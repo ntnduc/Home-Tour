@@ -14,6 +14,9 @@ export class InvoiceItem extends BaseEntity {
   @Column()
   invoiceId: string;
 
+  @Column({ type: 'text', nullable: true })
+  name?: string;
+
   @Column({ type: 'decimal', precision: 15, scale: 2 })
   amount: number;
 

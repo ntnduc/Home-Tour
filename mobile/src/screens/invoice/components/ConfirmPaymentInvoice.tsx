@@ -15,6 +15,7 @@ import { Text, View } from "react-native";
 
 type Props = {
   invoice: InvoiceDetailResponse;
+  onSubmit?: (data: PaymentCreateRequest) => void | Promise<void>;
 };
 
 export interface ConfirmPaymentInvoiceRef {
@@ -22,7 +23,7 @@ export interface ConfirmPaymentInvoiceRef {
 }
 
 const ConfirmPaymentInvoice = forwardRef<ConfirmPaymentInvoiceRef, Props>((props: Props, ref) => {
-  const { invoice } = props;
+  const { invoice, onSubmit } = props;
   const {
     control,
     handleSubmit,
@@ -41,7 +42,9 @@ const ConfirmPaymentInvoice = forwardRef<ConfirmPaymentInvoiceRef, Props>((props
 
   useImperativeHandle(ref, () => ({
     submit() {
-      console.log("Submitting payment form with values:");
+      handleSubmit((data) => {
+        onSubmit?.(data);
+      })();
     },
   }));
 

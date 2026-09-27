@@ -1,3 +1,20 @@
 {
-  "js/ts.tsdk.path": "node_modules/typescript/lib"
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
+  "chat.tools.terminal.autoApprove": {
+    "/^cd /tmp && python3 - <<'EOF'\nimport json\nd=json\\.load\\(open\\('/tmp/expo_versions\\.json'\\)\\)\\['data'\\]\\['sdkVersions'\\]\\['57\\.0\\.0'\\]\nbn=d\\.get\\('relatedPackages',\\{\\}\\)\nrn=d\\.get\\('recommendedTools',\\{\\}\\)\n# bundledNativeModules\nbnm=d\\.get\\('facebookReactVersion'\\),d\\.get\\('facebookReactNativeVersion'\\)\nprint\\(\"react/rn:\", bnm\\)\nrp=d\\.get\\('relatedPackages',\\{\\}\\)\nkeys=\\['expo','expo-status-bar','expo-blur','expo-camera','expo-document-picker','expo-file-system','expo-glass-effect','expo-image-picker','react','react-native','react-native-gesture-handler','react-native-reanimated','react-native-safe-area-context','react-native-screens','react-native-svg','react-native-pager-view','react-native-worklets','@react-native-async-storage/async-storage','@react-native-community/datetimepicker','@react-native-community/netinfo','babel-preset-expo'\\]\nfor k in keys:\n    print\\(k, \"=>\", rp\\.get\\(k\\)\\)\nEOF$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^cd /tmp && python3 - <<'EOF'\nimport json\nd=json\\.load\\(open\\('/tmp/expo_versions\\.json'\\)\\)\\['data'\\]\\['sdkVersions'\\]\\['57\\.0\\.0'\\]\nprint\\(\"TOP KEYS:\", list\\(d\\.keys\\(\\)\\)\\)\nrp=d\\.get\\('relatedPackages',\\{\\}\\)\nprint\\(\"relatedPackages count:\", len\\(rp\\)\\)\nfor k in sorted\\(rp\\): print\\(k,\"=>\",rp\\[k\\]\\)\nEOF$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^ls node_modules/@expo/vector-icons/package\\.json 2>/dev/null && node -e \"console\\.log\\(require\\('\\./node_modules/@expo/vector-icons/package\\.json'\\)\\.version\\)\" 2>/dev/null \\|\\| echo \"NOT installed\"; echo \"--- listed in package\\.json\\? ---\"; grep -n \"vector-icons\" package\\.json \\|\\| echo \"not in package\\.json\"$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "npx expo": true,
+    "npx tsc": true,
+    "uniq": true
+  }
 }

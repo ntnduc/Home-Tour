@@ -1,3 +1,4 @@
+import { StatusOption } from "@/components/Status";
 import { ContractDetailResponse } from "./contract";
 import {
   InvoiceItemCreateRequest,
@@ -76,3 +77,53 @@ export const INVOICE_STATUS_COLOR: Record<
   [InvoiceStatus.OVERDUE]: { bg: "#FFECEC", color: "#FF3B30" },
   [InvoiceStatus.CANCELLED]: { bg: "#F2F2F2", color: "#8E8E93" },
 };
+
+export const INVOICE_STATUS_OPTIONS: StatusOption[] = [
+  {
+    value: InvoiceStatus.DRAFT,
+    label: "Nháp",
+    textStyle: { color: INVOICE_STATUS_COLOR[InvoiceStatus.DRAFT].color },
+    style: { backgroundColor: INVOICE_STATUS_COLOR[InvoiceStatus.DRAFT].bg },
+  },
+  {
+    value: InvoiceStatus.PENDING,
+    label: "Pending",
+    type: "default",
+    textStyle: { color: INVOICE_STATUS_COLOR[InvoiceStatus.PENDING].color },
+    style: { backgroundColor: INVOICE_STATUS_COLOR[InvoiceStatus.PENDING].bg },
+  },
+  {
+    value: InvoiceStatus.PAID,
+    label: "Paid",
+    type: "default",
+    textStyle: { color: INVOICE_STATUS_COLOR[InvoiceStatus.PAID].color },
+    style: { backgroundColor: INVOICE_STATUS_COLOR[InvoiceStatus.PAID].bg },
+  },
+  {
+    value: InvoiceStatus.PARTIALLY_PAID,
+    label: "Partially Paid",
+    type: "default",
+    textStyle: {
+      color: INVOICE_STATUS_COLOR[InvoiceStatus.PARTIALLY_PAID].color,
+    },
+    style: {
+      backgroundColor: INVOICE_STATUS_COLOR[InvoiceStatus.PARTIALLY_PAID].bg,
+    },
+  },
+  {
+    value: InvoiceStatus.OVERDUE,
+    label: "Overdue",
+    type: "default",
+    textStyle: { color: INVOICE_STATUS_COLOR[InvoiceStatus.OVERDUE].color },
+    style: { backgroundColor: INVOICE_STATUS_COLOR[InvoiceStatus.OVERDUE].bg },
+  },
+  {
+    value: InvoiceStatus.CANCELLED,
+    label: "Cancelled",
+    type: "default",
+    textStyle: { color: INVOICE_STATUS_COLOR[InvoiceStatus.CANCELLED].color },
+    style: {
+      backgroundColor: INVOICE_STATUS_COLOR[InvoiceStatus.CANCELLED].bg,
+    },
+  },
+];

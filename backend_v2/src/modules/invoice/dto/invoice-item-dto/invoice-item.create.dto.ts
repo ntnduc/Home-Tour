@@ -15,6 +15,9 @@ export class InvoiceItemCreateDto extends BaseCreateDto<InvoiceItem> {
   @IsUUID()
   invoiceId: string;
 
+  @IsOptional()
+  name?: string;
+
   @IsNumber()
   @Min(0)
   amount: number;
@@ -47,6 +50,7 @@ export class InvoiceItemCreateDto extends BaseCreateDto<InvoiceItem> {
 
   getEntity(): InvoiceItem {
     const entity = new InvoiceItem();
+    entity.name = this.name;
     entity.invoiceId = this.invoiceId;
     entity.amount = this.amount;
     entity.type = this.type;
@@ -61,6 +65,7 @@ export class InvoiceItemCreateDto extends BaseCreateDto<InvoiceItem> {
 
   deptClone(): InvoiceItemCreateDto {
     const clone = new InvoiceItemCreateDto();
+    clone.name = this.name;
     clone.invoiceId = this.invoiceId;
     clone.amount = this.amount;
     clone.type = this.type;

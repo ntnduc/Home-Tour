@@ -36,7 +36,6 @@ const PropertyListScreen = ({ navigation }: PropertyListScreenProps) => {
           globalKey: search,
         }),
       getNextPageParam: (lastPage, pages) => {
-        console.log("💞💓💗💞💓💗 ~ PropertyListScreen ~ lastPage:", lastPage);
         return lastPage.data?.total && lastPage.data?.total > pages.length
           ? pages.length + 1
           : undefined;

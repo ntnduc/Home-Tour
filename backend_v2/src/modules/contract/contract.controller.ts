@@ -124,7 +124,7 @@ export class ContractController extends BaseController<
     if (body.reason) {
       updateDto.reason = body.reason;
     }
-    return await this.contractService.changeStatus(updateDto);
+    return await this.contractService.active(updateDto);
   }
 
   @Post(':id/deactivate')
@@ -142,7 +142,7 @@ export class ContractController extends BaseController<
     updateDto.id = id;
     updateDto.status = ContractStatus.TERMINATED_EARLY;
     updateDto.reason = body.reason;
-    return await this.contractService.changeStatus(updateDto);
+    return await this.contractService.deActive(true, updateDto);
   }
 
   @Get('status/:status')

@@ -25,6 +25,8 @@ export class ContractDetailDto extends BaseDetailDto<Contracts> {
   carryDebtToNextInvoice: boolean;
   contractClient?: ContractClientDetailDto[];
   contractServices?: ContractServiceDetailDto[];
+  // ID của hóa đơn tạm thời được tạo ra khi hợp đồng được kích hoạt.
+  preInvoiceId?: string;
 
   fromEntity(entity: Contracts): void {
     this.id = entity.id;

@@ -44,7 +44,7 @@ export class ContractServiceCreateDto extends BaseCreateDto<ContractServices> {
   @IsOptional()
   isSelectedFromService?: boolean;
 
-  @IsNumber() contr;
+  @IsNumber()
   @IsOptional()
   helperValue?: number;
 

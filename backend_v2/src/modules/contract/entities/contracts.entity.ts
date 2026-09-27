@@ -1,3 +1,4 @@
+import { Invoice } from 'src/modules/invoice/entities/invoice.entity';
 import {
   Column,
   Entity,
@@ -82,4 +83,7 @@ export class Contracts extends BaseEntity {
     (contractServices) => contractServices.contract,
   )
   contractServices: ContractServices[];
+
+  @OneToMany(() => Invoice, (invoice) => invoice.contract)
+  invoices: Invoice[];
 }

@@ -12,6 +12,7 @@ import ConfirmCreateContract, {
   ConfirmCreateContractRef,
 } from "./components/ConfirmCreateContract";
 import CreateContractForm from "./components/CreateContractForm";
+import CreateInvoice from "./components/CreateInvoice";
 
 type CreateContractScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, "CreateContract">;
@@ -25,27 +26,40 @@ const CreateContractScreen = ({
   const [roomData, setRoomData] = useState<RoomServiceDetailResponse | null>(
     null,
   );
-  const [confirmData, setConfirmData] = useState<ContractDetailResponse | null>(
-    null,
-  );
+  // const [confirmData, setConfirmData] = useState<ContractCreateRequest | null>(
+  //   null,
+  // );
   const [defaultContractData, setDefaultContractData] =
     useState<ContractCreateRequest | null>(null);
-  const [activeStep, setActiveStep] = useState<number>(0);
+  const [invoiceId, setInvoiceId] = useState<string | null>(
+    "25348560-813f-40a9-9e8a-419096c1b53a",
+  );
+  const [activeStep, setActiveStep] = useState<number>(2);
 
   const confirmRef = useRef<ConfirmCreateContractRef>(null);
 
   const handleConfirm = async () => {
-    await confirmRef.current?.confirm();
+    const response = await confirmRef.current?.confirm();
+    if (response && typeof response === "string") {
+      setInvoiceId(response);
+    }
     return false;
   };
 
   const onNextStep = (
     rawData: ContractCreateRequest,
-    data: ContractDetailResponse,
+    // data: ContractCreateRequest,
   ) => {
     setDefaultContractData(rawData);
-    setConfirmData(data);
     setActiveStep(activeStep + 1);
+  };
+
+  const onContractCreated = (contract: ContractDetailResponse) => {
+    if (contract.preInvoiceId) {
+      setInvoiceId(contract.preInvoiceId);
+      setActiveStep(2);
+      return;
+    }
   };
 
   return (
@@ -65,6 +79,7 @@ const CreateContractScreen = ({
         <ChildStep
           offsetBottomActionButtom={-12}
           label="Xác nhận"
+          // hideButtonRow
           previousAction={{
             label: "Chỉnh sửa thông tin",
             icon: "pencil",
@@ -73,20 +88,32 @@ const CreateContractScreen = ({
               return true;
             },
           }}
-          finishAction={{
+          nextAction={{
             label: "Xác nhận tạo hợp đồng",
             icon: "checkmark-circle",
-            variant: "success",
             onPress: handleConfirm,
           }}
         >
-          {confirmData && (
+          {defaultContractData && (
             <ConfirmCreateContract
               ref={confirmRef}
               navigation={navigation}
-              contract={confirmData}
+              contract={defaultContractData}
               room={roomData?.name || ""}
+              propertyName={roomData?.propertyName || ""}
+              onPreviousStep={() => setActiveStep(activeStep - 1)}
+              onNextStep={onContractCreated}
             />
+          )}
+        </ChildStep>
+
+        <ChildStep
+          offsetBottomActionButtom={-12}
+          label="Hóa đơn"
+          hideButtonRow={true}
+        >
+          {invoiceId && (
+            <CreateInvoice navigation={navigation} invoiceId={invoiceId} />
           )}
         </ChildStep>
       </ParrentStep>

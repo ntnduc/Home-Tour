@@ -144,6 +144,7 @@ export class InvoiceService
           debtItem.amount = preInvoiceRemaining;
           debtItem.type = InvoiceItemType.OTHER;
           debtItem.propertyId = entity.propertyId;
+          debtItem.name = `Nợ hóa đơn: ${findPreInvoice.code}`;
           debtItem.metadata = {
             reason: 'CARRY_OVER_DEBT',
             preInvoiceId: findPreInvoice.id,
@@ -289,15 +290,16 @@ export class InvoiceService
     invoiceCreateDto.contractId = contract.id;
     invoiceCreateDto.status = InvoiceStatus.DRAFT;
     const invoiceItemCreateDtos: InvoiceItemCreateDto[] = [];
+    const breakDayAmount = this.calculateBreakDayRoom(
+      contract,
+      contract.startDate,
+      endOfMonth,
+    );
     if (contract.isPrepaidRoom) {
       const invoiceItemCreateDto = new InvoiceItemCreateDto();
-      const breakDayAmount = this.calculateBreakDayRoom(
-        contract,
-        contract.startDate,
-        endOfMonth,
-      );
       invoiceItemCreateDto.amount = breakDayAmount;
       invoiceItemCreateDto.type = InvoiceItemType.ROOM_RENT;
+      invoiceItemCreateDto.name = `Tiền thuê`;
       invoiceItemCreateDto.propertyId = contract.propertyId;
       invoiceItemCreateDto.calculationMethod =
         ServiceCalculationMethod.FIXED_PER_ROOM;
@@ -308,6 +310,7 @@ export class InvoiceService
       const invoiceItemCreateDto = new InvoiceItemCreateDto();
       invoiceItemCreateDto.amount = Number(contract.depositAmountPaid);
       invoiceItemCreateDto.type = InvoiceItemType.DESPOSIT_CONTRACT;
+      invoiceItemCreateDto.name = `Tiền cọc`;
       invoiceItemCreateDto.propertyId = contract.propertyId;
       invoiceItemCreateDto.calculationMethod =
         ServiceCalculationMethod.FIXED_PER_ROOM;

@@ -1,4 +1,3 @@
-import { createContract } from "@/api/contract/contract.api";
 import ActionButtonBottom from "@/components/ActionButtonBottom";
 import DatePicker from "@/components/DatePicker";
 import Input from "@/components/Input";
@@ -22,10 +21,7 @@ import { Alert, Text, TouchableOpacity, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import Toast from "react-native-toast-message";
 import { getRoomWitcService } from "../../../api/room/room.api";
-import {
-  ContractCreateRequest,
-  ContractDetailResponse,
-} from "../../../types/contract";
+import { ContractCreateRequest } from "../../../types/contract";
 import { RoomServiceDetailResponse, RoomStatus } from "../../../types/room";
 import CardComponent from "../../common/CardComponent";
 import CompanionClientComponent, {
@@ -65,7 +61,7 @@ interface CreateContractFormProps {
   onRoomLoaded: (room: RoomServiceDetailResponse) => void;
   onNextStep: (
     rawData: ContractCreateRequest,
-    contract: ContractDetailResponse,
+    // contract: ContractDetailResponse,
   ) => void;
 }
 
@@ -268,26 +264,28 @@ const CreateContractForm = forwardRef<
 
         const contract: ContractCreateRequest = {
           ...data,
-          contractClient: [
-            ...partnerClients,
-            {
-              ...data.contractClientLandlord,
-              isLandlordClient: true,
-            },
-          ],
+          // contractClient: [
+          //   ...partnerClients,
+          //   {
+          //     ...data.contractClientLandlord,
+          //     isLandlordClient: true,
+          //   },
+          // ],
         };
 
-        const result = await createContract(contract);
-        if (result.success && result.data) {
-          onNextStep(data, result.data);
-          return result;
-        } else {
-          Toast.show({
-            type: "error",
-            text1: "Lỗi",
-            text2: result.message || "Không thể tạo hợp đồng",
-          });
-        }
+        onNextStep(contract);
+
+        // const result = await createContract(contract);
+        // if (result.success && result.data) {
+        //   onNextStep(data, result.data);
+        //   return result;
+        // } else {
+        //   Toast.show({
+        //     type: "error",
+        //     text1: "Lỗi",
+        //     text2: result.message || "Không thể tạo hợp đồng",
+        //   });
+        // }
       } catch (error) {
         console.error("Error creating contract:", error);
         Alert.alert("Lỗi", "Không thể tạo hợp đồng");

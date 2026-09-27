@@ -85,6 +85,7 @@ export class ContractService
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
+    const detailDto = new ContractDetailDto();
 
     try {
       // Kiểm tra phòng có tồn tại và trạng thái AVAILABLE
@@ -158,6 +159,7 @@ export class ContractService
       if (invoiceCreateDto) {
         const invoice = invoiceCreateDto.getEntity();
         const newInvoice = await queryRunner.manager.save(invoice);
+        detailDto.preInvoiceId = newInvoice.id; // Gán preInvoiceId vào detailDto
         invoice.invoiceItems.forEach((item) => {
           item.invoiceId = newInvoice.id;
         });
@@ -174,7 +176,7 @@ export class ContractService
           'contractClient.client',
         ],
       });
-      const detailDto = new ContractDetailDto();
+
       detailDto.fromEntity(detailContract!);
       return detailDto;
     } catch (error) {
@@ -190,9 +192,7 @@ export class ContractService
     throw new BadRequestException('Not implemented');
   }
 
-  async changeStatus(
-    updateDto: ContractChangeStatusDto,
-  ): Promise<ContractDetailDto> {
+  async active(updateDto: ContractChangeStatusDto): Promise<ContractDetailDto> {
     const id = updateDto.id;
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -215,6 +215,29 @@ export class ContractService
         queryRunner.manager,
       );
 
+      const otherActiveContracts = await this.contractsRepository
+        .createQueryBuilder('contract')
+        .where('contract.roomId = :roomId', { roomId: existingContract.roomId })
+        .andWhere('contract.id != :currentContractId', {
+          currentContractId: existingContract.id,
+        })
+        .andWhere('contract.status = :status', {
+          status: ContractStatus.ACTIVE,
+        })
+        .getCount();
+
+      if (otherActiveContracts === 0) {
+        await queryRunner.manager.update(
+          'rooms',
+          { id: existingContract.roomId },
+          { status: RoomStatus.OCCUPIED },
+        );
+      } else {
+        throw new BadRequestException(
+          'Không thể kích hoạt hợp đồng vì đã có hợp đồng đang hoạt động cho phòng này',
+        );
+      }
+
       await queryRunner.commitTransaction();
 
       // Lấy thông tin chi tiết hợp đồng sau khi cập nhật
@@ -232,10 +255,45 @@ export class ContractService
     } catch (error) {
       await queryRunner.rollbackTransaction();
       console.error(error);
-      throw new Error('Vui lòng kiểm tra lại dữ liệu hoặc thử lại sau!');
+      throw error;
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async deActive(
+    fork: boolean,
+    updateDto: ContractChangeStatusDto,
+  ): Promise<ContractDetailDto> {
+    if (!fork) {
+      throw new BadRequestException('Not implemented');
+    }
+    if (updateDto.reason === undefined || updateDto.reason.trim() === '') {
+      throw new BadRequestException('Lý do hủy hợp đồng không được để trống');
+    }
+    const contract = await this.contractsRepository.findOne({
+      where: { id: updateDto.id, status: ContractStatus.ACTIVE },
+    });
+    if (contract === null) {
+      throw new NotFoundException('Hợp đồng không tồn tại');
+    }
+    const allowContractUpdate = [
+      ContractStatus.TERMINATED_EARLY,
+      ContractStatus.EXPIRED,
+      ContractStatus.ENDED,
+    ];
+    if (allowContractUpdate.indexOf(updateDto.status) === -1) {
+      throw new BadRequestException('Trạng thái hợp đồng không hợp lệ');
+    }
+    const newEntity = this.handleStatusChange(
+      contract,
+      updateDto.status,
+      updateDto.reason,
+      this.dataSource.manager,
+    );
+    const dto = new ContractDetailDto();
+    dto.fromEntity(await newEntity);
+    return dto;
   }
 
   async get(id: string): Promise<ContractDetailDto> {
@@ -289,10 +347,7 @@ export class ContractService
     contractServiceCreateEntities.forEach((x) => {
       x.contractId = contractId;
     });
-    const savedContractServices = await manager.save(
-      ContractServices,
-      contractServiceCreateEntities,
-    );
+    await manager.save(ContractServices, contractServiceCreateEntities);
   }
 
   private async createContractClient(
@@ -358,47 +413,24 @@ export class ContractService
     newStatus: ContractStatus,
     reason: string,
     manager: EntityManager,
-  ): Promise<void> {
+  ): Promise<Contracts> {
     await manager.update(Contracts, contract.id, { status: newStatus });
-    const newContract = await manager.findOne(Contracts, {
-      where: { id: contract.id },
+    // const newContract = await manager.findOne(Contracts, {
+    //   where: { id: contract.id },
+    // });
+
+    const newContract = await manager.update(Contracts, contract.id, {
+      status: newStatus,
     });
 
-    if (newStatus === ContractStatus.ACTIVE) {
-      // Kiểm tra xem có hợp đồng ACTIVE nào khác cho phòng này không
-      const otherActiveContracts = await this.contractsRepository
-        .createQueryBuilder('contract')
-        .where('contract.roomId = :roomId', { roomId: contract.roomId })
-        .andWhere('contract.id != :currentContractId', {
-          currentContractId: contract.id,
-        })
-        .andWhere('contract.status = :status', {
-          status: ContractStatus.ACTIVE,
-        })
-        .getCount();
-
-      await this.recordChange(
-        newContract!,
-        contract,
-        'STATUS_CHANGE',
-        reason,
-        manager,
-      );
-
-      if (otherActiveContracts === 0) {
-        await manager.update(
-          'rooms',
-          { id: contract.roomId },
-          { status: RoomStatus.AVAILABLE },
-        );
-      } else {
-        await manager.update(
-          'rooms',
-          { id: contract.roomId },
-          { status: RoomStatus.OCCUPIED },
-        );
-      }
-    }
+    await this.recordChange(
+      newContract.raw,
+      contract,
+      'STATUS_CHANGE',
+      reason,
+      manager,
+    );
+    return newContract.raw;
   }
 
   private async recordChange(

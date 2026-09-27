@@ -1,4 +1,3 @@
-import { useTheme } from "@/theme/ThemeProvider";
 import { Ionicons } from "@expo/vector-icons";
 import React, { ReactNode } from "react";
 import {
@@ -22,12 +21,23 @@ interface ActionButton {
   hidden?: boolean | ((action: any) => boolean);
 }
 
+// A row can be a single button (rendered full-width) or an array of buttons
+// that should be rendered side by side on the same row.
+type ActionButtonRow = ActionButton | ActionButton[];
+
 interface ActionButtonBottomProps {
-  actions: ActionButton[];
+  actions: ActionButtonRow[];
   containerStyle?: ViewStyle;
   className?: string;
   bottomInsetOffset?: number;
 }
+
+const isActionHidden = (action: ActionButton, allActions: ActionButton[]) => {
+  if (typeof action.hidden === "function") {
+    return action.hidden(allActions);
+  }
+  return !!action.hidden;
+};
 
 const getButtonStyle = (
   variant: ActionButton["variant"] = "primary",
@@ -76,7 +86,15 @@ const ActionButtonBottom: React.FC<ActionButtonBottomProps> = ({
   bottomInsetOffset = 0,
 }) => {
   const { bottom } = useSafeAreaInsets();
-  const theme = useTheme();
+
+  // Flatten so `hidden` callbacks keep receiving the full list of actions,
+  // regardless of whether they were grouped into rows.
+  const flatActions = actions.flat();
+
+  const visibleRows = actions
+    .map((row) => (Array.isArray(row) ? row : [row]))
+    .map((row) => row.filter((action) => !isActionHidden(action, flatActions)))
+    .filter((row) => row.length > 0);
 
   return (
     <View
@@ -87,53 +105,50 @@ const ActionButtonBottom: React.FC<ActionButtonBottomProps> = ({
         { paddingBottom: bottom + bottomInsetOffset },
       ]}
     >
-      {actions
-        .filter((item) => {
-          if (item.hidden && typeof item.hidden === "function") {
-            return !item.hidden(actions);
-          }
-          return !item.hidden;
-        })
-        .map((action, index) => {
-          if (
-            action.hidden && typeof action.hidden === "function"
-              ? action.hidden(actions)
-              : action.hidden
-          ) {
-            return null;
-          }
-          return (
-            <TouchableOpacity
-              key={`${action.label}-${index}`}
-              className={getButtonStyle(action.variant, action.customStyle)}
-              onPress={action.onPress}
-              disabled={action.disabled || action.isLoading}
-              style={[index !== actions.length - 1 && { marginBottom: 12 }]}
-            >
-              {action.isLoading ? (
-                <ActivityIndicator
-                  color={getIconColor(action.variant)}
-                  size="small"
-                />
-              ) : (
-                <>
-                  {action.iconElement
-                    ? action.iconElement
-                    : action.icon && (
-                        <Ionicons
-                          name={action.icon}
-                          size={18}
-                          color={getIconColor(action.variant)}
-                        />
-                      )}
-                </>
-              )}
-              <Text className={getTextStyle(action.variant)}>
-                {action.isLoading ? "Đang xử lý..." : action.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+      {visibleRows.map((row, rowIndex) => {
+        const isMultiButtonRow = row.length > 1;
+        return (
+          <View
+            key={`row-${rowIndex}`}
+            className={isMultiButtonRow ? "flex-row" : undefined}
+            style={[rowIndex !== visibleRows.length - 1 && { marginBottom: 12 }]}
+          >
+            {row.map((action, actionIndex) => (
+              <TouchableOpacity
+                key={`${action.label}-${actionIndex}`}
+                className={getButtonStyle(action.variant, action.customStyle)}
+                onPress={action.onPress}
+                disabled={action.disabled || action.isLoading}
+                style={[
+                  isMultiButtonRow && { flex: 1 },
+                  isMultiButtonRow &&
+                    actionIndex !== row.length - 1 && { marginRight: 12 },
+                ]}
+              >
+                {action.isLoading ? (
+                  <ActivityIndicator
+                    color={getIconColor(action.variant)}
+                    size="small"
+                  />
+                ) : action.iconElement ? (
+                  action.iconElement
+                ) : (
+                  action.icon && (
+                    <Ionicons
+                      name={action.icon}
+                      size={18}
+                      color={getIconColor(action.variant)}
+                    />
+                  )
+                )}
+                <Text className={getTextStyle(action.variant)}>
+                  {action.isLoading ? "Đang xử lý..." : action.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        );
+      })}
     </View>
   );
 };
