@@ -1,6 +1,5 @@
 import {
-  IsDateString,
-  IsNotEmpty,
+  IsBoolean,
   IsNumber,
   IsOptional,
   IsString,
@@ -20,12 +19,20 @@ export class InvoicePaymentDto extends BaseUpdateDto<Invoice> {
   @Min(0, { message: 'Số tiền thanh toán phải lớn hơn 0' })
   remainingAmount: number;
 
-  @IsDateString()
-  dueDate: string;
+  /** ghi nợ vào cho hóa đơn tiếp theo
+   * true: ghi nợ vào cho hóa đơn tiếp theo
+   * false: không ghi nợ vào cho hóa đơn tiếp theo
+   */
+  @IsOptional()
+  @IsBoolean()
+  isCarryOver?: boolean;
 
-  @IsString()
-  @IsNotEmpty({ message: 'Không có mã hợp đồng' })
-  contractId: string;
+  // @IsDateString()
+  // dueDate: string;
+
+  // @IsString()
+  // @IsNotEmpty({ message: 'Không có mã hợp đồng' })
+  // contractId: string;
 
   @IsString()
   @IsOptional()
@@ -35,11 +42,23 @@ export class InvoicePaymentDto extends BaseUpdateDto<Invoice> {
   paymentMethod: string;
 
   getEntity(entity: Invoice): Invoice {
-    entity.paidAmount = this.calculatorPaidAmount(entity);
-    entity.remainingAmount = this.calculatorPaidAmount(entity);
-    entity.dueDate = new Date(this.dueDate);
-    entity.status = InvoiceStatus.PAID;
+    // entity.paidAmount = this.calculatorPaidAmount(entity);
+    entity.paidAmount = this.paidAmount;
+    entity.remainingAmount = this.calculatorRemainingAmount(entity);
+    // entity.dueDate = new Date(this.dueDate);
+    // entity.status = InvoiceStatus.PAID;
+    this.setStatus(entity);
     return entity;
+  }
+
+  setStatus(invoice: Invoice) {
+    if (!this.isCarryOver) {
+      return;
+    }
+    if (this.paidAmount < invoice.remainingAmount) {
+      invoice.status = InvoiceStatus.PARTIALLY_PAID;
+    }
+    invoice.status = InvoiceStatus.PAID;
   }
 
   calculatorPaidAmount(invoice: Invoice): number {

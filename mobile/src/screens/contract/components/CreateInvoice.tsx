@@ -1,4 +1,8 @@
-import { createPayment, getInvoice } from "@/api/invoice/invoice.api";
+import {
+  confirmInvoice,
+  getInvoice,
+  paymentInvoice,
+} from "@/api/invoice/invoice.api";
 import ActionButtonBottom from "@/components/ActionButtonBottom";
 import { useGlobalAppSheet } from "@/components/GlobalAppSheet";
 import Loading from "@/components/Loading";
@@ -11,17 +15,13 @@ import ConfirmPaymentInvoice, {
 import {
   INVOICE_STATUS_OPTIONS,
   InvoiceDetailResponse,
+  InvoicePaymentRequest,
   InvoiceStatus,
 } from "@/types/invoice";
 import {
   InvoiceItemDetailResponse,
   InvoiceItemType,
 } from "@/types/invoice.item";
-import {
-  PaymentCreateRequest,
-  PaymentStatus,
-  PaymentType,
-} from "@/types/payment";
 import { formatCurrency } from "@/utils/appUtil";
 import { formatDate } from "@/utils/dateUtil";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -83,53 +83,37 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
     fetchInvoice();
   }, [fetchInvoice]);
 
-  const handleSavePayment = async (formData: PaymentCreateRequest) => {
+  const handleSavePayment = async (formData: InvoicePaymentRequest) => {
     if (!invoice) return;
-
-    const remainingAmount = invoice.remainingAmount ?? 0;
-
-    if (!formData.paymentDate) {
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Vui lòng chọn ngày thanh toán",
-      });
-      return;
-    }
-
-    if (!formData.amount || formData.amount <= 0) {
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Số tiền thanh toán phải lớn hơn 0",
-      });
-      return;
-    }
-
-    if (formData.amount > remainingAmount) {
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Số tiền thanh toán không được vượt quá số tiền còn lại",
-      });
-      return;
+    setIsSubmitting(true);
+    if (invoice.status === InvoiceStatus.DRAFT) {
+      try {
+        const responseConfirm = await confirmInvoice(invoiceId);
+        if (!responseConfirm.success || !responseConfirm.data) {
+          return;
+        }
+      } catch (error: any) {
+        Toast.show({
+          type: "error",
+          text1: "Lỗi",
+          text2: error?.response?.data?.message ?? "Không thể xác nhận hóa đơn",
+        });
+        setIsSubmitting(false);
+        return;
+      }
     }
 
     try {
-      setIsSubmitting(true);
-      const paymentData: PaymentCreateRequest = {
-        invoiceId: invoice.id,
-        amount: formData.amount,
-        paymentDate: formData.paymentDate,
-        paymentMethod: formData.paymentMethod,
-        propertyId: invoice.propertyId,
-        type: PaymentType.IN,
-        status: PaymentStatus.PAID,
-        note: formData.note,
-        roomName: invoice.roomName ?? "",
+      const paymentData: InvoicePaymentRequest = {
+        id: formData.id,
+        paidAmount: formData.paidAmount,
+        paymentMethod: formData.paymentMethod ?? "CASH",
+        isCarryOver: formData.isCarryOver ?? false,
+        notes: formData.notes,
+        remainingAmount: formData.remainingAmount,
       };
 
-      const response = await createPayment(paymentData);
+      const response = await paymentInvoice(paymentData);
       if (response.success && response.data) {
         Toast.show({
           type: "success",
@@ -144,11 +128,12 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
       Toast.show({
         type: "error",
         text1: "Lỗi",
-        text2: error?.message || "Không thể ghi nhận thanh toán",
+        text2: error?.data?.message || "Không thể ghi nhận thanh toán",
       });
+      return;
     } finally {
       setIsSubmitting(false);
-      closeAppSheet();
+      // closeAppSheet();
     }
   };
 

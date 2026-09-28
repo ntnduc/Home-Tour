@@ -1,4 +1,10 @@
-import { Body, Controller, NotFoundException, Patch } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  NotFoundException,
+  Param,
+  Patch,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -76,7 +82,7 @@ export class InvoiceController extends BaseController<
   //   return new NotFoundException('Method not implemented yet');
   // }
 
-  @Patch(':id/payment')
+  @Patch('payment')
   @ApiOperation({ summary: 'Update invoice payment' })
   @ApiResponse({
     status: 200,
@@ -85,6 +91,17 @@ export class InvoiceController extends BaseController<
   @ApiResponse({ status: 404, description: 'Invoice not found.' })
   async updateInvoicePayment(@Body() data: InvoicePaymentDto) {
     return await this.invoiceService.paymentInvoice(data);
+  }
+
+  @Patch('confirm/:id')
+  @ApiOperation({ summary: 'Confirm invoice' })
+  @ApiResponse({
+    status: 200,
+    description: 'Invoice confirmed successfully.',
+  })
+  @ApiResponse({ status: 404, description: 'Invoice not found.' })
+  async confirmInvoice(@Param('id') id: string): Promise<InvoiceDetailDto> {
+    return await this.invoiceService.confirmInvoice(id);
   }
 
   async update(@Body() dto: InvoiceUpdateDto): Promise<InvoiceDetailDto> {

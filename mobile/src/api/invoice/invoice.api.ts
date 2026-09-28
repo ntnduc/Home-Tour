@@ -6,6 +6,7 @@ import {
   InvoiceCreateRequest,
   InvoiceDetailResponse,
   InvoiceListResponse,
+  InvoicePaymentRequest,
 } from "@/types/invoice";
 import { PaymentCreateRequest } from "@/types/payment";
 
@@ -120,15 +121,34 @@ export const getInvoicesByRoom = async (
   return response.data;
 };
 
+export const confirmInvoice = async (
+  id: string,
+): Promise<ApiResponse<InvoiceDetailResponse>> => {
+  const response = await privateApi.patch<ApiResponse<InvoiceDetailResponse>>(
+    `/invoice/confirm/${id}`,
+  );
+  return response.data;
+};
+
+export const paymentInvoice = async (
+  data: InvoicePaymentRequest,
+): Promise<ApiResponse<InvoiceDetailResponse>> => {
+  const response = await privateApi.patch<ApiResponse<InvoiceDetailResponse>>(
+    "/invoice/payment",
+    data,
+  );
+  return response.data;
+};
+
 // Payment APIs
 export const createPayment = async (
   data: PaymentCreateRequest,
 ): Promise<ApiResponse<PaymentResponse>> => {
-  const response = await privateApi.post<ApiResponse<PaymentResponse>>(
-    "/payment",
-    data,
-  );
-  return response.data;
+  // const response = await privateApi.post<ApiResponse<PaymentResponse>>(
+  //   "/payment",
+  //   data,
+  // );
+  return {} as any;
 };
 
 export const getPaymentsByInvoice = async (

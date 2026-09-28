@@ -57,6 +57,17 @@ export interface InvoiceUpdateRequest extends Omit<
   "id" | "createdAt" | "updatedAt"
 > {}
 
+export interface InvoicePaymentRequest {
+  id: string;
+  paidAmount: number;
+  remainingAmount: number;
+  isCarryOver?: boolean;
+  // dueDate: string;
+  // contractId: string;
+  notes?: string;
+  paymentMethod: string;
+}
+
 export enum InvoiceStatus {
   PENDING = "PENDING",
   PAID = "PAID",

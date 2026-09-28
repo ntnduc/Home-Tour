@@ -18,6 +18,7 @@ interface ActionButton {
   isLoading?: boolean;
   disabled?: boolean;
   customStyle?: ViewStyle;
+  isRow?: boolean;
   hidden?: boolean | ((action: any) => boolean);
 }
 
@@ -111,7 +112,9 @@ const ActionButtonBottom: React.FC<ActionButtonBottomProps> = ({
           <View
             key={`row-${rowIndex}`}
             className={isMultiButtonRow ? "flex-row" : undefined}
-            style={[rowIndex !== visibleRows.length - 1 && { marginBottom: 12 }]}
+            style={[
+              rowIndex !== visibleRows.length - 1 && { marginBottom: 12 },
+            ]}
           >
             {row.map((action, actionIndex) => (
               <TouchableOpacity

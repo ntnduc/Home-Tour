@@ -234,7 +234,11 @@ export class InvoiceService
       }
 
       const entity = dto.getEntity(invoice);
-      await this.invoiceRepository.update(dto.id, entity);
+      await this.invoiceRepository.update(dto.id, {
+        paidAmount: entity.paidAmount,
+        remainingAmount: entity.remainingAmount,
+        status: entity.status,
+      });
 
       //create payment
       const paymentCreateDto = new PaymentCreateDto();
@@ -264,10 +268,29 @@ export class InvoiceService
       return detailDto;
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new BadGatewayException(error);
+      throw new BadGatewayException(error.message);
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async confirmInvoice(id: string): Promise<InvoiceDetailDto> {
+    const invoice = await this.invoiceRepository.findOne({ where: { id: id } });
+    if (!invoice) {
+      throw new NotFoundException('Không tìm thấy hóa đơn');
+    }
+    if (
+      invoice.status !== InvoiceStatus.DRAFT &&
+      invoice.status !== InvoiceStatus.PENDING
+    ) {
+      throw new BadRequestException(
+        'Chỉ hóa đơn ở trạng thái DRAFT mới có thể xác nhận',
+      );
+    }
+
+    invoice.status = InvoiceStatus.PENDING;
+    this.invoiceRepository.update(invoice.id, invoice);
+    return this.get(invoice.id);
   }
 
   getPreInvoiceContract(contract: Contracts): InvoiceCreateDto | null {
@@ -448,13 +471,13 @@ export class InvoiceService
     error: string;
     status: boolean;
   } {
-    if (payment.paidAmount <= 0) {
+    if (payment.paidAmount < 0) {
       return { error: 'Số tiền thanh toán phải lớn hơn 0', status: false };
     }
 
-    if (payment.contractId !== invoice.contractId) {
-      return { error: 'Mã hợp đồng không khớp với hóa đơn', status: false };
-    }
+    // if (payment.contractId !== invoice.contractId) {
+    //   return { error: 'Mã hợp đồng không khớp với hóa đơn', status: false };
+    // }
 
     if (payment.paidAmount > invoice.remainingAmount) {
       return {
