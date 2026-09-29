@@ -14,7 +14,9 @@ export enum InvoiceStatus {
 }
 
 export enum InvoiceItemType {
+  // Tiền thuê phòng
   ROOM_RENT = 'ROOM_RENT',
+  // Tiền cọc hợp đồng
   DESPOSIT_CONTRACT = 'DESPOSIT_CONTRACT',
   SERVICE_FEE = 'SERVICE_FEE',
   OTHER = 'OTHER',

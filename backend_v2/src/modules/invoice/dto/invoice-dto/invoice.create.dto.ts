@@ -74,7 +74,6 @@ export class InvoiceCreateDto extends BaseCreateDto<Invoice> {
     entity.billingPeriodStart = new Date(this.billingPeriodStart);
     entity.billingPeriodEnd = new Date(this.billingPeriodEnd);
     entity.dueDate = new Date(this.dueDate);
-    entity.totalAmount = this.totalAmount;
     entity.paidAmount = this.paidAmount ?? 0;
     entity.remainingAmount =
       this.remainingAmount ?? this.totalAmount - entity.paidAmount;
@@ -82,6 +81,7 @@ export class InvoiceCreateDto extends BaseCreateDto<Invoice> {
     entity.notes = this.notes;
     entity.invoiceItems =
       this.invoiceItems?.map((item) => item.getEntity()) ?? [];
+    entity.totalAmount = entity.calculatorTotalAmount();
     return entity;
   }
 

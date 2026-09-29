@@ -20,6 +20,7 @@ import { InvoiceDetailDto } from './dto/invoice-dto/invoice.detail.dto';
 import { InvoiceListDto } from './dto/invoice-dto/invoice.list.dto';
 import { InvoicePaymentDto } from './dto/invoice-dto/invoice.payment.dto';
 import { InvoiceUpdateDto } from './dto/invoice-dto/invoice.update.dto';
+import { InvoiceUpdateItemsDto } from './dto/invoice-dto/invoice.update-items.dto';
 import { Invoice } from './entities/invoice.entity';
 import { InvoiceService } from './invoice.service';
 
@@ -102,6 +103,19 @@ export class InvoiceController extends BaseController<
   @ApiResponse({ status: 404, description: 'Invoice not found.' })
   async confirmInvoice(@Param('id') id: string): Promise<InvoiceDetailDto> {
     return await this.invoiceService.confirmInvoice(id);
+  }
+
+  @Patch('items')
+  @ApiOperation({ summary: 'Update invoice items price' })
+  @ApiResponse({
+    status: 200,
+    description: 'Invoice items updated successfully.',
+  })
+  @ApiResponse({ status: 404, description: 'Invoice not found.' })
+  async updateInvoiceItems(
+    @Body() data: InvoiceUpdateItemsDto,
+  ): Promise<InvoiceDetailDto> {
+    return await this.invoiceService.updateInvoiceItems(data);
   }
 
   async update(@Body() dto: InvoiceUpdateDto): Promise<InvoiceDetailDto> {

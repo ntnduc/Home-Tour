@@ -85,4 +85,11 @@ export class Invoice extends BaseEntity {
   // Danh sách các lần thanh toán đã ghi nhận cho hóa đơn.
   @OneToMany(() => Payment, (payment) => payment.invoice)
   payments: Payment[];
+
+  calculatorTotalAmount(): number {
+    return this.invoiceItems.reduce(
+      (sum, item) => sum + Number(item.amount),
+      0,
+    );
+  }
 }

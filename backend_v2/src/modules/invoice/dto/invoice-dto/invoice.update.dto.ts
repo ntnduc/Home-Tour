@@ -1,32 +1,17 @@
 import {
   IsDateString,
-  IsEnum,
   IsNumber,
   IsOptional,
   IsString,
-  IsUUID,
   Min,
 } from 'class-validator';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { BaseUpdateDto } from '../../../../common/base/dto/update.dto';
-import { InvoiceStatus } from '../../../../common/enums/invoice.enum';
 import { Invoice } from '../../entities/invoice.entity';
 
 export class InvoiceUpdateDto implements BaseUpdateDto<Invoice> {
   @IsString()
   id: string;
-
-  @IsOptional()
-  @IsUUID()
-  contractId?: string;
-
-  @IsOptional()
-  @IsUUID()
-  roomId?: string;
-
-  @IsOptional()
-  @IsUUID()
-  propertyId?: string;
 
   @IsOptional()
   @IsDateString()
@@ -56,10 +41,6 @@ export class InvoiceUpdateDto implements BaseUpdateDto<Invoice> {
   remainingAmount?: number;
 
   @IsOptional()
-  @IsEnum(InvoiceStatus)
-  status?: InvoiceStatus;
-
-  @IsOptional()
   @IsString()
   notes?: string;
 
@@ -76,7 +57,6 @@ export class InvoiceUpdateDto implements BaseUpdateDto<Invoice> {
     if (this.paidAmount !== undefined) updateData.paidAmount = this.paidAmount;
     if (this.remainingAmount !== undefined)
       updateData.remainingAmount = this.remainingAmount;
-    if (this.status) updateData.status = this.status;
     if (this.notes !== undefined) updateData.notes = this.notes;
 
     return updateData;

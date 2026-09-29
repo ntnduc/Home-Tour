@@ -41,6 +41,7 @@ export type RootStackParamList = {
   ConfirmCreateInvoice: {
     invoice: InvoiceCreateRequest;
   };
+  ConfirmDraftInvoice: { invoiceId: string };
   InvoiceDetailScreen: { invoiceId: string };
 
   // Reports

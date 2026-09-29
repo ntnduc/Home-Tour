@@ -7,6 +7,7 @@ import {
   InvoiceDetailResponse,
   InvoiceListResponse,
   InvoicePaymentRequest,
+  InvoiceUpdateItemsRequest,
 } from "@/types/invoice";
 import { PaymentCreateRequest } from "@/types/payment";
 
@@ -135,6 +136,16 @@ export const paymentInvoice = async (
 ): Promise<ApiResponse<InvoiceDetailResponse>> => {
   const response = await privateApi.patch<ApiResponse<InvoiceDetailResponse>>(
     "/invoice/payment",
+    data,
+  );
+  return response.data;
+};
+
+export const updateInvoiceItems = async (
+  data: InvoiceUpdateItemsRequest,
+): Promise<ApiResponse<InvoiceDetailResponse>> => {
+  const response = await privateApi.patch<ApiResponse<InvoiceDetailResponse>>(
+    "/invoice/items",
     data,
   );
   return response.data;

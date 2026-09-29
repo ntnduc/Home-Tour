@@ -45,6 +45,7 @@ import TerminateContractScreen from "./src/screens/contract/TerminateContractScr
 
 // Invoice Screens
 import ConfirmCreateInvoiceScreen from "./src/screens/invoice/ConfirmCreateInvoiceScreen";
+import ConfirmDraftInvoiceScreen from "./src/screens/invoice/ConfirmDraftInvoiceScreen";
 import CreateInvoiceScreen from "./src/screens/invoice/CreateInvoiceScreen";
 import InvoiceDetailScreen from "./src/screens/invoice/InvoiceDetailScreen";
 import InvoiceHistoryScreen from "./src/screens/invoice/InvoiceHistoryScreen";
@@ -265,6 +266,12 @@ export default function App() {
                     title: "Xác Nhận Tạo Hóa Đơn",
                     headerBackTitle: "Chỉnh sửa",
                   }}
+                />
+
+                <Stack.Screen
+                  name="ConfirmDraftInvoice"
+                  component={ConfirmDraftInvoiceScreen}
+                  options={{ title: "Xác Nhận Hóa Đơn Nháp" }}
                 />
 
                 <Stack.Screen

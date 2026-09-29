@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { RequestContextService } from 'src/common/base/context/request-context.service';
 import { ContractStatus } from 'src/common/enums/contract.enum';
+import { getCurrentDate } from 'src/common/utils';
 import { DataSource, EntityManager, In, SelectQueryBuilder } from 'typeorm';
 import { BaseService } from '../../common/base/crud/base.service';
 import { IBaseService } from '../../common/base/crud/IService';
@@ -145,14 +146,6 @@ export class ContractService
         );
       }
 
-      if (savedContract.status === ContractStatus.ACTIVE) {
-        await queryRunner.manager.update(
-          'rooms',
-          { id: createDto.roomId },
-          { status: RoomStatus.PENDING_DEPOSIT },
-        );
-      }
-
       // Tạo hóa đơn nếu hợp đồng là hợp đồng trả trước và đã thanh toán tiền cọc
       const invoiceCreateDto =
         this.invoiceService.getPreInvoiceContract(savedContract);
@@ -164,6 +157,31 @@ export class ContractService
           item.invoiceId = newInvoice.id;
         });
         await queryRunner.manager.save(invoice.invoiceItems);
+
+        await queryRunner.manager.update(
+          'contracts',
+          { id: savedContract.id },
+          { status: ContractStatus.WAITING_PAYMENT_INVOICE },
+        );
+      } else {
+        if (contractEntity.startDate <= getCurrentDate(true)) {
+          await queryRunner.manager.update(
+            'rooms',
+            { id: createDto.roomId },
+            { status: RoomStatus.OCCUPIED },
+          );
+          await queryRunner.manager.update(
+            'contracts',
+            { id: savedContract.id },
+            { status: ContractStatus.ACTIVE },
+          );
+        } else {
+          await queryRunner.manager.update(
+            'contracts',
+            { id: savedContract.id },
+            { status: ContractStatus.PENDING_START },
+          );
+        }
       }
 
       await queryRunner.commitTransaction();

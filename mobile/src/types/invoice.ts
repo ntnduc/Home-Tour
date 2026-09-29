@@ -57,6 +57,17 @@ export interface InvoiceUpdateRequest extends Omit<
   "id" | "createdAt" | "updatedAt"
 > {}
 
+export interface InvoiceItemPriceUpdateRequest {
+  id: string;
+  amount: number;
+}
+
+export interface InvoiceUpdateItemsRequest {
+  /** Id của hóa đơn cần cập nhật khoản mục. */
+  id: string;
+  invoiceItems: InvoiceItemPriceUpdateRequest[];
+}
+
 export interface InvoicePaymentRequest {
   id: string;
   paidAmount: number;

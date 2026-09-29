@@ -2,6 +2,7 @@ import {
   confirmInvoice,
   getInvoice,
   paymentInvoice,
+  updateInvoiceItems,
 } from "@/api/invoice/invoice.api";
 import ActionButtonBottom from "@/components/ActionButtonBottom";
 import { useGlobalAppSheet } from "@/components/GlobalAppSheet";
@@ -12,6 +13,9 @@ import CardComponent from "@/screens/common/CardComponent";
 import ConfirmPaymentInvoice, {
   ConfirmPaymentInvoiceRef,
 } from "@/screens/invoice/components/ConfirmPaymentInvoice";
+import UpdateInvoiceItemsPrice, {
+  UpdateInvoiceItemsPriceRef,
+} from "@/screens/invoice/components/UpdateInvoiceItemsPrice";
 import {
   INVOICE_STATUS_OPTIONS,
   InvoiceDetailResponse,
@@ -28,7 +32,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { BottomSheetFooter } from "@gorhom/bottom-sheet";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import Toast from "react-native-toast-message";
 
@@ -45,7 +49,11 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [invoice, setInvoice] = useState<InvoiceDetailResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isSubmittingItemsPrice, setIsSubmittingItemsPrice] =
+    useState<boolean>(false);
+  const [isConfirming, setIsConfirming] = useState<boolean>(false);
   const refPaymentForm = useRef<ConfirmPaymentInvoiceRef>(null);
+  const refUpdateItemsPriceForm = useRef<UpdateInvoiceItemsPriceRef>(null);
   const { openAppSheet, closeAppSheet } = useGlobalAppSheet();
 
   const fetchInvoice = useCallback(async () => {
@@ -186,6 +194,136 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
     );
   };
 
+  const handleSaveInvoiceItemsPrice = async (
+    updatedItems: InvoiceItemDetailResponse[],
+  ) => {
+    if (!invoice) return;
+    setIsSubmittingItemsPrice(true);
+
+    try {
+      const response = await updateInvoiceItems({
+        id: invoiceId,
+        invoiceItems: updatedItems.map((item) => ({
+          id: item.id,
+          amount: item.totalAmount ?? item.amount ?? 0,
+        })),
+      });
+
+      if (response.success && response.data) {
+        Toast.show({
+          type: "success",
+          text1: "Thành công",
+          text2: "Đã cập nhật giá các khoản mục",
+        });
+        closeAppSheet();
+        await fetchInvoice();
+      } else {
+        throw new Error(response.message || "Không thể cập nhật giá khoản mục");
+      }
+    } catch (error: any) {
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2:
+          error?.response?.data?.message ?? "Không thể cập nhật giá khoản mục",
+      });
+    } finally {
+      setIsSubmittingItemsPrice(false);
+    }
+  };
+
+  const handleOpenUpdateItemsPrice = () => {
+    if (!invoice) return;
+
+    openAppSheet(
+      <UpdateInvoiceItemsPrice
+        ref={refUpdateItemsPriceForm}
+        invoice={invoice}
+        onSubmit={handleSaveInvoiceItemsPrice}
+      />,
+      {
+        snapPoints: ["80%"],
+        detached: false,
+        header: {
+          title: "Cập nhật giá khoản mục",
+          onClose: () => {
+            closeAppSheet();
+          },
+        },
+        renderFooter: (props) => (
+          <BottomSheetFooter {...props}>
+            <ActionButtonBottom
+              actions={[
+                [
+                  {
+                    label: "Hủy",
+                    icon: "close-circle",
+                    variant: "danger",
+                    onPress: () => {
+                      closeAppSheet();
+                    },
+                  },
+                  {
+                    label: "Lưu",
+                    icon: "save",
+                    variant: "success",
+                    isLoading: isSubmittingItemsPrice,
+                    onPress: () => {
+                      refUpdateItemsPriceForm.current?.submit();
+                    },
+                  },
+                ],
+              ]}
+            />
+          </BottomSheetFooter>
+        ),
+      },
+    );
+  };
+
+  const handleConfirmInvoice = () => {
+    if (!invoice) return;
+
+    Alert.alert(
+      "Xác nhận hóa đơn",
+      "Bạn có chắc chắn muốn xác nhận hóa đơn này?",
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Xác nhận",
+          onPress: async () => {
+            setIsConfirming(true);
+            try {
+              const response = await confirmInvoice(invoiceId);
+              if (response.success && response.data) {
+                Toast.show({
+                  type: "success",
+                  text1: "Thành công",
+                  text2: "Đã xác nhận hóa đơn",
+                });
+                await fetchInvoice();
+              } else {
+                throw new Error(
+                  response.message || "Không thể xác nhận hóa đơn",
+                );
+              }
+            } catch (error: any) {
+              Toast.show({
+                type: "error",
+                text1: "Lỗi",
+                text2:
+                  error?.response?.data?.message ??
+                  "Không thể xác nhận hóa đơn",
+              });
+            } finally {
+              setIsConfirming(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const renderRow = (
     label: string,
     value?: string | number,
@@ -286,7 +424,7 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
             Số tiền cần thanh toán
           </Text>
           <Text className="text-3xl font-extrabold text-blue-700 text-center">
-            {formatCurrency((invoice.remainingAmount || 0).toString())}đ
+            {formatCurrency((Number(invoice.remainingAmount) || 0).toString())}đ
           </Text>
         </CardComponent>
 
@@ -333,6 +471,14 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
         <CardComponent
           title="Chi tiết hóa đơn"
           description="Các khoản mục được tính trong hóa đơn"
+          actions={[
+            {
+              key: "edit",
+              label: "Cập nhật giá",
+              disabled: status !== InvoiceStatus.DRAFT,
+              onPress: handleOpenUpdateItemsPrice,
+            },
+          ]}
         >
           {invoiceItems.length === 0 ? (
             <View className="flex-1 items-center justify-center py-8">
@@ -364,9 +510,6 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
                         <Text className="text-base font-medium text-gray-900">
                           {item.name || "Khoản mục"}
                         </Text>
-                        {/* <Text className="text-xs text-gray-500">
-                          {ITEM_TYPE_LABEL[item.type]}
-                        </Text> */}
                       </View>
                     </View>
                     <Text className="text-sm font-semibold text-gray-900">
@@ -405,11 +548,10 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
               },
             },
             {
-              label: "Tạo hóa đơn",
+              label: "Xác nhận hóa đơn",
               icon: "checkmark-circle",
-              onPress: () => {
-                navigation.goBack();
-              },
+              isLoading: isConfirming,
+              onPress: handleConfirmInvoice,
             },
           ],
         ]}

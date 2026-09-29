@@ -33,6 +33,7 @@ import { InvoiceCreateDto } from './dto/invoice-dto/invoice.create.dto';
 import { InvoiceDetailDto } from './dto/invoice-dto/invoice.detail.dto';
 import { InvoiceListDto } from './dto/invoice-dto/invoice.list.dto';
 import { InvoicePaymentDto } from './dto/invoice-dto/invoice.payment.dto';
+import { InvoiceUpdateItemsDto } from './dto/invoice-dto/invoice.update-items.dto';
 import { InvoiceUpdateDto } from './dto/invoice-dto/invoice.update.dto';
 import { InvoiceItemCreateDto } from './dto/invoice-item-dto/invoice-item.create.dto';
 import { Invoice } from './entities/invoice.entity';
@@ -78,6 +79,9 @@ export class InvoiceService
 
   async create(dto: InvoiceCreateDto): Promise<InvoiceDetailDto> {
     const entity = dto.getEntity();
+    if (entity.totalAmount !== dto.totalAmount) {
+      throw new BadRequestException('Tổng tiền hóa đơn không khớp');
+    }
     entity.status = InvoiceStatus.PENDING;
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -284,13 +288,103 @@ export class InvoiceService
       invoice.status !== InvoiceStatus.PENDING
     ) {
       throw new BadRequestException(
-        'Chỉ hóa đơn ở trạng thái DRAFT mới có thể xác nhận',
+        'Chỉ hóa đơn ở trạng thái nháp mới có thể xác nhận',
       );
     }
 
     invoice.status = InvoiceStatus.PENDING;
     this.invoiceRepository.update(invoice.id, invoice);
     return this.get(invoice.id);
+  }
+
+  async updateInvoiceItems(
+    dto: InvoiceUpdateItemsDto,
+  ): Promise<InvoiceDetailDto> {
+    const invoice = await this.invoiceRepository.findOne({
+      where: { id: dto.id },
+      relations: ['invoiceItems'],
+    });
+    if (!invoice) {
+      throw new NotFoundException('Không tìm thấy hóa đơn');
+    }
+
+    if (invoice.status !== InvoiceStatus.DRAFT) {
+      throw new BadRequestException(
+        'Chỉ hóa đơn ở trạng thái nháp mới có thể cập nhật khoản mục',
+      );
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const nonEditableInvoiceItemTypes: InvoiceItemType[] = [
+        InvoiceItemType.DESPOSIT_CONTRACT,
+      ];
+
+      for (const itemDto of dto.invoiceItems) {
+        const invoiceItem = invoice.invoiceItems.find(
+          (item) =>
+            item.id === itemDto.id &&
+            nonEditableInvoiceItemTypes.includes(item.type),
+        );
+        if (!invoiceItem) {
+          continue;
+        }
+
+        // this.validateInvoiceItemTypeEditable(invoiceItem);
+
+        invoiceItem.amount = itemDto.amount;
+        await queryRunner.manager.update(InvoiceItem, invoiceItem.id, {
+          amount: itemDto.amount,
+        });
+      }
+
+      const totalAmount = roundMoney(
+        invoice.invoiceItems.reduce(
+          (sum, item) => sum + Number(item.amount),
+          0,
+        ),
+      );
+      const remainingAmount = Math.max(
+        0,
+        roundMoney(totalAmount - Number(invoice.paidAmount ?? 0)),
+      );
+
+      await queryRunner.manager.update(Invoice, invoice.id, {
+        totalAmount,
+        remainingAmount,
+      });
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      throw new BadGatewayException(error.message);
+    } finally {
+      await queryRunner.release();
+    }
+
+    return this.get(invoice.id);
+  }
+
+  // TODO: Bổ sung danh sách/điều kiện các loại khoản mục (InvoiceItemType) không được phép
+  // cập nhật giá khi có yêu cầu nghiệp vụ cụ thể (ví dụ: không cho sửa tiền cọc, nợ chuyển kỳ...).
+  private validateInvoiceItemTypeEditable(invoiceItem: InvoiceItem): void {
+    const nonEditableInvoiceItemTypes: InvoiceItemType[] = [
+      InvoiceItemType.DESPOSIT_CONTRACT,
+    ];
+
+    if (nonEditableInvoiceItemTypes.includes(invoiceItem.type)) {
+      throw new BadRequestException(
+        `Khoản mục "${invoiceItem.name ?? invoiceItem.type}" không được phép cập nhật giá`,
+      );
+    }
   }
 
   getPreInvoiceContract(contract: Contracts): InvoiceCreateDto | null {
@@ -343,7 +437,7 @@ export class InvoiceService
     if (invoiceItemCreateDtos.length > 0) {
       invoiceCreateDto.invoiceItems = invoiceItemCreateDtos;
       const totalAmount = invoiceItemCreateDtos.reduce(
-        (sum, item) => sum + item.amount,
+        (sum, item) => Number(sum) + Number(item.amount),
         0,
       );
       invoiceCreateDto.totalAmount = roundMoney(totalAmount);
