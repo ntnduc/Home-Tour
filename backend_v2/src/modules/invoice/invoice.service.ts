@@ -279,22 +279,33 @@ export class InvoiceService
   }
 
   async confirmInvoice(id: string): Promise<InvoiceDetailDto> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
     const invoice = await this.invoiceRepository.findOne({ where: { id: id } });
-    if (!invoice) {
-      throw new NotFoundException('Không tìm thấy hóa đơn');
-    }
-    if (
-      invoice.status !== InvoiceStatus.DRAFT &&
-      invoice.status !== InvoiceStatus.PENDING
-    ) {
-      throw new BadRequestException(
-        'Chỉ hóa đơn ở trạng thái nháp mới có thể xác nhận',
-      );
-    }
+    try {
+      if (!invoice) {
+        throw new NotFoundException('Không tìm thấy hóa đơn');
+      }
+      if (
+        invoice.status !== InvoiceStatus.DRAFT &&
+        invoice.status !== InvoiceStatus.PENDING
+      ) {
+        throw new BadRequestException(
+          'Chỉ hóa đơn ở trạng thái nháp mới có thể xác nhận',
+        );
+      }
 
-    invoice.status = InvoiceStatus.PENDING;
-    this.invoiceRepository.update(invoice.id, invoice);
-    return this.get(invoice.id);
+      invoice.status = InvoiceStatus.PENDING;
+      this.invoiceRepository.update(invoice.id, invoice);
+
+      return this.get(invoice.id);
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new BadGatewayException(error.message);
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async updateInvoiceItems(

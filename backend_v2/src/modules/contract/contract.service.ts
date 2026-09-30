@@ -163,6 +163,13 @@ export class ContractService
           { id: savedContract.id },
           { status: ContractStatus.WAITING_PAYMENT_INVOICE },
         );
+        if (contractEntity.startDate <= getCurrentDate(true)) {
+          await queryRunner.manager.update(
+            'rooms',
+            { id: createDto.roomId },
+            { status: RoomStatus.PENDING_DEPOSIT },
+          );
+        }
       } else {
         if (contractEntity.startDate <= getCurrentDate(true)) {
           await queryRunner.manager.update(

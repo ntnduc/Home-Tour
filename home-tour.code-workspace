@@ -1,0 +1,39 @@
+{
+  "folders": [
+    {
+      "name": "🖥️ Backend (NestJS)",
+      "path": "backend_v2"
+    },
+    {
+      "name": "📱 Mobile (Expo)",
+      "path": "mobile"
+    },
+    {
+      "name": "📦 Repo root (docs & shared)",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+    "files.exclude": {
+      "**/.DS_Store": true
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/.expo": true
+    },
+    "files.associations": {
+      "*.ts": "typescript"
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "github.copilot",
+      "github.copilot-chat",
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode",
+      "expo.vscode-expo-tools"
+    ]
+  }
+}
