@@ -125,3 +125,9 @@ Always deliver:
 2. A brief summary of what changed and why
 3. Notes on API assumptions, platform differences, and edge cases
 4. Verification steps (typecheck + manual test scenarios for Android/iOS)
+
+## History Logging
+Sau khi code xong và **người dùng đã chấp nhận** kết quả, ghi lại thay đổi vào folder dùng chung [history/](../../../history) theo quy ước ở [history/README.md](../../../history/README.md) và mẫu [history/_TEMPLATE.md](../../../history/_TEMPLATE.md).
+- Tên file: `YYYYMMDDHHmmss-<slug-title>.md` (giờ local; slug bỏ dấu, viết thường, nối bằng `-`).
+- Nếu yêu cầu đụng cả Backend và Frontend → mô tả chung trong MỘT file (đánh dấu "Phạm vi: Cả hai").
+- Nếu người dùng chỉnh sửa tiếp trong cùng session → cập nhật lại chính file đó (mục "Nhật ký cập nhật"), không tạo file mới.
