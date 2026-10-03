@@ -41,6 +41,7 @@ export type CardComponentProps = {
   descriptionStyle?: StyleProp<any>;
   actions?: (CardActionConfig | string)[];
   renderActions?: () => React.ReactNode;
+  topContent?: React.ReactNode;
   header?: React.ReactNode;
   footer?: React.ReactNode;
   onActionPress?: (key: string) => void;
@@ -80,6 +81,7 @@ const CardComponent = (props: CardComponentProps) => {
     descriptionStyle,
     actions,
     renderActions,
+    topContent,
     header,
     footer,
     onActionPress,
@@ -140,6 +142,7 @@ const CardComponent = (props: CardComponentProps) => {
       style={[styles.card, style]}
       className={`rounded-xl ${className || ""}`}
     >
+      {topContent !== undefined ? topContent : null}
       {header !== undefined ? (
         header
       ) : title || filteredActions || renderActions ? (

@@ -2,11 +2,14 @@ import { colors } from "@/theme/colors";
 import { StyleSheet } from "react-native";
 
 const styles = StyleSheet.create({
+  cardWrapper: {
+    position: "relative",
+    marginBottom: 16,
+  },
   card: {
     backgroundColor: colors.background.default,
     borderRadius: 14,
     padding: 16,
-    marginBottom: 16,
     shadowColor: colors.neutral.black,
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -75,32 +78,30 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontStyle: "italic",
   },
-  titleWithBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
   cardTitle: {
-    flex: 1,
     fontSize: 16,
     fontWeight: "700",
     color: colors.text.primary,
   },
-  pendingTaskBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 999,
-    backgroundColor: colors.secondary.light,
-    borderWidth: 1,
-    borderColor: colors.status.error,
-    gap: 3,
+  pendingBadgeContainer: {
+    position: "absolute",
+    top: -8,
+    right: -6,
+    zIndex: 20,
+    elevation: 20,
   },
-  pendingTaskBadgeText: {
+  pendingBadge: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    paddingHorizontal: 5,
+    borderWidth: 2,
+    borderColor: colors.background.default,
+    backgroundColor: colors.status.error,
+  },
+  pendingBadgeText: {
     fontSize: 11,
     fontWeight: "700",
-    color: colors.status.error,
   },
   contentRow: {
     flexDirection: "row",
@@ -110,23 +111,18 @@ const styles = StyleSheet.create({
   contentColumn: {
     flex: 1,
   },
-  overdueAlertRow: {
+  cardNotice: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: colors.secondary.light,
-    borderWidth: 1,
-    borderColor: colors.status.error,
+    justifyContent: "center",
+    marginBottom: 12,
     gap: 6,
   },
-  overdueAlertText: {
-    flex: 1,
-    fontSize: 12,
-    fontWeight: "600",
-    color: colors.status.error,
+  cardNoticeText: {
+    flexShrink: 1,
+    fontSize: 14,
+    fontWeight: "700",
+    textAlign: "center",
   },
   contractInfo: {
     marginTop: 8,
@@ -212,6 +208,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     gap: 4,
+    overflow: "hidden",
   },
   primaryRoomActionButton: {},
   secondaryRoomActionButton: {},

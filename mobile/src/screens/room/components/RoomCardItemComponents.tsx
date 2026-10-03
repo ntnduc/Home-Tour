@@ -10,6 +10,7 @@ import { formatDate } from "@/utils/dateUtil";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Text, TouchableOpacity, View } from "react-native";
+import { Badge } from "react-native-elements";
 import styles from "../styles/StyleRoomCardItemComponent";
 
 type Props = {
@@ -31,6 +32,12 @@ const ROOM_ACTION_ICONS: Record<RoomActionType, IoniconName> = {
 };
 
 const DEFAULT_OVERDUE_ALERT_MESSAGE = "Phòng có công việc quá hạn cần xử lý";
+
+const CARD_ALERT_TONE = {
+  foreground: colors.status.error,
+  background: "#FFF6F6",
+  shadow: colors.status.error,
+};
 
 const getActionTone = (severity: RoomAction["severity"]) => {
   switch (severity) {
@@ -212,35 +219,53 @@ const RoomCardItemComponent = ({ item, navigation }: Props) => {
   };
 
   const cardTitle = (
-    <View style={styles.titleWithBadge}>
-      <Text style={styles.cardTitle} numberOfLines={1}>
-        {item.name}
-      </Text>
-      {pendingTaskCount > 0 && (
-        <View style={styles.pendingTaskBadge}>
-          <Ionicons
-            name="alert-circle-outline"
-            size={12}
-            color={colors.status.error}
-          />
-          <Text style={styles.pendingTaskBadgeText}>{pendingTaskCount}</Text>
-        </View>
-      )}
-    </View>
+    <Text style={styles.cardTitle} numberOfLines={1}>
+      {item.name}
+    </Text>
   );
 
+  const alertTone = hasOverdueAlert ? CARD_ALERT_TONE : null;
+
+  const cardNotice = alertTone ? (
+    <View style={styles.cardNotice}>
+      <Ionicons
+        name="warning-outline"
+        size={17}
+        color={alertTone.foreground}
+      />
+      <Text style={[styles.cardNoticeText, { color: alertTone.foreground }]}>
+        {item.overdueAlertMessage || DEFAULT_OVERDUE_ALERT_MESSAGE}
+      </Text>
+    </View>
+  ) : undefined;
+
   return (
-    <CardComponent
-      style={styles.card}
-      title={cardTitle}
-      actions={["edit", "delete"]}
-      onActionPress={(key) => {
-        if (key === "edit") {
-          navigation.navigate("UpdateRoom", { roomId: item.id });
-        }
-      }}
-      description={item.property?.name}
-    >
+    <View style={styles.cardWrapper}>
+      <CardComponent
+        style={[
+          styles.card,
+          alertTone
+            ? {
+                backgroundColor: alertTone.background,
+                borderWidth: 0,
+                shadowColor: alertTone.shadow,
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.18,
+                shadowRadius: 5,
+                elevation: 5,
+              }
+            : null,
+        ]}
+        topContent={cardNotice}
+        title={cardTitle}
+        actions={["edit", "delete"]}
+        onActionPress={(key) => {
+          if (key === "edit") {
+            navigation.navigate("UpdateRoom", { roomId: item.id });
+          }
+        }}
+        description={item.property?.name}
+      >
       <View style={styles.contentRow}>
         <View style={styles.contentColumn}>
           <Text style={styles.price}>
@@ -248,19 +273,6 @@ const RoomCardItemComponent = ({ item, navigation }: Props) => {
           </Text>
           {item.description && (
             <Text style={styles.roomDesc}>{item.description}</Text>
-          )}
-
-          {hasOverdueAlert && (
-            <View style={styles.overdueAlertRow}>
-              <Ionicons
-                name="warning-outline"
-                size={15}
-                color={colors.status.error}
-              />
-              <Text style={styles.overdueAlertText}>
-                {item.overdueAlertMessage || DEFAULT_OVERDUE_ALERT_MESSAGE}
-              </Text>
-            </View>
           )}
 
           {contractActive && (
@@ -394,7 +406,17 @@ const RoomCardItemComponent = ({ item, navigation }: Props) => {
           </Animated.View>
         </View>
       )}
-    </CardComponent>
+      </CardComponent>
+      {pendingTaskCount > 0 && (
+        <Badge
+          value={pendingTaskCount > 99 ? "99+" : pendingTaskCount}
+          status="error"
+          containerStyle={styles.pendingBadgeContainer}
+          badgeStyle={styles.pendingBadge}
+          textStyle={styles.pendingBadgeText}
+        />
+      )}
+    </View>
   );
 };
 
