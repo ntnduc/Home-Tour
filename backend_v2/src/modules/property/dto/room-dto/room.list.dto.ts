@@ -4,6 +4,7 @@ import { ContractListDto } from 'src/modules/contract/dto/contract-dto/contract.
 import { InvoiceListDto } from 'src/modules/invoice/dto/invoice-dto/invoice.list.dto';
 import { Rooms } from '../../entities/rooms.entity';
 import { PropertyDetailDto } from '../properties-dto/property.detail.dto';
+import { RoomActionDto } from './room-action.dto';
 
 export class RoomListDto extends BaseListDto<Rooms> {
   propertyId: string;
@@ -20,6 +21,10 @@ export class RoomListDto extends BaseListDto<Rooms> {
   contracts?: ContractListDto[];
   landlordClient: string;
   invoices?: InvoiceListDto[];
+  actions: RoomActionDto[] = [];
+  pendingTaskCount: number = 0;
+  hasOverdueAlert: boolean = false;
+  overdueAlertMessage?: string;
 
   fromEntity(entity: Rooms): void {
     this.id = entity.id;
@@ -51,7 +56,7 @@ export class RoomListDto extends BaseListDto<Rooms> {
       const contractActive = entity.contracts.find(
         (contract) =>
           contract.status === ContractStatus.ACTIVE &&
-          contract.contractClient.length > 0,
+          contract.contractClient?.length > 0,
       );
       if (contractActive) {
         this.landlordClient =

@@ -7,7 +7,10 @@ export default registerAs('database', () => ({
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_DATABASE || 'home_tour_db',
-  entities: [__dirname + '/../**/*.entity.{js,ts}'],
+  entities: [
+    __dirname + '/../**/*.entity.{js,ts}',
+    __dirname + '/../**/*.view.{js,ts}',
+  ],
   synchronize: false,
   logging: process.env.NODE_ENV !== 'production',
 }));

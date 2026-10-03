@@ -12,6 +12,33 @@ export enum RoomStatus {
   UNAVAILABLE = "UNAVAILABLE",
 }
 
+export type RoomActionSeverity = "normal" | "warning" | "overdue";
+
+export type RoomActionType =
+  | "INVOICE_PAYMENT"
+  | "CREATE_INVOICE"
+  | "CONFIRM_CONTRACT"
+  | "CONFIRM_DEPOSIT"
+  | "RENEW_CONTRACT"
+  | "CREATE_CONTRACT"
+  | "VIEW_CONTRACT"
+  | "TERMINATE_CONTRACT";
+
+export interface RoomAction {
+  type: RoomActionType;
+  label: string;
+  priority: number;
+  urgent: boolean;
+  primary: boolean;
+  severity: RoomActionSeverity;
+  payload: {
+    contractId?: string;
+    invoiceId?: string;
+    roomId?: string;
+    invoiceStatus?: string;
+  };
+}
+
 export interface Room {
   id: string;
   name: string;
@@ -33,6 +60,10 @@ export interface Room {
 export interface RoomListResponse extends Room {
   landlordClient: string;
   invoices?: InvoiceListResponse[];
+  actions: RoomAction[];
+  pendingTaskCount: number;
+  hasOverdueAlert: boolean;
+  overdueAlertMessage?: string;
 }
 
 export interface RoomDetailResponse extends Room {
