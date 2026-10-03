@@ -1,4 +1,5 @@
 import { Contracts } from 'src/modules/contract/entities/contracts.entity';
+import { Invoice } from 'src/modules/invoice/entities/invoice.entity';
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../../common/base/Entity/base.entity';
 import { RoomStatus } from './../../../common/enums/room.enum';
@@ -48,10 +49,12 @@ export class Rooms extends BaseEntity {
   @OneToMany(() => Contracts, (contract) => contract.room)
   contracts: Contracts[];
 
+  @OneToMany(() => Invoice, (invoice) => invoice.room)
+  invoices: Invoice[];
+
   @Column({ nullable: true, default: true })
   isPrepaidRoom?: boolean;
 
   @Column({ nullable: true })
   imageCollectionId?: string;
-
 }

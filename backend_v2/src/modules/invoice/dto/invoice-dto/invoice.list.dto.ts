@@ -16,7 +16,7 @@ export class InvoiceListDto extends BaseListDto<Invoice> {
   remainingAmount: number;
   status: InvoiceStatus;
   createdAt: Date;
-  updatedAt: Date;
+  updatedAt?: Date;
 
   fromEntity(entity: Invoice): void {
     this.id = entity.id;

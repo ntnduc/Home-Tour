@@ -2,7 +2,7 @@ import BottomSheet, {
   BottomSheetFooterProps,
   BottomSheetProps,
   BottomSheetView,
-} from '@gorhom/bottom-sheet';
+} from "@gorhom/bottom-sheet";
 import React, {
   forwardRef,
   ReactNode,
@@ -10,12 +10,12 @@ import React, {
   useImperativeHandle,
   useRef,
   useState,
-} from 'react';
-import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import AppSheetBackdropComponent from './AppSheetBackdropComponent';
-import AppSheetHandleComponent from './AppSheetHandleComponent';
-import AppSheetHeader from './AppSheetHeader';
+} from "react";
+import { StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AppSheetBackdropComponent from "./AppSheetBackdropComponent";
+import AppSheetHandleComponent from "./AppSheetHandleComponent";
+import AppSheetHeader from "./AppSheetHeader";
 
 export type HeaderConfig = {
   element?: ReactNode;
@@ -26,8 +26,10 @@ export type HeaderConfig = {
   onClose?: () => void;
 };
 
-export interface AppSheetProps
-  extends Omit<BottomSheetProps, 'ref' | 'children'> {
+export interface AppSheetProps extends Omit<
+  BottomSheetProps,
+  "ref" | "children"
+> {
   classNameContent?: string;
   styleContent?: StyleProp<ViewStyle>;
   header?: HeaderConfig;
@@ -158,7 +160,7 @@ const AppSheet = forwardRef<AppSheetRef, AppSheetProps>((props, ref) => {
   return (
     <View
       style={StyleSheet.absoluteFill}
-      pointerEvents={isOpen ? 'auto' : 'none'}
+      pointerEvents={isOpen ? "auto" : "none"}
     >
       <BottomSheet
         ref={bottomSheetRef}
@@ -166,7 +168,7 @@ const AppSheet = forwardRef<AppSheetRef, AppSheetProps>((props, ref) => {
         enablePanDownToClose
         onClose={close}
         onChange={handleSheetChanges}
-        snapPoints={['50%']}
+        snapPoints={["50%"]}
         backdropComponent={renderBackdrop}
         handleComponent={AppSheetHandleComponent}
         enableOverDrag={false}
@@ -174,8 +176,9 @@ const AppSheet = forwardRef<AppSheetRef, AppSheetProps>((props, ref) => {
         enableContentPanningGesture={true}
         // activeOffsetY={[-1, 1]}
         // failOffsetX={[-5, 5]}
-        {...config}
+        footerComponent={config.renderFooter}
         detached={true}
+        {...config}
         android_keyboardInputMode="adjustResize"
       >
         {_renderChildren()}
@@ -188,29 +191,29 @@ export const stylesHeader = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: 600,
-    color: '#222',
+    color: "#222",
   },
   content: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '95%',
-    backgroundColor: '#fff',
+    maxHeight: "95%",
+    backgroundColor: "#fff",
   },
   backdrop: {
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   fixedHeaderContainer: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     zIndex: 50,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
   },
 });
 
-AppSheet.displayName = 'AppSheet';
+AppSheet.displayName = "AppSheet";
 
 export default AppSheet;

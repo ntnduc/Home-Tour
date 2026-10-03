@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { UploadCategory } from 'src/common/enums/upload.enum';
+import { getCurrentDate } from 'src/common/utils';
 import { DataSource, EntityManager, SelectQueryBuilder } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { BaseService } from '../../common/base/crud/base.service';
@@ -36,13 +37,14 @@ export class UploadFileService
     FileCollectionUpdateDto
   >
   implements
-  IBaseService<
-    FileCollection,
-    FileCollectionDetailDto,
-    FileCollectionListDto,
-    FileCollectionCreateDto,
-    FileCollectionUpdateDto
-  > {
+    IBaseService<
+      FileCollection,
+      FileCollectionDetailDto,
+      FileCollectionListDto,
+      FileCollectionCreateDto,
+      FileCollectionUpdateDto
+    >
+{
   private readonly logger = new Logger(UploadFileService.name);
   private readonly config: UploadFileConfig;
 
@@ -50,7 +52,7 @@ export class UploadFileService
     private readonly fileCollectionRepository: FileCollectionRepository,
     private readonly fileEntryRepository: FileEntryRepository,
     private readonly configService: ConfigService,
-    private readonly dataSource: DataSource
+    private readonly dataSource: DataSource,
   ) {
     super(
       fileCollectionRepository,
@@ -82,7 +84,6 @@ export class UploadFileService
     file: Express.Multer.File,
     dto: FileUploadDto,
   ): Promise<FileEntryDetailDto> {
-
     if (!file) {
       throw new BadRequestException('File không được để trống');
     }
@@ -159,7 +160,13 @@ export class UploadFileService
       // Save all files to disk
       const fileEntries = await Promise.all(
         files.map((file, index) =>
-          this.saveFileToDisk(file, index + 1 + totalFileEnitryChild, dto, collection.id, manager),
+          this.saveFileToDisk(
+            file,
+            index + 1 + totalFileEnitryChild,
+            dto,
+            collection.id,
+            manager,
+          ),
         ),
       );
 
@@ -174,7 +181,12 @@ export class UploadFileService
 
       const detailDto = new FileCollectionDetailDto();
       detailDto.fromEntity(collectionWithFiles);
-      await this._uploadCategoryEntity(dto.category, dto.relatedEntityId, collection.id, manager);
+      await this._uploadCategoryEntity(
+        dto.category,
+        dto.relatedEntityId,
+        collection.id,
+        manager,
+      );
       await querryRunner.commitTransaction();
       return detailDto;
     } catch (error) {
@@ -188,9 +200,7 @@ export class UploadFileService
   /**
    * Get file collection by ID with files
    */
-  async getCollectionWithFiles(
-    id: string,
-  ): Promise<FileCollectionDetailDto> {
+  async getCollectionWithFiles(id: string): Promise<FileCollectionDetailDto> {
     const collection = await this.fileCollectionRepository.findOne({
       where: { id },
       relations: ['files'],
@@ -261,9 +271,10 @@ export class UploadFileService
    */
   private validateFile(file: Express.Multer.File, category?: string): void {
     // Check file size
-    const maxSize = category && this.config.categoryConfig[category]?.maxSize
-      ? this.config.categoryConfig[category].maxSize
-      : this.config.maxFileSize;
+    const maxSize =
+      category && this.config.categoryConfig[category]?.maxSize
+        ? this.config.categoryConfig[category].maxSize
+        : this.config.maxFileSize;
 
     if (file.size > maxSize) {
       throw new BadRequestException(
@@ -272,9 +283,10 @@ export class UploadFileService
     }
 
     // Check MIME type
-    const allowedTypes = category && this.config.categoryConfig[category]?.allowedTypes
-      ? this.config.categoryConfig[category].allowedTypes
-      : this.config.allowedMimeTypes;
+    const allowedTypes =
+      category && this.config.categoryConfig[category]?.allowedTypes
+        ? this.config.categoryConfig[category].allowedTypes
+        : this.config.allowedMimeTypes;
 
     if (!allowedTypes.includes(file.mimetype)) {
       throw new BadRequestException(
@@ -284,9 +296,10 @@ export class UploadFileService
 
     // Check extension
     const extension = this.getFileExtension(file.originalname);
-    const allowedExtensions = category && this.config.categoryConfig[category]?.allowedExtensions
-      ? this.config.categoryConfig[category].allowedExtensions
-      : this.config.allowedExtensions;
+    const allowedExtensions =
+      category && this.config.categoryConfig[category]?.allowedExtensions
+        ? this.config.categoryConfig[category].allowedExtensions
+        : this.config.allowedExtensions;
 
     if (!allowedExtensions.includes(extension.toLowerCase())) {
       throw new BadRequestException(
@@ -310,7 +323,7 @@ export class UploadFileService
     const fileName = `${uuidv4()}${extension}`;
 
     // Create date-based directory structure: YYYY/MM/DD
-    const now = new Date();
+    const now = getCurrentDate();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
@@ -376,7 +389,7 @@ export class UploadFileService
     }
 
     collection.isDeleted = true;
-    collection.deletedAt = new Date();
+    collection.deletedAt = getCurrentDate();
     await this.fileCollectionRepository.save(collection);
   }
 
@@ -414,7 +427,10 @@ export class UploadFileService
       );
 
       // Re-throw known exceptions
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
 
@@ -425,7 +441,12 @@ export class UploadFileService
     }
   }
 
-  private async _uploadCategoryEntity(category: UploadCategory, entityId: string, collectionId: string, manager: EntityManager): Promise<void> {
+  private async _uploadCategoryEntity(
+    category: UploadCategory,
+    entityId: string,
+    collectionId: string,
+    manager: EntityManager,
+  ): Promise<void> {
     const updateEntity = this._getRepositoryEntityByCategory(category);
     const entity = await manager.findOne(updateEntity, {
       where: { id: entityId },

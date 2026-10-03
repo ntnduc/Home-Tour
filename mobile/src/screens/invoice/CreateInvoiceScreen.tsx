@@ -181,7 +181,7 @@ const CreateInvoiceScreen = ({
                 render={({ field: { onChange, value }, fieldState: { error } }) => (
                   <Input
                     label="Tiền phòng"
-                    value={formatCurrency(value?.toString())}
+                    value={formatCurrency(value?.toString() ?? 0)}
                     error={error?.message}
                     onChangeText={onChange}
                     type="number"

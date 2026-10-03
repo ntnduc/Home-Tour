@@ -12,7 +12,7 @@ export class PaymentListDto extends BaseListDto<Payment> {
   paymentMethod?: string;
   status: PaymentStatus;
   createdAt: Date;
-  updatedAt: Date;
+  updatedAt?: Date;
 
   fromEntity(entity: Payment): void {
     this.id = entity.id;

@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { RequestContextService } from 'src/common/base/context/request-context.service';
 import { ContractStatus } from 'src/common/enums/contract.enum';
+import { getCurrentDate } from 'src/common/utils';
 import { DataSource, EntityManager, In, SelectQueryBuilder } from 'typeorm';
 import { BaseService } from '../../common/base/crud/base.service';
 import { IBaseService } from '../../common/base/crud/IService';
@@ -12,6 +13,7 @@ import { RoomStatus } from '../../common/enums/room.enum';
 import { AuthService } from '../auth/auth.service';
 import { Client } from '../client/entities/client.entity';
 import { ClientRepository } from '../client/repositories/client.repository';
+import { InvoiceService } from '../invoice/invoice.service';
 import { PropertiesServiceRepository } from '../property/repositories/properties-service.repository';
 import { RoomsRepository } from '../property/repositories/rooms.repository';
 import { ServicesRepository } from '../services/repositories/services.repository';
@@ -39,13 +41,14 @@ export class ContractService
     ContractUpdateDto
   >
   implements
-  IBaseService<
-    Contracts,
-    ContractDetailDto,
-    ContractListDto,
-    ContractCreateDto,
-    ContractUpdateDto
-  > {
+    IBaseService<
+      Contracts,
+      ContractDetailDto,
+      ContractListDto,
+      ContractCreateDto,
+      ContractUpdateDto
+    >
+{
   constructor(
     private readonly contractsRepository: ContractsRepository,
     private readonly roomsRepository: RoomsRepository,
@@ -54,6 +57,8 @@ export class ContractService
     private readonly userRepository: UserRepository,
     private readonly clientRepository: ClientRepository,
     private readonly dataSource: DataSource,
+
+    private readonly invoiceService: InvoiceService,
   ) {
     super(
       contractsRepository,
@@ -63,6 +68,8 @@ export class ContractService
       ContractUpdateDto,
     );
   }
+  // Định nghĩa các trường cần theo dõi thay đổi
+  protected static FIELD_TRACKING_CHANGE = ['status'];
 
   async specQuery(): Promise<SelectQueryBuilder<Contracts>> {
     const query = this.contractsRepository
@@ -79,6 +86,7 @@ export class ContractService
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
+    const detailDto = new ContractDetailDto();
 
     try {
       // Kiểm tra phòng có tồn tại và trạng thái AVAILABLE
@@ -94,6 +102,8 @@ export class ContractService
         throw new BadRequestException('Phòng đang không sẵn sàng để cho thuê!');
       }
 
+      // TODO: Kiểm tra xem có hợp đồng ACTIVE nào khác cho phòng này không
+      // Thiếu kiểm tra ngày bắt đầu và ngày kết thúc của hợp đồng hiện tại với các hợp đồng khác
       const activeContractExists = await this.contractsRepository.findOne({
         where: {
           roomId: createDto.roomId,
@@ -105,25 +115,27 @@ export class ContractService
         throw new BadRequestException('Phòng đã có hợp đồng đang hoạt động');
       }
 
-      const contractEntity = createDto.getEntity();
-      if (contractEntity.startDate <= new Date()) {
-        contractEntity.status = ContractStatus.ACTIVE;
+      if (!createDto.contractClient || createDto.contractClient.length === 0) {
+        throw new BadRequestException('Phải có ít nhất 1 người thuê');
       }
+
+      const contractEntity = createDto.getEntity();
+      contractEntity.status = ContractStatus.DRAFT;
+
+      // if (contractEntity.startDate <= getCurrentDate(true)) {
+      //   contractEntity.status = ContractStatus.ACTIVE;
+      // }
       const savedContract = await queryRunner.manager.save(
         Contracts,
         contractEntity,
       );
 
-      if (createDto.contractClient && createDto.contractClient.length > 0) {
-        await this.createContractClient(
-          savedContract.id,
-          createDto.contractClient,
-          savedContract,
-          queryRunner.manager,
-        );
-      } else {
-        throw new BadRequestException('Phải có ít nhất 1 người thuê');
-      }
+      await this.createContractClient(
+        savedContract.id,
+        createDto.contractClient,
+        savedContract,
+        queryRunner.manager,
+      );
 
       if (createDto.contractServices && createDto.contractServices.length > 0) {
         await this.createContractServices(
@@ -134,12 +146,49 @@ export class ContractService
         );
       }
 
-      if (savedContract.status === ContractStatus.ACTIVE) {
+      // Tạo hóa đơn nếu hợp đồng là hợp đồng trả trước và đã thanh toán tiền cọc
+      const invoiceCreateDto =
+        this.invoiceService.getPreInvoiceContract(savedContract);
+      if (invoiceCreateDto) {
+        const invoice = invoiceCreateDto.getEntity();
+        const newInvoice = await queryRunner.manager.save(invoice);
+        detailDto.preInvoiceId = newInvoice.id; // Gán preInvoiceId vào detailDto
+        invoice.invoiceItems.forEach((item) => {
+          item.invoiceId = newInvoice.id;
+        });
+        await queryRunner.manager.save(invoice.invoiceItems);
+
         await queryRunner.manager.update(
-          'rooms',
-          { id: createDto.roomId },
-          { status: RoomStatus.OCCUPIED },
+          'contracts',
+          { id: savedContract.id },
+          { status: ContractStatus.WAITING_PAYMENT_INVOICE },
         );
+        if (contractEntity.startDate <= getCurrentDate(true)) {
+          await queryRunner.manager.update(
+            'rooms',
+            { id: createDto.roomId },
+            { status: RoomStatus.PENDING_DEPOSIT },
+          );
+        }
+      } else {
+        if (contractEntity.startDate <= getCurrentDate(true)) {
+          await queryRunner.manager.update(
+            'rooms',
+            { id: createDto.roomId },
+            { status: RoomStatus.OCCUPIED },
+          );
+          await queryRunner.manager.update(
+            'contracts',
+            { id: savedContract.id },
+            { status: ContractStatus.ACTIVE },
+          );
+        } else {
+          await queryRunner.manager.update(
+            'contracts',
+            { id: savedContract.id },
+            { status: ContractStatus.PENDING_START },
+          );
+        }
       }
 
       await queryRunner.commitTransaction();
@@ -152,7 +201,7 @@ export class ContractService
           'contractClient.client',
         ],
       });
-      const detailDto = new ContractDetailDto();
+
       detailDto.fromEntity(detailContract!);
       return detailDto;
     } catch (error) {
@@ -168,9 +217,7 @@ export class ContractService
     throw new BadRequestException('Not implemented');
   }
 
-  async changeStatus(
-    updateDto: ContractChangeStatusDto,
-  ): Promise<ContractDetailDto> {
+  async active(updateDto: ContractChangeStatusDto): Promise<ContractDetailDto> {
     const id = updateDto.id;
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -193,6 +240,29 @@ export class ContractService
         queryRunner.manager,
       );
 
+      const otherActiveContracts = await this.contractsRepository
+        .createQueryBuilder('contract')
+        .where('contract.roomId = :roomId', { roomId: existingContract.roomId })
+        .andWhere('contract.id != :currentContractId', {
+          currentContractId: existingContract.id,
+        })
+        .andWhere('contract.status = :status', {
+          status: ContractStatus.ACTIVE,
+        })
+        .getCount();
+
+      if (otherActiveContracts === 0) {
+        await queryRunner.manager.update(
+          'rooms',
+          { id: existingContract.roomId },
+          { status: RoomStatus.OCCUPIED },
+        );
+      } else {
+        throw new BadRequestException(
+          'Không thể kích hoạt hợp đồng vì đã có hợp đồng đang hoạt động cho phòng này',
+        );
+      }
+
       await queryRunner.commitTransaction();
 
       // Lấy thông tin chi tiết hợp đồng sau khi cập nhật
@@ -210,10 +280,45 @@ export class ContractService
     } catch (error) {
       await queryRunner.rollbackTransaction();
       console.error(error);
-      throw new Error('Vui lòng kiểm tra lại dữ liệu hoặc thử lại sau!');
+      throw error;
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async deActive(
+    fork: boolean,
+    updateDto: ContractChangeStatusDto,
+  ): Promise<ContractDetailDto> {
+    if (!fork) {
+      throw new BadRequestException('Not implemented');
+    }
+    if (updateDto.reason === undefined || updateDto.reason.trim() === '') {
+      throw new BadRequestException('Lý do hủy hợp đồng không được để trống');
+    }
+    const contract = await this.contractsRepository.findOne({
+      where: { id: updateDto.id, status: ContractStatus.ACTIVE },
+    });
+    if (contract === null) {
+      throw new NotFoundException('Hợp đồng không tồn tại');
+    }
+    const allowContractUpdate = [
+      ContractStatus.TERMINATED_EARLY,
+      ContractStatus.EXPIRED,
+      ContractStatus.ENDED,
+    ];
+    if (allowContractUpdate.indexOf(updateDto.status) === -1) {
+      throw new BadRequestException('Trạng thái hợp đồng không hợp lệ');
+    }
+    const newEntity = this.handleStatusChange(
+      contract,
+      updateDto.status,
+      updateDto.reason,
+      this.dataSource.manager,
+    );
+    const dto = new ContractDetailDto();
+    dto.fromEntity(await newEntity);
+    return dto;
   }
 
   async get(id: string): Promise<ContractDetailDto> {
@@ -224,6 +329,25 @@ export class ContractService
         'contractClient',
         'contractClient.client',
         'room',
+      ],
+    });
+    if (!contract) {
+      throw new NotFoundException('Hợp đồng không tồn tại');
+    }
+    const detailDto = new ContractDetailDto();
+    detailDto.fromEntity(contract);
+    return detailDto;
+  }
+
+  async getContractForInvoice(id: string): Promise<ContractDetailDto> {
+    const contract = await this.contractsRepository.findOne({
+      where: { id },
+      relations: [
+        'contractServices',
+        'contractClient',
+        'contractClient.client',
+        'room',
+        'room.property',
       ],
     });
     if (!contract) {
@@ -248,35 +372,7 @@ export class ContractService
     contractServiceCreateEntities.forEach((x) => {
       x.contractId = contractId;
     });
-    const savedContractServices = await manager.save(
-      ContractServices,
-      contractServiceCreateEntities,
-    );
-    // const serviceIds = contractServicesDto.filter((x) => x.serviceId);
-    // const services = await this.servicesRepository.find({
-    //   where: { id: In(serviceIds) },
-    // });
-
-    // for (const serviceDto of contractServicesDto) {
-    // const service = services.findLast((x) => x.id === serviceDto.serviceId);
-    // const newService = new ServiceDetailDto();
-
-    // if (service) {
-    //   newService.fromEntity(service);
-    // } else {
-    //   const serviceEntity = new Services();
-    //   serviceEntity.name = serviceDto.name ?? '';
-    //   serviceEntity.isActive = true;
-    //   serviceEntity.isDefaultSelected = true;
-    //   serviceEntity.calculationMethod = serviceDto.calculationMethod;
-    //   serviceEntity.price = serviceDto.price ?? 0;
-    //   const service = await manager.save(serviceEntity);
-    //   newService.fromEntity(service);
-    // }
-
-    // const newContractService = serviceDto.getEntity();
-    // await manager.save(newContractService);
-    // }
+    await manager.save(ContractServices, contractServiceCreateEntities);
   }
 
   private async createContractClient(
@@ -342,45 +438,24 @@ export class ContractService
     newStatus: ContractStatus,
     reason: string,
     manager: EntityManager,
-  ): Promise<void> {
+  ): Promise<Contracts> {
     await manager.update(Contracts, contract.id, { status: newStatus });
-    const newContract = await manager.findOne(Contracts, {
-      where: { id: contract.id },
+    // const newContract = await manager.findOne(Contracts, {
+    //   where: { id: contract.id },
+    // });
+
+    const newContract = await manager.update(Contracts, contract.id, {
+      status: newStatus,
     });
 
-    // Kiểm tra xem có hợp đồng ACTIVE nào khác cho phòng này không
-    const otherActiveContracts = await this.contractsRepository
-      .createQueryBuilder('contract')
-      .where('contract.roomId = :roomId', { roomId: contract.roomId })
-      .andWhere('contract.id != :currentContractId', {
-        currentContractId: contract.id,
-      })
-      .andWhere('contract.status = :status', {
-        status: ContractStatus.ACTIVE,
-      })
-      .getCount();
-
     await this.recordChange(
-      newContract!,
+      newContract.raw,
       contract,
       'STATUS_CHANGE',
       reason,
       manager,
     );
-
-    if (otherActiveContracts === 0) {
-      await manager.update(
-        'rooms',
-        { id: contract.roomId },
-        { status: RoomStatus.AVAILABLE },
-      );
-    } else {
-      await manager.update(
-        'rooms',
-        { id: contract.roomId },
-        { status: RoomStatus.OCCUPIED },
-      );
-    }
+    return newContract.raw;
   }
 
   private async recordChange(
@@ -414,7 +489,7 @@ export class ContractService
     newContract: Contracts,
   ): ContractChangeDetail[] {
     const changeDetails: ContractChangeDetail[] = [];
-    const fields = ['status'];
+    const fields = ContractService.FIELD_TRACKING_CHANGE;
     for (const field of fields) {
       if (oldContract[field] !== newContract[field]) {
         const changeDetail = new ContractChangeDetail();

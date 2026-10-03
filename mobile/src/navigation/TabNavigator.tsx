@@ -1,21 +1,20 @@
-import TestScreen from '@/screens/test/TestScreen';
-import { FontAwesome5, Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import React, { useEffect, useState } from 'react';
-import { Platform, TouchableOpacity, View } from 'react-native';
-import { TouchableOpacity as TouchableOpacityGestureHandler } from 'react-native-gesture-handler';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import ContractListScreen from '../screens/contract/ContractListScreen';
-import DashboardScreen from '../screens/dashboard/DashboardScreen';
-import ProfileScreen from '../screens/profile/ProfileScreen';
-import PropertyListScreen from '../screens/property/PropertyListScreen';
-import ReportScreen from '../screens/report/ReportScreen';
-import RoomListScreen from '../screens/room/RoomListScreen';
-import { TabParamList } from './types';
+import { FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import React, { useEffect, useState } from "react";
+import { Platform, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import ContractListScreen from "../screens/contract/ContractListScreen";
+import DashboardScreen from "../screens/dashboard/DashboardScreen";
+import ProfileScreen from "../screens/profile/ProfileScreen";
+import PropertyListScreen from "../screens/property/PropertyListScreen";
+import ReportScreen from "../screens/report/ReportScreen";
+import RoomListScreen from "../screens/room/RoomListScreen";
+import TestScreen from "../screens/test/TestScreen";
+import { TabParamList } from "./types";
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
-const DEFAULT_BOTTOM_INSET = Platform.OS === 'android' ? 16 : 0;
+const DEFAULT_BOTTOM_INSET = Platform.OS === "android" ? 16 : 0;
 
 const TabNavigator = () => {
   const insets = useSafeAreaInsets();
@@ -32,8 +31,8 @@ const TabNavigator = () => {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: '#6a5af9',
-        tabBarInactiveTintColor: '#888',
+        tabBarActiveTintColor: "#6a5af9",
+        tabBarInactiveTintColor: "#888",
         tabBarStyle: {
           paddingBottom: 2 + bottomInset,
           height: 40 + bottomInset,
@@ -41,17 +40,17 @@ const TabNavigator = () => {
         tabBarHideOnKeyboard: true,
         tabBarIcon: ({ color, size }) => {
           switch (route.name) {
-            case 'Dashboard':
+            case "Dashboard":
               return <Ionicons name="home-outline" size={size} color={color} />;
-            case 'Properties':
+            case "Properties":
               return (
                 <MaterialIcons name="apartment" size={size} color={color} />
               );
-            case 'Rooms':
+            case "Rooms":
               return (
                 <FontAwesome5 name="door-open" size={size} color={color} />
               );
-            case 'Contracts':
+            case "Contracts":
               return (
                 <Ionicons
                   name="document-text-outline"
@@ -59,11 +58,11 @@ const TabNavigator = () => {
                   color={color}
                 />
               );
-            case 'Reports':
+            case "Reports":
               return (
                 <Ionicons name="bar-chart-outline" size={size} color={color} />
               );
-            case 'Profile':
+            case "Profile":
               return (
                 <Ionicons
                   name="person-circle-outline"
@@ -71,20 +70,20 @@ const TabNavigator = () => {
                   color={color}
                 />
               );
-            case 'TestScreen':
+            case "TestScreen":
               return <Ionicons name="telescope" size={size} color={color} />;
             default:
               return null;
           }
         },
         tabBarButton: (props) => {
-          if (Platform.OS === 'ios') {
+          if (Platform.OS === "ios") {
             return <TouchableOpacity {...(props as any)} />;
           }
           return (
-            <TouchableOpacityGestureHandler {...(props as any)}>
+            <TouchableOpacity {...(props as any)}>
               <View className="flex items-center">{props.children}</View>
-            </TouchableOpacityGestureHandler>
+            </TouchableOpacity>
           );
         },
       })}
@@ -92,37 +91,37 @@ const TabNavigator = () => {
       <Tab.Screen
         name="Dashboard"
         component={DashboardScreen}
-        options={{ title: 'Trang chủ' }}
+        options={{ title: "Trang chủ" }}
       />
       <Tab.Screen
         name="Properties"
         component={PropertyListScreen}
-        options={{ title: 'Tài sản' }}
+        options={{ title: "Tài sản" }}
       />
       <Tab.Screen
         name="Rooms"
         component={RoomListScreen}
-        options={{ title: 'Phòng' }}
+        options={{ title: "Phòng" }}
       />
       <Tab.Screen
         name="Contracts"
         component={ContractListScreen}
-        options={{ title: 'Hợp đồng' }}
+        options={{ title: "Hợp đồng" }}
       />
       <Tab.Screen
         name="Reports"
         component={ReportScreen}
-        options={{ title: 'Báo cáo' }}
+        options={{ title: "Báo cáo" }}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
-        options={{ title: 'Cá nhân' }}
+        options={{ title: "Cá nhân" }}
       />
       <Tab.Screen
         name="TestScreen"
         component={TestScreen}
-        options={{ title: 'Test Screen' }}
+        options={{ title: "Test Screen" }}
       />
     </Tab.Navigator>
   );

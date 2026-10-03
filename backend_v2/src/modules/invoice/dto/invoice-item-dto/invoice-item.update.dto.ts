@@ -12,6 +12,10 @@ import { InvoiceItemType } from '../../../../common/enums/invoice.enum';
 import { InvoiceItem } from '../../entities/invoice.item.entity';
 
 export class InvoiceItemUpdateDto implements BaseUpdateDto<InvoiceItem> {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
   @IsString()
   id: string;
 

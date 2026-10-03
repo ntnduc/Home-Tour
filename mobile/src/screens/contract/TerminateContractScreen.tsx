@@ -9,9 +9,10 @@ import { formatCurrency } from "@/utils/appUtil";
 import { formatDate } from "@/utils/dateUtil";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import React, { useState } from "react";
+import React from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
+  Alert,
   Text,
   TouchableOpacity,
   View
@@ -31,7 +32,6 @@ const TerminateContractScreen = ({
   route,
 }: TerminateContractScreenProps) => {
   const { contractId } = route.params;
-  const [terminationReason, setTerminationReason] = useState("");
 
   const { control, handleSubmit, setValue, setError, formState: { isLoading, defaultValues: contract, errors } } = useForm<ContractTerminateRequest>({
     defaultValues: async () => {
@@ -60,16 +60,33 @@ const TerminateContractScreen = ({
       setError("reason", { message: 'Vui lòng nhập lý do kết thúc hợp đồng' });
       return;
     }
-    deactivateContract(data.id, data.reason)
-      .then(() => { })
-      .finally(() => {
-        Toast.show({
-          type: 'success',
-          text1: 'Thành công',
-          text2: 'Đã kết thúc hợp đồng thành công!',
-        });
-        navigation.goBack();
-      });
+
+    Alert.alert('Xác nhận', 'Bạn có chắc chắn muốn kết thúc hợp đồng?', [{ text: 'Cancel', style: 'cancel' }, {
+      text: 'OK', style: 'destructive', onPress: () => {
+        deactivateContract(data.id, data.reason ?? "")
+          .then(() => { })
+          .finally(() => {
+            Toast.show({
+              type: 'success',
+              text1: 'Thành công',
+              text2: 'Đã kết thúc hợp đồng thành công!',
+            });
+            navigation.goBack();
+          });
+      }
+    }]);
+    return;
+
+    // deactivateContract(data.id, data.reason)
+    //   .then(() => { })
+    //   .finally(() => {
+    //     Toast.show({
+    //       type: 'success',
+    //       text1: 'Thành công',
+    //       text2: 'Đã kết thúc hợp đồng thành công!',
+    //     });
+    //     navigation.goBack();
+    //   });
   }
 
 

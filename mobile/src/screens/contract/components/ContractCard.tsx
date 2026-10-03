@@ -1,6 +1,6 @@
 import CardComponent from "@/screens/common/CardComponent";
 import { colors } from "@/theme/colors";
-import { formatCurrency } from "@/utils/appUtil";
+import { formatCurrency, formatPhoneNumber } from "@/utils/appUtil";
 import { formatDate } from "@/utils/dateUtil";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
@@ -77,10 +77,7 @@ const ContractCard = ({
           <Ionicons name="person" size={16} color="#6B7280" />
           <Text style={styles.tenantName}>{tenantContract?.name}</Text>
         </View>
-        <Text style={styles.tenantPhone}>📞 {tenantContract?.phoneNumber}</Text>
-        {/* {contract.tenantEmail && (
-          <Text style={styles.tenantEmail}>📧 {contract.tenantEmail}</Text>
-        )} */}
+        <Text style={styles.tenantPhone}>📞 {formatPhoneNumber(tenantContract?.phoneNumber ?? "")}</Text>
       </View>
 
       {/* Contract Period */}

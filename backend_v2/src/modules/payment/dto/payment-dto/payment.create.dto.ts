@@ -3,10 +3,11 @@ import {
   IsEnum,
   IsNumber,
   IsOptional,
+  IsPositive,
   IsString,
   IsUUID,
-  Min,
 } from 'class-validator';
+import { getCurrentDate } from 'src/common/utils';
 import { BaseCreateDto } from '../../../../common/base/dto/create.dto';
 import {
   PaymentStatus,
@@ -15,29 +16,32 @@ import {
 import { Payment } from '../../entities/payment.entity';
 
 export class PaymentCreateDto extends BaseCreateDto<Payment> {
+  // Hóa đơn cần thanh toán.
   @IsUUID()
   invoiceId: string;
 
-  @IsDateString()
-  paymentDate: string;
-
+  // Số tiền khách thanh toán, phải lớn hơn 0 (BR-004).
   @IsNumber()
-  @Min(0)
+  @IsPositive()
   amount: number;
 
+  // Ngày thanh toán, mặc định là thời điểm hiện tại nếu không truyền.
+  @IsDateString()
+  @IsOptional()
+  paymentDate?: string;
+
+  // propertyId không bắt buộc từ client, service sẽ tự suy ra từ invoice để tránh sai lệch dữ liệu.
   @IsUUID()
-  propertyId: string;
+  @IsOptional()
+  propertyId?: string;
 
   @IsEnum(PaymentType)
-  type: PaymentType;
+  @IsOptional()
+  type?: PaymentType;
 
   @IsString()
   @IsOptional()
   paymentMethod?: string;
-
-  @IsEnum(PaymentStatus)
-  @IsOptional()
-  status?: PaymentStatus;
 
   @IsString()
   @IsOptional()
@@ -46,12 +50,14 @@ export class PaymentCreateDto extends BaseCreateDto<Payment> {
   getEntity(): Payment {
     const entity = new Payment();
     entity.invoiceId = this.invoiceId;
-    entity.paymentDate = new Date(this.paymentDate);
+    entity.paymentDate = this.paymentDate
+      ? new Date(this.paymentDate)
+      : getCurrentDate();
     entity.amount = this.amount;
-    entity.propertyId = this.propertyId;
-    entity.type = this.type;
+    entity.propertyId = this.propertyId as any;
+    entity.type = this.type ?? PaymentType.IN;
     entity.paymentMethod = this.paymentMethod ?? 'CASH';
-    entity.status = this.status ?? PaymentStatus.PENDING;
+    entity.status = PaymentStatus.PAID;
     entity.notes = this.notes;
     return entity;
   }

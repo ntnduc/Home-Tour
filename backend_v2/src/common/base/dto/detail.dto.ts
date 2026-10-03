@@ -3,6 +3,6 @@ export abstract class BaseDetailDto<TEntity> {
   createdBy: string;
   updatedBy: string;
   createdAt: Date;
-  updatedAt: Date;
+  updatedAt?: Date;
   abstract fromEntity(entity: TEntity): void;
 }

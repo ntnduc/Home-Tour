@@ -1,4 +1,4 @@
-import { deactivateContract, getContract } from '@/api/contract/contract.api';
+import { getContract } from '@/api/contract/contract.api';
 import ActionButtonBottom from '@/components/ActionButtonBottom';
 import DisplayField from '@/components/DisplayField';
 import Loading from '@/components/Loading';
@@ -10,8 +10,9 @@ import { ContractDetailResponse, ContractStatus } from '@/types/contract';
 import { formatCurrency } from '@/utils/appUtil';
 import { formatDate } from '@/utils/dateUtil';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Alert, Text, TouchableOpacity, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -27,41 +28,54 @@ const ContractDetailScreen = ({
   route,
 }: ContractDetailScreenProps) => {
   const { contractId } = route.params;
+  const [isLoading, setIsLoading] = useState(true);
 
   const {
     watch,
-    formState: { isLoading, defaultValues },
+    formState: { defaultValues },
+    reset
   } = useForm<ContractDetailResponse>({
-    defaultValues: async () => {
-      if (!contractId) {
-        return {} as ContractDetailResponse;
-      }
-      try {
-        const response = await getContract(contractId);
-        if (response.success && response.data) {
-          return response.data;
-        }
-
-        Toast.show({
-          type: 'error',
-          text1: 'Lỗi',
-          text2: response.message ?? 'Không thể tải thông tin hợp đồng',
-        });
-        navigation.goBack();
-      } catch (error: any) {
-        console.error('Error fetching contract detail:', error);
-        Toast.show({
-          type: 'error',
-          text1: 'Lỗi',
-          text2:
-            error.response?.data?.message ?? 'Không thể tải thông tin hợp đồng',
-        });
-        navigation.goBack();
-      }
-
-      return {} as ContractDetailResponse;
-    },
+    defaultValues: {} as ContractDetailResponse
   });
+
+  const fetchData = useCallback(async () => {
+    if (!contractId) {
+      return {} as ContractDetailResponse;
+    }
+    try {
+      const response = await getContract(contractId);
+      if (response.success && response.data) {
+        reset(response.data);
+        return;
+      }
+
+      Toast.show({
+        type: 'error',
+        text1: 'Lỗi',
+        text2: response.message ?? 'Không thể tải thông tin hợp đồng',
+      });
+      navigation.goBack();
+    } catch (error: any) {
+      console.error('Error fetching contract detail:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Lỗi',
+        text2:
+          error.response?.data?.message ?? 'Không thể tải thông tin hợp đồng',
+      });
+      navigation.goBack();
+    } finally {
+      setIsLoading(false);
+    }
+
+    return {} as ContractDetailResponse;
+  }, [contractId, reset]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [fetchData]),
+  );
 
   const contract = watch() as ContractDetailResponse | undefined;
 
@@ -76,35 +90,38 @@ const ContractDetailScreen = ({
 
   const handleTerminateContract = () => {
     if (!contract) return;
-    const landlordClient = contract.contractClient?.find(
-      (client) => client.isActiveInContract,
-    );
-    Alert.prompt(
-      'Xác nhận kết thúc hợp đồng',
-      `Bạn có chắc chắn muốn kết thúc hợp đồng với ${landlordClient?.name || 'người thuê'}?\nHành động này sẽ chuyển phòng về trạng thái trống.
-      \nLý do kết thúc:`,
-      async (text: string) => {
-        if (!text.trim()) {
-          Toast.show({
-            type: 'error',
-            text1: 'Lỗi',
-            text2: 'Vui lòng nhập lý do kết thúc hợp đồng',
-          });
-          return;
-        }
+    navigation.navigate('TerminateContract', { contractId: contract.id });
+    return;
 
-        deactivateContract(contract.id, text)
-          .then(() => { })
-          .finally(() => {
-            Toast.show({
-              type: 'success',
-              text1: 'Thành công',
-              text2: 'Đã kết thúc hợp đồng thành công!',
-            });
-            navigation.goBack();
-          });
-      },
-    );
+    // const landlordClient = contract.contractClient?.find(
+    //   (client) => client.isActiveInContract,
+    // );
+    // Alert.prompt(
+    //   'Xác nhận kết thúc hợp đồng',
+    //   `Bạn có chắc chắn muốn kết thúc hợp đồng với ${landlordClient?.name || 'người thuê'}?\nHành động này sẽ chuyển phòng về trạng thái trống.
+    //   \nLý do kết thúc:`,
+    //   async (text: string) => {
+    //     if (!text.trim()) {
+    //       Toast.show({
+    //         type: 'error',
+    //         text1: 'Lỗi',
+    //         text2: 'Vui lòng nhập lý do kết thúc hợp đồng',
+    //       });
+    //       return;
+    //     }
+
+    //     deactivateContract(contract.id, text)
+    //       .then(() => { })
+    //       .finally(() => {
+    //         Toast.show({
+    //           type: 'success',
+    //           text1: 'Thành công',
+    //           text2: 'Đã kết thúc hợp đồng thành công!',
+    //         });
+    //         navigation.goBack();
+    //       });
+    //   },
+    // );
   };
 
   const handleRenewContract = () => {

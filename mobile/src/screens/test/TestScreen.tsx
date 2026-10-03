@@ -1,40 +1,61 @@
-import CommonUpload from '@/components/Uploadfile';
-import { UploadedFile, UploadStatus } from '@/components/Uploadfile/types';
-import { RootStackParamList } from '@/navigation/types';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ChildStep, ParrentStep } from "@/components/StepByStep";
+import { RootStackParamList } from "@/navigation/types";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import React from "react";
+import { Text, View } from "react-native";
 
 type TestScreenProps = {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'TestScreen'>;
+  navigation: NativeStackNavigationProp<RootStackParamList, "TestScreen">;
 };
 
-const TestScreen = ({ }: TestScreenProps) => {
-  const [files, setFiles] = useState<UploadedFile[] | null>(null);
+/** Giả lập gọi API mất 1.2s rồi thành công. */
+const fakeApiCall = () =>
+  new Promise<void>((resolve) => setTimeout(resolve, 1200));
 
-  const handleChange = (nextFiles: UploadedFile[] | null, status: UploadStatus) => {
-    if (status === 'success' || status === 'prepare' || status === 'loading') {
-      setFiles(nextFiles);
-    }
-  };
-
+const TestScreen = ({}: TestScreenProps) => {
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 p-4">
-      <CommonUpload
-        label="Ảnh thực tế"
-        type="image"
-        variant="multiple"
-        value={files ?? []}
-        onChange={handleChange as any}
-      />
-      <CommonUpload
-        label={'single'}
-        type='image'
-        variant='single'
-        value={files?.[0] ?? null}
-        onChange={handleChange as any}
-      />
-    </SafeAreaView>
+    <View className="flex-1 bg-white">
+      <ParrentStep activeStep={0}>
+        <ChildStep
+          label="Thông tin"
+          nextAction={{
+            label: "Tạo hoá đơn",
+            variant: "primary",
+            // Gọi API, chỉ chuyển bước khi thành công (nút hiển thị loading).
+            onPress: fakeApiCall,
+          }}
+          previousAction={{ label: "Quay lại" }}
+        >
+          <View className="items-center py-6">
+            <Text className="text-base text-gray-700">Nội dung của bước 1</Text>
+          </View>
+        </ChildStep>
+
+        <ChildStep
+          label="Xác nhận"
+          nextAction={{ label: "Tiếp tục" }}
+          previousAction={{ label: "Quay lại" }}
+        >
+          <View className="items-center py-6">
+            <Text className="text-base text-gray-700">Nội dung của bước 2</Text>
+          </View>
+        </ChildStep>
+
+        <ChildStep
+          label="Hoàn tất"
+          previousAction={{ label: "Quay lại" }}
+          finishAction={{
+            label: "Hoàn tất",
+            variant: "success",
+            onPress: fakeApiCall,
+          }}
+        >
+          <View className="items-center py-6">
+            <Text className="text-base text-gray-700">Nội dung của bước 3</Text>
+          </View>
+        </ChildStep>
+      </ParrentStep>
+    </View>
   );
 };
 

@@ -7,6 +7,8 @@ import { InvoiceItem } from '../../entities/invoice.item.entity';
 export class InvoiceItemDetailDto extends BaseDetailDto<InvoiceItem> {
   invoiceId: string;
   amount: number;
+  name?: string;
+  totalAmount: number;
   type: InvoiceItemType;
   helperValue?: number;
   contractServiceId?: string;
@@ -15,8 +17,10 @@ export class InvoiceItemDetailDto extends BaseDetailDto<InvoiceItem> {
   property: PropertyDetailDto;
   fromEntity(entity: InvoiceItem): void {
     this.id = entity.id;
+    this.name = entity.name;
     this.invoiceId = entity.invoiceId;
     this.amount = entity.amount ? Number(entity.amount) : 0;
+    this.totalAmount = entity.amount ? Number(entity.amount) : 0;
     this.type = entity.type;
     this.helperValue = entity.helperValue;
     this.metadata = entity.metadata;

@@ -62,6 +62,10 @@ export class ContractUpdateDto implements BaseUpdateDto<Contracts> {
   @IsBoolean()
   isPrepaidRoom?: boolean;
 
+  @IsOptional()
+  @IsBoolean()
+  carryDebtToNextInvoice?: boolean;
+
   getEntity(entity: Contracts): QueryDeepPartialEntity<Contracts> {
     const updateData: QueryDeepPartialEntity<Contracts> = {};
 
@@ -79,6 +83,8 @@ export class ContractUpdateDto implements BaseUpdateDto<Contracts> {
     if (this.notes !== undefined) updateData.notes = this.notes;
     if (this.isPrepaidRoom !== undefined)
       updateData.isPrepaidRoom = this.isPrepaidRoom;
+    if (this.carryDebtToNextInvoice !== undefined)
+      updateData.carryDebtToNextInvoice = this.carryDebtToNextInvoice;
     return updateData;
   }
 }

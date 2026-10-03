@@ -10,21 +10,26 @@ export class InvoiceDetailDto extends BaseDetailDto<Invoice> {
   contractId: string;
   roomId: string;
   propertyId: string;
+  roomName?: string;
+  propertyName?: string;
   billingPeriodStart: Date;
   billingPeriodEnd: Date;
   dueDate: Date;
   totalAmount: number;
   paidAmount: number;
   remainingAmount: number;
+  clientName?: string;
   status: InvoiceStatus;
   notes?: string;
   contract: ContractDetailDto;
   room: RoomDetailDto;
+  code?: string;
   property: PropertyDetailDto;
   invoiceItems: Array<InvoiceItemDetailDto>;
 
   fromEntity(entity: Invoice): void {
     this.id = entity.id;
+    this.code = entity.code;
     this.contractId = entity.contractId;
     this.roomId = entity.roomId;
     this.propertyId = entity.propertyId;
@@ -43,19 +48,24 @@ export class InvoiceDetailDto extends BaseDetailDto<Invoice> {
     this.createdBy = entity.createdBy;
     this.updatedBy = entity.updatedBy;
 
-    if (entity.contract) {
-      this.contract = new ContractDetailDto();
-      this.contract.fromEntity(entity.contract);
+    if (entity.contract && entity.contract.contractClient) {
+      this.clientName = entity.contract.contractClient.findLast(
+        (client) => client.isLandlordClient && client.isActiveInContract,
+      )?.name;
+      // this.contract = new ContractDetailDto();
+      // this.contract.fromEntity(entity.contract);
     }
 
     if (entity.room) {
-      this.room = new RoomDetailDto();
-      this.room.fromEntity(entity.room);
+      this.roomName = entity.room.name;
+      // this.room = new RoomDetailDto();
+      // this.room.fromEntity(entity.room);
     }
 
     if (entity.property) {
-      this.property = new PropertyDetailDto();
-      this.property.fromEntity(entity.property);
+      this.propertyName = entity.property.name;
+      // this.property = new PropertyDetailDto();
+      // this.property.fromEntity(entity.property);
     }
 
     if (entity.invoiceItems) {

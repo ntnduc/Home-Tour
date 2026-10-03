@@ -24,11 +24,9 @@ export const checkLogin = async (): Promise<boolean> => {
 };
 
 export const formatCurrency = (value: string | number) => {
-  if (typeof value === 'number') {
-    value = value.toString();
-  }
-  const numericValue = value.replace(/[.,]/g, '');
-  return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const stringValue = typeof value === 'number' ? value.toString() : value;
+  const integerPart = stringValue.split(/[.,]/)[0].replace(/\D/g, '');
+  return integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 };
 
 export const generateId = () => {

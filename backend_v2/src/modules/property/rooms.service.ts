@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { BaseService } from 'src/common/base/crud/base.service';
+import { ContractStatus } from 'src/common/enums/contract.enum';
 import { RoomStatus } from 'src/common/enums/room.enum';
-import { SelectQueryBuilder } from 'typeorm';
+import { In, Repository, SelectQueryBuilder } from 'typeorm';
 import { ContractServiceDetailDto } from '../contract/dto/contract-services-dto/contract-service.detail.dto';
 import { ContractsRepository } from '../contract/repositories/contracts.repository';
 import { PropertyCreateDto } from './dto/properties-dto/property.create.dto';
@@ -11,9 +13,11 @@ import { RoomDetailDto } from './dto/room-dto/room.detail.dto';
 import { RoomListDto } from './dto/room-dto/room.list.dto';
 import { RoomUpdateDto } from './dto/room-dto/room.update.dto';
 import { RoomCreateDto } from './dto/room-dto/rooms.create.dto';
+import { RoomActionSignal } from './entities/room-action-signal.view';
 import { Rooms } from './entities/rooms.entity';
 import { PropertiesServiceRepository } from './repositories/properties-service.repository';
 import { RoomsRepository } from './repositories/rooms.repository';
+import { RoomActionService } from './room-action.service';
 
 @Injectable()
 export class RoomsService extends BaseService<
@@ -27,6 +31,9 @@ export class RoomsService extends BaseService<
     private readonly roomsRepository: RoomsRepository,
     private readonly contractsRepository: ContractsRepository,
     private readonly propertiesServiceRepository: PropertiesServiceRepository,
+    private readonly roomActionService: RoomActionService,
+    @InjectRepository(RoomActionSignal)
+    private readonly roomActionSignalRepository: Repository<RoomActionSignal>,
   ) {
     super(
       roomsRepository,
@@ -40,19 +47,52 @@ export class RoomsService extends BaseService<
   override async specQuery(): Promise<SelectQueryBuilder<Rooms>> {
     const query = this.roomsRepository
       .createQueryBuilder('entity')
-      .leftJoinAndSelect('entity.contracts', 'contracts')
+      .leftJoinAndSelect(
+        'entity.contracts',
+        'contracts',
+        'contracts.status = :status',
+        {
+          status: ContractStatus.ACTIVE,
+        },
+      )
       .leftJoinAndSelect('contracts.contractClient', 'contractClient');
     query.orderBy('property.name', 'ASC');
     return query;
   }
 
-  override beautifyResult(items: Rooms[]): Promise<RoomListDto[]> {
+  override async beautifyResult(items: Rooms[]): Promise<RoomListDto[]> {
     items.sort((a, b) => {
       const propCompare = a.property.name.localeCompare(b.property.name);
       if (propCompare !== 0) return propCompare;
       return a.name.localeCompare(b.name);
     });
-    return super.beautifyResult(items);
+
+    const now = new Date();
+    const roomIds = items.map((item) => item.id);
+    const signals =
+      roomIds.length > 0
+        ? await this.roomActionSignalRepository.find({
+            where: { roomId: In(roomIds) },
+          })
+        : [];
+    const signalMap = new Map(signals.map((signal) => [signal.roomId, signal]));
+
+    return items.map((item) => {
+      const listDto = new RoomListDto();
+      listDto.fromEntity(item);
+      const actionResult = this.roomActionService.computeRoomActions(
+        signalMap.get(item.id) ?? {
+          roomId: item.id,
+          roomStatus: item.status,
+        },
+        now,
+      );
+      listDto.actions = actionResult.actions;
+      listDto.pendingTaskCount = actionResult.pendingTaskCount;
+      listDto.hasOverdueAlert = actionResult.hasOverdueAlert;
+      listDto.overdueAlertMessage = actionResult.overdueAlertMessage;
+      return listDto;
+    });
   }
 
   override async get(id: string): Promise<RoomDetailDto> {

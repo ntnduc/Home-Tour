@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsDateString,
   IsEnum,
   IsNumber,
@@ -56,6 +57,10 @@ export class InvoiceCreateDto extends BaseCreateDto<Invoice> {
   @IsOptional()
   notes?: string;
 
+  @IsBoolean()
+  @IsOptional()
+  isPassPreInvoice?: boolean;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => InvoiceItemCreateDto)
@@ -69,14 +74,18 @@ export class InvoiceCreateDto extends BaseCreateDto<Invoice> {
     entity.billingPeriodStart = new Date(this.billingPeriodStart);
     entity.billingPeriodEnd = new Date(this.billingPeriodEnd);
     entity.dueDate = new Date(this.dueDate);
-    entity.totalAmount = this.totalAmount;
     entity.paidAmount = this.paidAmount ?? 0;
     entity.remainingAmount =
-      this.remainingAmount ?? this.totalAmount - (this.paidAmount ?? 0);
+      this.remainingAmount ?? this.totalAmount - entity.paidAmount;
     entity.status = this.status ?? InvoiceStatus.DRAFT;
     entity.notes = this.notes;
     entity.invoiceItems =
       this.invoiceItems?.map((item) => item.getEntity()) ?? [];
+    entity.totalAmount = entity.calculatorTotalAmount();
     return entity;
+  }
+
+  compareToEntity(entity: Invoice): string | null {
+    return null;
   }
 }

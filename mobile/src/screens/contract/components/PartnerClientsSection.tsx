@@ -1,26 +1,33 @@
-import CardComponent from '@/screens/common/CardComponent';
-import { ClientCreateRequest } from '@/types/client';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import CardComponent from "@/screens/common/CardComponent";
+import { ClientCreateRequest } from "@/types/client";
+import { cn } from "@/utils/appUtil";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import React from "react";
+import { Text, TouchableOpacity, View } from "react-native";
 
 type PartnerClientsSectionProps = {
   onAdd: () => void;
   onEdit: (index: number) => void;
   onDelete: (index: number) => void;
   data?: ClientCreateRequest[];
+  error?: string;
 };
 
 const PartnerClientsSection: React.FC<PartnerClientsSectionProps> = ({
   onAdd,
   onEdit,
   onDelete,
+  error,
   data,
 }) => {
   const hasCompanion = data && data.length > 0;
 
   return (
     <CardComponent
+      className={cn({
+        "border border-red-400": error,
+      })}
+      style={{ borderColor: "#ef4444" }}
       title="Người ở cùng"
       renderActions={() => (
         <TouchableOpacity
@@ -88,18 +95,13 @@ const PartnerClientsSection: React.FC<PartnerClientsSectionProps> = ({
                   </View>
                 </View>
               </View>
-              // <Controller
-              //   key={`companion-${idx}`}
-              //   control={control}
-              //   name={`contractClient.${idx}`}
-              //   render={() => (
-
-              //   )}
-              // />
             );
           })}
         </View>
       )}
+      {error ? (
+        <Text className="text-xs text-red-500 mt-2">{error}</Text>
+      ) : null}
     </CardComponent>
   );
 };

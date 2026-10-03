@@ -10,6 +10,7 @@ import { Services } from '../services/entities/services.entity';
 import { ServicesRepository } from '../services/repositories/services.repository';
 import { PropertiesService } from './entities/properties-service.entity';
 import { Properties } from './entities/properties.entity';
+import { RoomActionSignal } from './entities/room-action-signal.view';
 import { Rooms } from './entities/rooms.entity';
 import { PropertiesServiceService } from './properties-service.service';
 import { PropertyController } from './property.controller';
@@ -17,6 +18,7 @@ import { PropertyService } from './property.service';
 import { PropertiesServiceRepository } from './repositories/properties-service.repository';
 import { PropertiesRepository } from './repositories/properties.repository';
 import { RoomsRepository } from './repositories/rooms.repository';
+import { RoomActionService } from './room-action.service';
 import { RoomsController } from './rooms.controller';
 import { RoomsService } from './rooms.service';
 
@@ -27,6 +29,7 @@ import { RoomsService } from './rooms.service';
       PropertiesService,
       Services,
       Rooms,
+      RoomActionSignal,
       Provinces,
       Districts,
       Wards,
@@ -37,6 +40,7 @@ import { RoomsService } from './rooms.service';
   providers: [
     PropertyService,
     PropertiesServiceService,
+    RoomActionService,
     RoomsService,
     PropertiesRepository,
     PropertiesServiceRepository,
@@ -47,6 +51,7 @@ import { RoomsService } from './rooms.service';
   exports: [
     PropertyService,
     PropertiesServiceService,
+    RoomActionService,
     RoomsService,
     PropertiesRepository,
     PropertiesServiceRepository,

@@ -1,3 +1,4 @@
+import { Invoice } from 'src/modules/invoice/entities/invoice.entity';
 import {
   Column,
   Entity,
@@ -50,6 +51,7 @@ export class Contracts extends BaseEntity {
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
   depositAmountPaid: number;
 
+  // ngày thanh toán tiền thuê
   @Column()
   paymentDueDay: number;
 
@@ -69,6 +71,10 @@ export class Contracts extends BaseEntity {
   @Column({ type: 'text', nullable: true })
   notes?: string;
 
+  // Có tự động cộng dồn công nợ còn lại của hóa đơn trước sang hóa đơn kỳ tiếp theo hay không.
+  @Column({ type: 'boolean', default: true })
+  carryDebtToNextInvoice: boolean;
+
   @OneToMany(() => ContractClient, (contractClient) => contractClient.contract)
   contractClient: ContractClient[];
 
@@ -77,4 +83,7 @@ export class Contracts extends BaseEntity {
     (contractServices) => contractServices.contract,
   )
   contractServices: ContractServices[];
+
+  @OneToMany(() => Invoice, (invoice) => invoice.contract)
+  invoices: Invoice[];
 }

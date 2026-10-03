@@ -22,8 +22,11 @@ export class ContractDetailDto extends BaseDetailDto<Contracts> {
   contractScanURL?: string;
   status: ContractStatus;
   notes?: string;
+  carryDebtToNextInvoice: boolean;
   contractClient?: ContractClientDetailDto[];
   contractServices?: ContractServiceDetailDto[];
+  // ID của hóa đơn tạm thời được tạo ra khi hợp đồng được kích hoạt.
+  preInvoiceId?: string;
 
   fromEntity(entity: Contracts): void {
     this.id = entity.id;
@@ -44,6 +47,7 @@ export class ContractDetailDto extends BaseDetailDto<Contracts> {
     this.contractScanURL = entity.contractScanURL;
     this.status = entity.status;
     this.notes = entity.notes;
+    this.carryDebtToNextInvoice = entity.carryDebtToNextInvoice ?? false;
 
     //Room
     if (entity.room) {

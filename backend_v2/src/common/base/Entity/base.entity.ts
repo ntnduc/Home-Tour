@@ -21,8 +21,8 @@ export abstract class BaseEntity {
   @CreateDateColumn()
   public createdAt: Date;
 
-  @UpdateDateColumn()
-  public updatedAt: Date;
+  @UpdateDateColumn({ nullable: true })
+  public updatedAt?: Date;
 
   @BeforeInsert()
   public beforeInsert() {

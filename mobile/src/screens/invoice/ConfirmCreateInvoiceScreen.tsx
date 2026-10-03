@@ -1,26 +1,26 @@
-import { createInvoice } from '@/api/invoice/invoice.api';
-import ActionButtonBottom from '@/components/ActionButtonBottom';
-import Loading from '@/components/Loading';
-import { ServiceCalculateMethod } from '@/constant/service.constant';
-import { RootStackParamList } from '@/navigation/types';
-import CardComponent from '@/screens/common/CardComponent';
-import ServiceDetailInvoiceItemComponent from '@/screens/invoice/components/ServiceDetailInvoiceItemComponent';
-import { InvoiceItemType } from '@/types/invoice.item';
-import { formatCurrency } from '@/utils/appUtil';
-import { formatDate } from '@/utils/dateUtil';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useMemo } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import Toast from 'react-native-toast-message';
+import { createInvoice } from "@/api/invoice/invoice.api";
+import ActionButtonBottom from "@/components/ActionButtonBottom";
+import Loading from "@/components/Loading";
+import { ServiceCalculateMethod } from "@/constant/service.constant";
+import { RootStackParamList } from "@/navigation/types";
+import CardComponent from "@/screens/common/CardComponent";
+import ServiceDetailInvoiceItemComponent from "@/screens/invoice/components/ServiceDetailInvoiceItemComponent";
+import { InvoiceItemType } from "@/types/invoice.item";
+import { formatCurrency } from "@/utils/appUtil";
+import { formatDate } from "@/utils/dateUtil";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import React, { useMemo } from "react";
+import { Text, TouchableOpacity, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import Toast from "react-native-toast-message";
 
 type ConfirmCreateInvoiceScreenProps = {
   navigation: NativeStackNavigationProp<
     RootStackParamList,
-    'ConfirmCreateInvoice'
+    "ConfirmCreateInvoice"
   >;
-  route: { params: RootStackParamList['ConfirmCreateInvoice'] };
+  route: { params: RootStackParamList["ConfirmCreateInvoice"] };
 };
 
 // type ServiceCalculation = {
@@ -92,9 +92,10 @@ const ConfirmCreateInvoiceScreen = ({
     //#endregion
 
     // Tính tổng tiền dịch vụ
-    const totalServiceAmount = invoiceItemsWithTotal
-      .filter((item) => item.type === InvoiceItemType.SERVICE_FEE)
-      .reduce((sum, item) => sum + Number(item.totalAmount || 0), 0) || 0;
+    const totalServiceAmount =
+      invoiceItemsWithTotal
+        .filter((item) => item.type === InvoiceItemType.SERVICE_FEE)
+        .reduce((sum, item) => sum + Number(item.totalAmount || 0), 0) || 0;
 
     // Tính tổng tiền cuối cùng (dịch vụ + tiền thuê)
     const totalAmount =
@@ -132,23 +133,23 @@ const ConfirmCreateInvoiceScreen = ({
       const response = await createInvoice(invoiceToSubmit);
       if (response.success && response.data) {
         Toast.show({
-          type: 'success',
-          text1: 'Thành công',
-          text2: 'Tạo hóa đơn thành công',
+          type: "success",
+          text1: "Thành công",
+          text2: "Tạo hóa đơn thành công",
         });
         navigation.popToTop();
       } else {
         Toast.show({
-          type: 'error',
-          text1: 'Lỗi',
-          text2: response.message ?? 'Tạo hóa đơn thất bại!',
+          type: "error",
+          text1: "Lỗi",
+          text2: response.message ?? "Tạo hóa đơn thất bại!",
         });
       }
     } catch (error: any) {
       Toast.show({
-        type: 'error',
-        text1: 'Lỗi',
-        text2: error.response?.data?.message ?? 'Tạo hóa đơn thất bại!',
+        type: "error",
+        text1: "Lỗi",
+        text2: error.response?.data?.message ?? "Tạo hóa đơn thất bại!",
       });
     } finally {
       setIsSubmitting(false);
@@ -163,7 +164,7 @@ const ConfirmCreateInvoiceScreen = ({
     <View className="flex-row justify-between items-center mb-2">
       <Text className="text-base text-gray-600">{label}</Text>
       <Text
-        className={`text-base ${strong ? 'font-semibold text-gray-900' : 'text-gray-900'}`}
+        className={`text-base ${strong ? "font-semibold text-gray-900" : "text-gray-900"}`}
       >
         {value}
       </Text>
@@ -182,8 +183,8 @@ const ConfirmCreateInvoiceScreen = ({
           flexGrow: 1,
           padding: 16,
           paddingBottom: 16,
-          display: 'flex',
-          flexDirection: 'column',
+          display: "flex",
+          flexDirection: "column",
           gap: 16,
         }}
         enableOnAndroid={true}
@@ -237,7 +238,14 @@ const ConfirmCreateInvoiceScreen = ({
               <View className="flex-row justify-between items-center mb-1">
                 <Text className="text-xs text-blue-600">Tiền thuê</Text>
                 <Text className="text-sm font-semibold text-blue-700">
-                  {formatCurrency((invoice.invoiceItems?.find(item => item.type === InvoiceItemType.ROOM_RENT)?.amount || 0).toString())}đ
+                  {formatCurrency(
+                    (
+                      invoice.invoiceItems?.find(
+                        (item) => item.type === InvoiceItemType.ROOM_RENT,
+                      )?.amount || 0
+                    ).toString(),
+                  )}
+                  đ
                 </Text>
               </View>
               <View className="flex-row justify-between items-center">
@@ -253,8 +261,8 @@ const ConfirmCreateInvoiceScreen = ({
         {/* Thông tin hợp đồng */}
         <CardComponent title="Thông tin hợp đồng">
           <View>
-            {renderRow('Phòng', invoice.roomName || '-', true)}
-            {renderRow('Người thuê', invoice.clientName || '-')}
+            {renderRow("Phòng", invoice.roomName || "-", true)}
+            {renderRow("Người thuê", invoice.clientName || "-")}
           </View>
         </CardComponent>
 
@@ -262,12 +270,12 @@ const ConfirmCreateInvoiceScreen = ({
         <CardComponent title="Thông tin thanh toán">
           <View>
             {renderRow(
-              'Hóa đơn tháng',
-              invoice.paymentMonth ? `Tháng ${invoice.paymentMonth}` : '-',
+              "Hóa đơn tháng",
+              invoice.paymentMonth ? `Tháng ${invoice.paymentMonth}` : "-",
             )}
             {renderRow(
-              'Hạn thanh toán',
-              invoice.dueDate ? formatDate(invoice.dueDate.toString()) : '-',
+              "Hạn thanh toán",
+              invoice.dueDate ? formatDate(invoice.dueDate.toString()) : "-",
             )}
             {invoice.notes && (
               <>
@@ -288,7 +296,9 @@ const ConfirmCreateInvoiceScreen = ({
           title="Chi tiết dịch vụ"
           description="Các dịch vụ được tính trong hóa đơn này"
         >
-          {calculatedInvoiceData.invoiceItemsWithTotal.filter(item => item.type === InvoiceItemType.SERVICE_FEE)?.length === 0 ? (
+          {calculatedInvoiceData.invoiceItemsWithTotal.filter(
+            (item) => item.type === InvoiceItemType.SERVICE_FEE,
+          )?.length === 0 ? (
             <View className="flex-1 items-center justify-center py-8">
               <View className="w-14 h-14 bg-gray-100 rounded-full items-center justify-center mb-2">
                 <Ionicons name="construct-outline" size={22} color="#9CA3AF" />
@@ -297,13 +307,21 @@ const ConfirmCreateInvoiceScreen = ({
             </View>
           ) : (
             <View className="flex flex-col">
-              {calculatedInvoiceData.invoiceItemsWithTotal.filter(item => item.type === InvoiceItemType.SERVICE_FEE)?.map((calc, idx) => (
-                <ServiceDetailInvoiceItemComponent
-                  key={`${calc.contractServiceId || idx + 1}`}
-                  data={calc}
-                  isLast={idx === (calculatedInvoiceData.invoiceItemsWithTotal.filter(item => item.type === InvoiceItemType.SERVICE_FEE)?.length || 0) - 1}
-                />
-              ))}
+              {calculatedInvoiceData.invoiceItemsWithTotal
+                .filter((item) => item.type === InvoiceItemType.SERVICE_FEE)
+                ?.map((calc, idx) => (
+                  <ServiceDetailInvoiceItemComponent
+                    key={`${calc.contractServiceId || idx + 1}`}
+                    data={calc}
+                    isLast={
+                      idx ===
+                      (calculatedInvoiceData.invoiceItemsWithTotal.filter(
+                        (item) => item.type === InvoiceItemType.SERVICE_FEE,
+                      )?.length || 0) -
+                        1
+                    }
+                  />
+                ))}
             </View>
           )}
         </CardComponent>
@@ -314,7 +332,14 @@ const ConfirmCreateInvoiceScreen = ({
             <View className="flex-row justify-between items-center mb-2">
               <Text className="text-base text-gray-600">Tiền thuê</Text>
               <Text className="text-base font-semibold text-gray-900">
-                {formatCurrency((invoice?.invoiceItems?.find(item => item.type === InvoiceItemType.ROOM_RENT)?.amount || 0).toString())}đ
+                {formatCurrency(
+                  (
+                    invoice?.invoiceItems?.find(
+                      (item) => item.type === InvoiceItemType.ROOM_RENT,
+                    )?.amount || 0
+                  ).toString(),
+                )}
+                đ
               </Text>
             </View>
             <View className="flex-row justify-between items-center mb-2">
@@ -337,16 +362,16 @@ const ConfirmCreateInvoiceScreen = ({
       <ActionButtonBottom
         actions={[
           {
-            label: 'Xác nhận tạo hóa đơn',
-            icon: 'checkmark-circle',
-            variant: 'success',
+            label: "Xác nhận tạo hóa đơn",
+            icon: "checkmark-circle",
+            variant: "success",
             isLoading: isSubmitting,
             onPress: onSubmit,
           },
           {
-            label: 'Chỉnh sửa thông tin',
-            icon: 'create-outline',
-            variant: 'secondary',
+            label: "Chỉnh sửa thông tin",
+            icon: "create-outline",
+            variant: "secondary",
             onPress: onEdit,
           },
         ]}

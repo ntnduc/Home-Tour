@@ -14,5 +14,6 @@
   },
   "debug.allowBreakpointsEverywhere": true,
   "debug.showBreakpointsInOverviewRuler": true,
-  "debug.showInlineBreakpointCandidates": true
+  "debug.showInlineBreakpointCandidates": true,
+  "js/ts.tsdk.path": "node_modules/typescript/lib"
 } 

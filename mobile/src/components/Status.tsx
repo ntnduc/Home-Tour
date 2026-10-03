@@ -47,14 +47,14 @@ const Status = ({
             styles.container,
             styles[selectedOption.type ?? "default"],
             containerStyle,
-            style,
+            selectedOption.style,
           ]}
           className={selectedOption.className}
         >
           <Text
             style={[
-              styles.text,
               styles[`text_${selectedOption.type ?? "default"}`],
+              selectedOption.textStyle,
             ]}
             className={selectedOption.textClassName}
           >
@@ -63,7 +63,7 @@ const Status = ({
         </View>
       );
     },
-    [options, value]
+    [options, value],
   );
 
   if (options && options.length > 0 && value) {
@@ -81,7 +81,7 @@ const Status = ({
       className={className}
     >
       <Text
-        style={[styles.text, styles[`text_${type ?? "default"}`]]}
+        style={[styles[`text_${type ?? "default"}`], styles.text]}
         className={textClassName}
       >
         {label}

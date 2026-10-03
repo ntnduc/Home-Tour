@@ -12,13 +12,21 @@ export interface Payment {
   updatedAt?: string;
 }
 
-export interface PaymentCreateRequest
-  extends Omit<Payment, "id" | "createdAt" | "updatedAt"> {
+export interface PaymentCreateRequest extends Omit<
+  Payment,
+  "id" | "createdAt" | "updatedAt" | "invoiceId"
+> {
   roomName: string;
+  isCarryOver?: boolean;
+  invoiceId: string;
+  contractId: string;
+  remainingAmount: number;
 }
 
-export interface PaymentUpdateRequest
-  extends Omit<Payment, "id" | "createdAt" | "updatedAt"> {}
+export interface PaymentUpdateRequest extends Omit<
+  Payment,
+  "id" | "createdAt" | "updatedAt"
+> {}
 
 export interface PaymentDetailResponse extends Payment {}
 

@@ -1,11 +1,12 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
-  NotFoundException,
   Param,
-  Patch,
+  Post,
   Query,
+  Request,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -54,6 +55,13 @@ export class PaymentController extends BaseController<
     );
   }
 
+  @Post()
+  @ApiResponse({ status: 404, description: 'Hóa đơn không tồn tại.' })
+  async create(@Request() req: Request, @Body() dto: PaymentCreateDto) {
+    throw new BadRequestException('Method not implemented yet');
+    return new PaymentDetailDto();
+  }
+
   @Get('invoice/:invoiceId')
   @ApiOperation({ summary: 'Get payments by invoice ID' })
   @ApiResponse({
@@ -95,22 +103,4 @@ export class PaymentController extends BaseController<
     query.type = type;
     return await this.getAll(query);
   }
-
-  @Patch(':id/status')
-  @ApiOperation({ summary: 'Update payment status' })
-  @ApiResponse({
-    status: 200,
-    description: 'Payment status updated successfully.',
-  })
-  @ApiResponse({ status: 404, description: 'Payment not found.' })
-  async updatePaymentStatus(
-    @Param('id') id: string,
-    @Body() body: { status: PaymentStatus },
-  ) {
-    const updateDto = new PaymentUpdateDto();
-    updateDto.id = id;
-    updateDto.status = body.status;
-    return await this.paymentService.update(updateDto);
-  }
 }
-
