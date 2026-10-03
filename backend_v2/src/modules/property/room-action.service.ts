@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InvoiceStatus } from 'src/common/enums/invoice.enum';
 import { RoomStatus } from 'src/common/enums/room.enum';
+import { getCurrentDate } from 'src/common/utils';
 import {
   ROOM_ACTION_CONFIG,
   RoomActionDto,
@@ -32,7 +33,7 @@ type InvoiceCreationInfo = {
 export class RoomActionService {
   computeRoomActions(
     signal: RoomActionSignalInput,
-    now: Date = new Date(),
+    now: Date = getCurrentDate(),
   ): RoomActionComputationResult {
     const actions: RoomActionDto[] = [];
     const invoiceCreationInfo = this.getInvoiceCreationInfo(signal, now);

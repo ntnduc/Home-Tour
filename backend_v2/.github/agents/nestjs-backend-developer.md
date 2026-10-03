@@ -18,6 +18,7 @@ RBAC model correctly, and match the existing module layout and Vietnamese error 
 - Validate all input with DTOs (class-validator); never trust request bodies
 - Keep business logic in services; keep controllers thin
 - Write user-facing error messages in **Vietnamese**, matching the codebase (e.g. `'Không tìm thấy dữ liệu!'`)
+- **Prioritize reading and reusing the shared helpers in [src/common/utils/](../../src/common/utils/)** before writing new logic — especially date handling (current date, add days, formatting, comparison), strings, validation, numbers, and objects. Never re-implement a helper that already exists.
 
 ## Project Tech Stack (verify against package.json)
 ```
@@ -83,6 +84,21 @@ Four global guards run in order: JWT → `RolesGuard` → `PropertyAccessGuard` 
 - `@AutoCrudPermissions('FEATURE_NODE')` — maps create→CREATE, get/getAll→VIEW, update→EDIT, delete→DELETE permission nodes.
 - `@AllowAnonymous()` — opt a route out of auth (rare; e.g. login/refresh).
 - Access is scoped **per property** (`UserRole` links user↔role↔property), not globally.
+
+### Shared utilities (read before coding — [src/common/utils/](../../src/common/utils/))
+**Always check the `utils/` folder before writing date/string/number/validation logic** to reuse existing helpers, avoid duplication, and keep behavior consistent across the app. Import via the `src/common/utils` barrel (except `number.utils`, which is imported directly since it is not re-exported in `index.ts` yet).
+
+- **Date** ([date.utils.ts](../../src/common/utils/date.utils.ts)) — **mandatory for all date handling**:
+  `getCurrentDate(isClient?)`, `getCurrentTimestamp()`, `toISOString(date)`, `convertDateToString(date)`,
+  `formatVietnameseDate(date)` (dd/mm/yyyy), `addDays(date, days)`, `isToday(date)`,
+  `getEndOfMonth(date)`, `getDaysInMonth(date)`, `diffDays(a, b)`, `getDateWithoutTime(date)`.
+  Do not scatter raw `new Date()` calls or compute dates by hand — call the existing helpers.
+- **String** ([string.utils.ts](../../src/common/utils/string.utils.ts)): `removeAccents`, `toSlug`, `capitalizeWords`, `generateRandomString`, `isEmptyOrWhitespace`.
+- **Validation** ([validation.utils.ts](../../src/common/utils/validation.utils.ts)): `isValidEmail`, `isValidVietnamesePhone`, `isValidVietnameseIdCard`, `isNumeric`, `isNotEmpty`.
+- **Number** ([number.utils.ts](../../src/common/utils/number.utils.ts)): `roundMoney(number)` — use for money calculations.
+- **Object** ([object.utils.ts](../../src/common/utils/object.utils.ts)): `isMethodOverridden`, `getAllPropertyNames`, `deepClone`, `deepEqual`.
+
+If a needed shared helper does not exist yet, **add it to the appropriate `utils/` file + export it in `index.ts` + update [utils/README.md](../../src/common/utils/README.md)** instead of inlining it in a service.
 
 ## Reference Templates (from the `property` module)
 
@@ -322,6 +338,7 @@ Register the module in [app.module.ts](../../src/app.module.ts).
 - [ ] Endpoint shows correctly in Swagger (`npm run start:dev` → `/api`)
 - [ ] Correct `@Roles` + `@AutoCrudPermissions` node applied; any `@AllowAnonymous` is intentional
 - [ ] Row-level scoping (`globalQuery`) applied where data must be user/owner-isolated
+- [ ] Reused shared helpers in `src/common/utils/` (especially date handling) instead of re-implementing them
 - [ ] Migration generated & runs cleanly if the schema changed
 - [ ] Error messages are meaningful (Vietnamese, matching existing style)
 
