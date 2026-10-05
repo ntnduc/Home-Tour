@@ -1,6 +1,5 @@
 import { logout } from "@/api/auth/api";
 import ButtonAction from "@/components/ButtomAction";
-import { useTheme } from "@/theme/ThemeProvider";
 import { User } from "@/types/user";
 import { getStoreUser } from "@/utils/appUtil";
 import { useNavigation } from "@react-navigation/native";
@@ -19,7 +18,6 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const ProfileScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const theme = useTheme();
   const [user, setUser] = React.useState<User | undefined>(undefined);
 
   React.useEffect(() => {
@@ -61,19 +59,15 @@ const ProfileScreen = () => {
         {/* Header */}
         <View className="bg-[rgba(0,0,0,0.03)] p-4 rounded-lg gap-4">
           <View className="flex-row justify-center">
-            <Avatar>
-              {/* <Ionicons
-                  name="person-circle"
-                  size={40}
-                  color={theme.color.val}
-                /> */}
-            </Avatar>
+            <Avatar />
           </View>
           <View className="gap-2 items-center">
-            {/* <Text color={theme.theme.colors.primary.main}>{user?.fullName || "Chưa cập nhật"}</H3> */}
-            {/* <Paragraph color={theme.theme.colors.primary.main}>
-                {user?.phoneNumber || "Chưa cập nhật"}
-              </Paragraph> */}
+            <Text className="text-xl font-bold text-primary">
+              {user?.fullName || "Chưa cập nhật"}
+            </Text>
+            <Text className="text-foreground-muted">
+              {user?.phoneNumber || "Chưa cập nhật"}
+            </Text>
           </View>
         </View>
 

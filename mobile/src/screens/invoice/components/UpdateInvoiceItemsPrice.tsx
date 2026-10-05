@@ -1,4 +1,5 @@
 import Input from "@/components/Input";
+import { tokens } from "@/theme";
 import { InvoiceDetailResponse } from "@/types/invoice";
 import {
   InvoiceItemDetailResponse,
@@ -97,7 +98,7 @@ const UpdateInvoiceItemsPrice = forwardRef<UpdateInvoiceItemsPriceRef, Props>(
                         : "construct-outline"
                     }
                     size={16}
-                    color="#6B7280"
+                    color={tokens.colors.muted}
                   />
                 </View>
                 <View className="flex-1">

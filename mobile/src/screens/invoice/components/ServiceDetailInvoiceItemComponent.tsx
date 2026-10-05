@@ -1,3 +1,4 @@
+import { tokens } from "@/theme";
 import {
   SERVICE_CALCULATE_METHOD_WITH_INFO,
   ServiceCalculateMethod,
@@ -46,14 +47,14 @@ const ServiceDetailInvoiceItemComponent = ({ data, isLast = false }: ServiceView
       className={`flex-row items-start py-3 ${!isLast ? 'border-b border-gray-100' : ''}`}
     >
       <View className="flex-row flex-1">
-        <Ionicons name="checkmark-circle" size={18} color="#34C759" />
+        <Ionicons name="checkmark-circle" size={18} color={tokens.colors.success} />
         <View className="ml-3 flex-1">
           <Text className="text-base font-semibold text-gray-900" numberOfLines={1}>
             {item.name || 'Dịch vụ'}
           </Text>
 
           <View>
-            <Text className="text-sm font-semibold text-blue-700 italic">
+            <Text className="text-sm font-semibold text-info italic">
               {formatCurrency((item.amount || 0).toString())} đ{unitLabel}
             </Text>
 

@@ -71,7 +71,7 @@ const ConfirmPaymentInvoice = forwardRef<ConfirmPaymentInvoiceRef, Props>(
         <View className="gap-2">
           <View>
             <Text className="text-sm text-gray-500 mb-1">Số tiền còn lại</Text>
-            <Text className="text-2xl font-bold text-blue-600">
+            <Text className="text-2xl font-bold text-info">
               {formatCurrency(invoice.remainingAmount.toString())}đ
             </Text>
           </View>

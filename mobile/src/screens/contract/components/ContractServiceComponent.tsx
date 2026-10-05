@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { tokens } from "@/theme";
 import React, {
   forwardRef,
   useCallback,
@@ -153,7 +154,7 @@ const ContractServiceComponent = forwardRef<
               className="mr-4"
               name={item.icon as any}
               size={17}
-              color="#6B7280"
+              color={tokens.colors.muted}
             />
             <Text style={styles.itemText}>{item.label}</Text>
           </View>
@@ -169,7 +170,7 @@ const ContractServiceComponent = forwardRef<
               className="mr-1"
               name={'information-circle-outline'}
               size={20}
-              color="#3B82F6"
+              color={tokens.colors.info}
             />
           </TouchableOpacity>
         </View>
@@ -371,7 +372,7 @@ const ContractServiceComponent = forwardRef<
                             name={findIconInOptions.icon as any}
                             size={18}
                             className="mr-3 ml-[-1px]"
-                            color="#6B7280"
+                            color={tokens.colors.muted}
                           />
                         );
                       }
@@ -382,7 +383,7 @@ const ContractServiceComponent = forwardRef<
                           name={value.icon as any}
                           size={18}
                           className="mr-3 ml-[-1px]"
-                          color="#6B7280"
+                          color={tokens.colors.muted}
                         />
                       );
                     }
@@ -447,13 +448,13 @@ const ContractServiceComponent = forwardRef<
             />
           </View>
 
-          <View className="bg-blue-50 rounded-2xl p-6 border border-blue-200 mb-6">
+          <View className="bg-info-surface rounded-2xl p-6 border border-info mb-6">
             <Text className="text-lg font-semibold text-gray-800 mb-4 text-center">
               Tóm tắt cấu hình
             </Text>
 
             <View className="space-y-3">
-              <View className="flex-row justify-between items-center py-2 border-b border-blue-200">
+              <View className="flex-row justify-between items-center py-2 border-b border-info">
                 <Text className="text-base text-gray-600 font-medium">
                   Phương thức:
                 </Text>
@@ -463,7 +464,7 @@ const ContractServiceComponent = forwardRef<
               </View>
 
               {helperValue && (
-                <View className="flex-row justify-between items-center py-2 border-b border-blue-200">
+                <View className="flex-row justify-between items-center py-2 border-b border-info">
                   <Text className="text-base text-gray-600 font-medium">
                     Số lượng / Giá trị:
                   </Text>
@@ -475,7 +476,7 @@ const ContractServiceComponent = forwardRef<
 
               {defaultValues?.calculationMethod !==
                 ServiceCalculateMethod.FREE && (
-                <View className="flex-row justify-between items-center py-2 border-b border-blue-200">
+                <View className="flex-row justify-between items-center py-2 border-b border-info">
                   <Text className="text-base text-gray-600 font-medium">
                     Giá dịch vụ:
                   </Text>

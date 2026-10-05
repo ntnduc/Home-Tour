@@ -1,3 +1,4 @@
+import { tokens } from "@/theme";
 import { register } from "@/api/auth/api";
 import { storage } from "@/utils/storage";
 import { Ionicons } from "@expo/vector-icons";
@@ -64,7 +65,7 @@ const RegisterScreen = ({ navigation, route }: RegisterScreenProps) => {
         <Ionicons
           name="person-add-outline"
           size={48}
-          color="#6a5af9"
+          color={tokens.colors.primary}
           style={{ alignSelf: "center", marginBottom: 8 }}
         />
         <Text style={styles.title}>Hoàn tất đăng ký</Text>
@@ -96,7 +97,7 @@ const RegisterScreen = ({ navigation, route }: RegisterScreenProps) => {
           onPress={() => navigation.goBack()}
         >
           <View style={styles.backButtonContent}>
-            <Ionicons name="chevron-back" size={18} color="#666" />
+            <Ionicons name="chevron-back" size={18} color={tokens.colors.muted} />
             <Text style={styles.backButtonText}>Quay lại</Text>
           </View>
         </TouchableOpacity>
@@ -119,7 +120,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   backButtonText: {
-    color: "#666",
+    color: tokens.colors.muted,
     fontSize: 15,
     fontWeight: "500",
     fontStyle: "italic",
@@ -129,12 +130,12 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: "bold",
     textAlign: "center",
-    color: "#222",
+    color: tokens.colors.foreground,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: "#666",
+    color: tokens.colors.muted,
     textAlign: "center",
     marginBottom: 28,
   },
@@ -143,24 +144,24 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 2,
-    borderColor: "#e0e0e0",
+    borderColor: tokens.palette.gray[300],
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    backgroundColor: "#f5f6fa",
+    backgroundColor: tokens.colors.surfaceMuted,
   },
   button: {
-    backgroundColor: "#6a5af9",
+    backgroundColor: tokens.colors.primary,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: "center",
     marginTop: 8,
-    shadowColor: "#6a5af9",
+    shadowColor: tokens.colors.primary,
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 2,
   },
-  buttonDisabled: { backgroundColor: "#ccc" },
+  buttonDisabled: { backgroundColor: tokens.palette.gray[400] },
   buttonText: {
     color: "#fff",
     fontSize: 16,

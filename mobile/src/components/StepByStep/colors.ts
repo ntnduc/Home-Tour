@@ -59,22 +59,22 @@ export const stepButtonVariants: Record<
   StepButtonVariantStyle
 > = {
   primary: {
-    container: "bg-[#6a5af9] border border-transparent",
+    container: "bg-primary border border-transparent",
     text: "text-white",
     contentColor: colors.neutral.white,
   },
   secondary: {
-    container: "bg-amber-500 border border-transparent",
+    container: "bg-warning border border-transparent",
     text: "text-white",
     contentColor: colors.neutral.white,
   },
   success: {
-    container: "bg-[#28a745] border border-transparent",
+    container: "bg-success border border-transparent",
     text: "text-white",
     contentColor: colors.neutral.white,
   },
   danger: {
-    container: "bg-[#dc3545] border border-transparent",
+    container: "bg-error border border-transparent",
     text: "text-white",
     contentColor: colors.neutral.white,
   },

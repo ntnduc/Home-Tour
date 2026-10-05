@@ -1,4 +1,5 @@
 import React from "react";
+import { tokens } from "@/theme";
 import { Text, View } from "react-native";
 
 const InvoiceHistoryScreen = () => {
@@ -333,7 +334,7 @@ export default InvoiceHistoryScreen;
 
 //         {item.status === PaymentStatus.OVERDUE && (
 //           <View style={styles.overdueWarning}>
-//             <Ionicons name="warning" size={16} color="#FF3B30" />
+//             <Ionicons name="warning" size={16} color={tokens.colors.error} />
 //             <Text style={styles.overdueWarningText}>
 //               Hóa đơn quá hạn {daysOverdue} ngày
 //             </Text>
@@ -358,7 +359,7 @@ export default InvoiceHistoryScreen;
 //               onPress={() => setShowFilterModal(false)}
 //               style={styles.closeButton}
 //             >
-//               <Ionicons name="close" size={24} color="#666" />
+//               <Ionicons name="close" size={24} color={tokens.colors.muted} />
 //             </TouchableOpacity>
 //           </View>
 
@@ -476,19 +477,19 @@ export default InvoiceHistoryScreen;
 //           <Text style={styles.statLabel}>Tổng</Text>
 //         </View>
 //         <View style={styles.statItem}>
-//           <Text style={[styles.statNumber, { color: "#FF3B30" }]}>
+//           <Text style={[styles.statNumber, { color: tokens.colors.error }]}>
 //             {stats.unpaid}
 //           </Text>
 //           <Text style={styles.statLabel}>Quá hạn</Text>
 //         </View>
 //         <View style={styles.statItem}>
-//           <Text style={[styles.statNumber, { color: "#FF9500" }]}>
+//           <Text style={[styles.statNumber, { color: tokens.palette.amber[500] }]}>
 //             {stats.pending}
 //           </Text>
 //           <Text style={styles.statLabel}>Chờ</Text>
 //         </View>
 //         <View style={styles.statItem}>
-//           <Text style={[styles.statNumber, { color: "#34C759" }]}>
+//           <Text style={[styles.statNumber, { color: tokens.colors.success }]}>
 //             {stats.paid}
 //           </Text>
 //           <Text style={styles.statLabel}>Đã thanh toán</Text>
@@ -515,7 +516,7 @@ export default InvoiceHistoryScreen;
 //         showsVerticalScrollIndicator={false}
 //         ListEmptyComponent={
 //           <View style={styles.emptyContainer}>
-//             <Ionicons name="receipt-outline" size={48} color="#ccc" />
+//             <Ionicons name="receipt-outline" size={48} color={tokens.palette.gray[400]} />
 //             <Text style={styles.emptyText}>Không có hóa đơn nào</Text>
 //           </View>
 //         }
@@ -529,7 +530,7 @@ export default InvoiceHistoryScreen;
 // const styles = StyleSheet.create({
 //   container: {
 //     flex: 1,
-//     backgroundColor: "#f8f9fa",
+//     backgroundColor: tokens.colors.surfaceMuted,
 //   },
 //   statsContainer: {
 //     flexDirection: "row",
@@ -551,12 +552,12 @@ export default InvoiceHistoryScreen;
 //   statNumber: {
 //     fontSize: 20,
 //     fontWeight: "bold",
-//     color: "#222",
+//     color: tokens.colors.foreground,
 //     marginBottom: 4,
 //   },
 //   statLabel: {
 //     fontSize: 12,
-//     color: "#666",
+//     color: tokens.colors.muted,
 //   },
 //   totalAmountContainer: {
 //     flexDirection: "row",
@@ -568,16 +569,16 @@ export default InvoiceHistoryScreen;
 //     marginTop: 8,
 //     borderRadius: 8,
 //     borderLeftWidth: 4,
-//     borderLeftColor: "#FF3B30",
+//     borderLeftColor: tokens.colors.error,
 //   },
 //   totalAmountLabel: {
 //     fontSize: 14,
-//     color: "#666",
+//     color: tokens.colors.muted,
 //   },
 //   totalAmountValue: {
 //     fontSize: 16,
 //     fontWeight: "bold",
-//     color: "#FF3B30",
+//     color: tokens.colors.error,
 //   },
 //   listContainer: {
 //     padding: 16,
@@ -602,17 +603,17 @@ export default InvoiceHistoryScreen;
 //   roomName: {
 //     fontSize: 16,
 //     fontWeight: "bold",
-//     color: "#222",
+//     color: tokens.colors.foreground,
 //     marginBottom: 2,
 //   },
 //   tenantName: {
 //     fontSize: 14,
-//     color: "#666",
+//     color: tokens.colors.muted,
 //     marginBottom: 2,
 //   },
 //   monthText: {
 //     fontSize: 12,
-//     color: "#888",
+//     color: tokens.colors.subtle,
 //   },
 //   statusBadge: {
 //     paddingHorizontal: 8,
@@ -625,7 +626,7 @@ export default InvoiceHistoryScreen;
 //   },
 //   invoiceDetails: {
 //     borderTopWidth: 1,
-//     borderTopColor: "#f0f0f0",
+//     borderTopColor: tokens.colors.border,
 //     paddingTop: 12,
 //   },
 //   detailRow: {
@@ -636,34 +637,34 @@ export default InvoiceHistoryScreen;
 //   },
 //   detailLabel: {
 //     fontSize: 13,
-//     color: "#666",
+//     color: tokens.colors.muted,
 //   },
 //   detailValue: {
 //     fontSize: 13,
 //     fontWeight: "500",
-//     color: "#222",
+//     color: tokens.colors.foreground,
 //   },
 //   amountText: {
 //     fontSize: 15,
 //     fontWeight: "bold",
-//     color: "#007AFF",
+//     color: tokens.colors.primary,
 //   },
 //   overdueText: {
 //     fontSize: 13,
 //     fontWeight: "500",
-//     color: "#FF3B30",
+//     color: tokens.colors.error,
 //   },
 //   overdueWarning: {
 //     flexDirection: "row",
 //     alignItems: "center",
-//     backgroundColor: "#FFECEC",
+//     backgroundColor: tokens.colors.errorSurface,
 //     padding: 8,
 //     borderRadius: 8,
 //     marginTop: 8,
 //   },
 //   overdueWarningText: {
 //     fontSize: 12,
-//     color: "#FF3B30",
+//     color: tokens.colors.error,
 //     marginLeft: 4,
 //     fontWeight: "500",
 //   },
@@ -673,7 +674,7 @@ export default InvoiceHistoryScreen;
 //   },
 //   emptyText: {
 //     fontSize: 16,
-//     color: "#888",
+//     color: tokens.colors.subtle,
 //     marginTop: 16,
 //   },
 //   modalOverlay: {
@@ -693,12 +694,12 @@ export default InvoiceHistoryScreen;
 //     alignItems: "center",
 //     padding: 20,
 //     borderBottomWidth: 1,
-//     borderBottomColor: "#f0f0f0",
+//     borderBottomColor: tokens.colors.border,
 //   },
 //   modalTitle: {
 //     fontSize: 18,
 //     fontWeight: "bold",
-//     color: "#222",
+//     color: tokens.colors.foreground,
 //   },
 //   closeButton: {
 //     padding: 4,
@@ -706,12 +707,12 @@ export default InvoiceHistoryScreen;
 //   filterSection: {
 //     padding: 20,
 //     borderBottomWidth: 1,
-//     borderBottomColor: "#f0f0f0",
+//     borderBottomColor: tokens.colors.border,
 //   },
 //   filterSectionTitle: {
 //     fontSize: 16,
 //     fontWeight: "600",
-//     color: "#222",
+//     color: tokens.colors.foreground,
 //     marginBottom: 12,
 //   },
 //   filterOptions: {
@@ -724,16 +725,16 @@ export default InvoiceHistoryScreen;
 //     paddingVertical: 6,
 //     borderRadius: 16,
 //     borderWidth: 1,
-//     borderColor: "#E0E0E0",
+//     borderColor: tokens.palette.gray[300],
 //     backgroundColor: "#fff",
 //   },
 //   filterOptionActive: {
-//     backgroundColor: "#007AFF",
-//     borderColor: "#007AFF",
+//     backgroundColor: tokens.colors.primary,
+//     borderColor: tokens.colors.primary,
 //   },
 //   filterOptionText: {
 //     fontSize: 12,
-//     color: "#666",
+//     color: tokens.colors.muted,
 //   },
 //   filterOptionTextActive: {
 //     color: "#fff",
@@ -749,19 +750,19 @@ export default InvoiceHistoryScreen;
 //     paddingVertical: 12,
 //     borderRadius: 8,
 //     borderWidth: 1,
-//     borderColor: "#E0E0E0",
+//     borderColor: tokens.palette.gray[300],
 //     alignItems: "center",
 //   },
 //   resetButtonText: {
 //     fontSize: 14,
-//     color: "#666",
+//     color: tokens.colors.muted,
 //     fontWeight: "500",
 //   },
 //   applyButton: {
 //     flex: 1,
 //     paddingVertical: 12,
 //     borderRadius: 8,
-//     backgroundColor: "#007AFF",
+//     backgroundColor: tokens.colors.primary,
 //     alignItems: "center",
 //   },
 //   applyButtonText: {

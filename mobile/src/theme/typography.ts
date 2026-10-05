@@ -1,72 +1,28 @@
+import { fontSize, fontWeight, lineHeight } from "./tokens";
+
+/**
+ * TYPOGRAPHY TOKENS — thang chữ dùng chung.
+ * fontSize/lineHeight/fontWeight lấy từ `./tokens` để đồng bộ tailwind.config.js.
+ */
 export const typography = {
-  // Font families
   fontFamily: {
     regular: "System",
     medium: "System",
     bold: "System",
   },
 
-  // Font sizes
-  fontSize: {
-    xs: 12,
-    sm: 14,
-    md: 16,
-    lg: 18,
-    xl: 20,
-    xxl: 24,
-    xxxl: 32,
-  },
+  fontSize,
+  lineHeight,
+  fontWeight,
 
-  // Line heights
-  lineHeight: {
-    xs: 16,
-    sm: 20,
-    md: 24,
-    lg: 28,
-    xl: 32,
-    xxl: 36,
-    xxxl: 40,
-  },
-
-  // Font weights
-  fontWeight: {
-    regular: "400",
-    medium: "500",
-    bold: "700",
-  },
-
-  // Text styles
+  // Text styles dựng sẵn
   text: {
-    h1: {
-      fontSize: 32,
-      lineHeight: 40,
-      fontWeight: "700",
-    },
-    h2: {
-      fontSize: 24,
-      lineHeight: 32,
-      fontWeight: "700",
-    },
-    h3: {
-      fontSize: 20,
-      lineHeight: 28,
-      fontWeight: "700",
-    },
-    body1: {
-      fontSize: 16,
-      lineHeight: 24,
-      fontWeight: "400",
-    },
-    body2: {
-      fontSize: 14,
-      lineHeight: 20,
-      fontWeight: "400",
-    },
-    caption: {
-      fontSize: 12,
-      lineHeight: 16,
-      fontWeight: "400",
-    },
+    h1: { fontSize: fontSize.xxxl, lineHeight: lineHeight.xxxl, fontWeight: fontWeight.bold },
+    h2: { fontSize: fontSize.xxl, lineHeight: lineHeight.xxl, fontWeight: fontWeight.bold },
+    h3: { fontSize: fontSize.xl, lineHeight: lineHeight.xl, fontWeight: fontWeight.bold },
+    body1: { fontSize: fontSize.md, lineHeight: lineHeight.md, fontWeight: fontWeight.regular },
+    body2: { fontSize: fontSize.sm, lineHeight: lineHeight.sm, fontWeight: fontWeight.regular },
+    caption: { fontSize: fontSize.xs, lineHeight: lineHeight.xs, fontWeight: fontWeight.regular },
   },
 } as const;
 

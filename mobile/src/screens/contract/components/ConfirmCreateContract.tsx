@@ -1,4 +1,5 @@
 import { createContract } from "@/api/contract/contract.api";
+import { tokens } from "@/theme";
 import {
   SERVICE_CALCULATE_METHOD_WITH_INFO,
   ServiceCalculateMethod,
@@ -141,7 +142,7 @@ const ConfirmCreateContract = forwardRef<
                     <Ionicons
                       name="alert-circle-outline"
                       size={18}
-                      color="#CA8A04"
+                      color={tokens.palette.amber[600]}
                     />
                     <Text className="text-sm text-yellow-700 ml-2 flex-1">
                       Hợp đồng chưa xác định ngày kết thúc. Vui lòng đảm bảo hai
@@ -167,7 +168,7 @@ const ConfirmCreateContract = forwardRef<
               <Ionicons
                 name="shield-checkmark-outline"
                 size={18}
-                color="#B45309"
+                color={tokens.palette.amber[700]}
               />
               <Text className="ml-2 text-sm font-semibold text-amber-700">
                 Tiền cọc phải thanh toán
@@ -226,7 +227,7 @@ const ConfirmCreateContract = forwardRef<
                   {contract.startDate ? formatDate(contract.startDate) : "-"}
                 </Text>
               </View>
-              <Ionicons name="arrow-forward" size={20} color="#6B7280" />
+              <Ionicons name="arrow-forward" size={20} color={tokens.colors.muted} />
               <View className="flex-1 items-end">
                 <Text className="text-sm text-gray-600 mb-1">
                   Ngày kết thúc
@@ -271,7 +272,7 @@ const ConfirmCreateContract = forwardRef<
                   <Ionicons
                     name="construct-outline"
                     size={22}
-                    color="#9CA3AF"
+                    color={tokens.colors.subtle}
                   />
                 </View>
                 <Text className="text-gray-500">Chưa có dịch vụ nào</Text>
@@ -295,7 +296,7 @@ const ConfirmCreateContract = forwardRef<
                               : "close-circle"
                           }
                           size={18}
-                          color={service.isEnabled ? "#34C759" : "#FF3B30"}
+                          color={service.isEnabled ? tokens.colors.success : tokens.colors.error}
                         />
                         <View className="ml-2 flex-1">
                           <Text className="text-base font-medium text-gray-900">

@@ -1,3 +1,4 @@
+import { tokens } from "@/theme";
 import { requestOTP, verifyOTP } from '@/api/auth/api';
 import { storage } from '@/utils/storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -103,13 +104,13 @@ const OTPVerificationScreen = ({
         <Ionicons
           name="shield-checkmark-outline"
           size={48}
-          color="#6a5af9"
+          color={tokens.colors.primary}
           style={{ alignSelf: 'center', marginBottom: 8 }}
         />
         <Text style={styles.title}>Xác thực OTP</Text>
         <Text style={styles.subtitle}>
           Nhập mã xác thực gồm 6 số đã gửi đến{'\n'}
-          <Text style={{ color: '#6a5af9', fontWeight: 'bold' }}>
+          <Text style={{ color: tokens.colors.primary, fontWeight: 'bold' }}>
             {phoneNumber}
           </Text>
         </Text>
@@ -163,7 +164,7 @@ const OTPVerificationScreen = ({
             onPress={() => navigation.goBack()}
           >
             <View style={styles.backButtonContent}>
-              <Ionicons name="chevron-back" size={18} color="#666" />
+              <Ionicons name="chevron-back" size={18} color={tokens.colors.muted} />
               <Text style={styles.backButtonText}>Quay lại</Text>
             </View>
           </TouchableOpacity>
@@ -180,12 +181,12 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     textAlign: 'center',
-    color: '#222',
+    color: tokens.colors.foreground,
     marginBottom: 12,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: tokens.colors.muted,
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 22,
@@ -201,30 +202,30 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderWidth: 1.5,
-    borderColor: '#e0e0e0',
+    borderColor: tokens.palette.gray[300],
     borderRadius: 12,
     textAlign: 'center',
     fontSize: 24,
-    color: '#222',
-    backgroundColor: '#f8f9fa',
+    color: tokens.colors.foreground,
+    backgroundColor: tokens.colors.surfaceMuted,
   },
   otpInputFilled: {
-    borderColor: '#6a5af9',
-    backgroundColor: '#eef1fd',
+    borderColor: tokens.colors.primary,
+    backgroundColor: tokens.colors.primaryMuted,
   },
   button: {
-    backgroundColor: '#6a5af9',
+    backgroundColor: tokens.colors.primary,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 8,
-    shadowColor: '#6a5af9',
+    shadowColor: tokens.colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 3,
   },
-  buttonDisabled: { backgroundColor: '#ccc' },
+  buttonDisabled: { backgroundColor: tokens.palette.gray[400] },
   buttonText: {
     color: '#fff',
     fontSize: 17,
@@ -241,7 +242,7 @@ const styles = StyleSheet.create({
   },
   resendButtonDisabled: { opacity: 0.5 },
   resendButtonText: {
-    color: '#6a5af9',
+    color: tokens.colors.primary,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -256,7 +257,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   backButtonText: {
-    color: '#666',
+    color: tokens.colors.muted,
     fontSize: 15,
     fontWeight: '500',
     fontStyle: 'italic',

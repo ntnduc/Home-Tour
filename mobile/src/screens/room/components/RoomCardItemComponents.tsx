@@ -1,5 +1,6 @@
 import CardComponent from "@/screens/common/CardComponent";
 import { colors } from "@/theme/colors";
+import { tokens } from "@/theme";
 import {
   CONTRACT_STATUS_COLOR,
   CONTRACT_STATUS_LABEL,
@@ -35,7 +36,7 @@ const DEFAULT_OVERDUE_ALERT_MESSAGE = "Phòng có công việc quá hạn cần 
 
 const CARD_ALERT_TONE = {
   foreground: colors.status.error,
-  background: "#FFF6F6",
+  background: tokens.colors.errorSurface,
   shadow: colors.status.error,
 };
 
@@ -50,7 +51,7 @@ const getActionTone = (severity: RoomAction["severity"]) => {
     case "warning":
       return {
         foreground: colors.status.warning,
-        background: "#FFF8E1",
+        background: tokens.colors.warningSurface,
         border: colors.status.warning,
       };
     case "normal":

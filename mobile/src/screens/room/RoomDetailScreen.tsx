@@ -5,6 +5,7 @@ import {
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { tokens } from "@/theme";
 import React from "react";
 import {
   FlatList,
@@ -36,14 +37,14 @@ const mockRoom = {
   availableDate: "2024-07-01",
   note: "Cần kiểm tra lại vòi nước.",
   utilities: [
-    { name: "Wifi", icon: <Feather name="wifi" size={18} color="#2563EB" /> },
+    { name: "Wifi", icon: <Feather name="wifi" size={18} color={tokens.colors.primary} /> },
     {
       name: "Máy lạnh",
-      icon: <Feather name="wind" size={18} color="#2563EB" />,
+      icon: <Feather name="wind" size={18} color={tokens.colors.primary} />,
     },
     {
       name: "WC riêng",
-      icon: <MaterialCommunityIcons name="toilet" size={18} color="#2563EB" />,
+      icon: <MaterialCommunityIcons name="toilet" size={18} color={tokens.colors.primary} />,
     },
     {
       name: "Tủ lạnh",
@@ -51,17 +52,17 @@ const mockRoom = {
         <MaterialCommunityIcons
           name="fridge-outline"
           size={18}
-          color="#2563EB"
+          color={tokens.colors.primary}
         />
       ),
     },
     {
       name: "Giường",
-      icon: <FontAwesome5 name="bed" size={18} color="#2563EB" />,
+      icon: <FontAwesome5 name="bed" size={18} color={tokens.colors.primary} />,
     },
     {
       name: "Ban công",
-      icon: <MaterialCommunityIcons name="balcony" size={18} color="#2563EB" />,
+      icon: <MaterialCommunityIcons name="balcony" size={18} color={tokens.colors.primary} />,
     },
   ],
   status: "RENTED", // "RENTED" | "AVAILABLE"
@@ -197,12 +198,12 @@ const RoomInfoCard = ({ room }: { room: typeof mockRoom }) => (
       <View
         className="px-3 py-1 rounded-full mr-2"
         style={{
-          backgroundColor: room.status === "RENTED" ? "#FFECEC" : "#E9F9EF",
+          backgroundColor: room.status === "RENTED" ? tokens.colors.errorSurface : tokens.colors.successSurface,
         }}
       >
         <Text
           className="text-xs font-semibold"
-          style={{ color: room.status === "RENTED" ? "#FF3B30" : "#34C759" }}
+          style={{ color: room.status === "RENTED" ? tokens.colors.error : tokens.colors.success }}
         >
           {room.status === "RENTED" ? "Đã thuê" : "Đang trống"}
         </Text>
@@ -274,10 +275,10 @@ const CurrentContractCard = ({
       <Ionicons
         name="document-text-outline"
         size={18}
-        color="#2563EB"
+        color={tokens.colors.primary}
         style={{ marginRight: 4 }}
       />
-      <Text className="text-sm font-semibold text-blue-600">
+      <Text className="text-sm font-semibold text-primary">
         Xem chi tiết hợp đồng
       </Text>
     </TouchableOpacity>
@@ -299,7 +300,7 @@ const CurrentResidentsCard = ({
         <Ionicons
           name="person-circle-outline"
           size={20}
-          color="#2563EB"
+          color={tokens.colors.primary}
           style={{ marginRight: 6 }}
         />
         <View>
@@ -334,7 +335,7 @@ const ViolationHistoryCard = ({
           <MaterialCommunityIcons
             name="alert-circle-outline"
             size={18}
-            color="#FF9500"
+            color={tokens.palette.amber[500]}
             style={{ marginRight: 6, marginTop: 2 }}
           />
           <View>
@@ -396,7 +397,7 @@ const ContractHistoryList = ({
           <Ionicons
             name="chevron-forward"
             size={18}
-            color="#9CA3AF"
+            color={tokens.colors.subtle}
             style={{ marginLeft: 8 }}
           />
         </TouchableOpacity>

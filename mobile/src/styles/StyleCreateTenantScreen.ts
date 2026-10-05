@@ -1,60 +1,61 @@
 import { StyleSheet } from "react-native";
+import { Tokens } from "@/theme";
 
-export const createStyles = (theme: any) =>
+export const createStyles = (tokens: Tokens) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: theme.background?.val,
+      backgroundColor: tokens.colors.surface,
     },
     label: {
       fontSize: 16,
       fontWeight: "600",
       marginBottom: 8,
-      color: theme.color?.val,
+      color: tokens.colors.foreground,
     },
     selectInput: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
       borderWidth: 1,
-      borderColor: theme.borderColor?.val,
+      borderColor: tokens.colors.borderStrong,
       borderRadius: 8,
       padding: 12,
-      backgroundColor: theme.background?.val,
+      backgroundColor: tokens.colors.surface,
     },
     selectText: {
       fontSize: 16,
-      color: theme.color?.val,
+      color: tokens.colors.foreground,
     },
     mapButton: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,
-      borderColor: theme.blue10?.val ?? "#007AFF",
+      borderColor: tokens.colors.primary,
       borderRadius: 8,
       padding: 12,
-      backgroundColor: theme.background?.val ?? "#fff",
+      backgroundColor: tokens.colors.surface,
     },
     mapButtonText: {
       marginLeft: 8,
       fontSize: 16,
-      color: theme.blue10?.val ?? "#007AFF",
+      color: tokens.colors.primary,
     },
     imageButton: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,
-      borderColor: theme.blue10?.val ?? "#007AFF",
+      borderColor: tokens.colors.primary,
       borderRadius: 8,
       padding: 12,
-      backgroundColor: theme.background?.val ?? "#fff",
+      backgroundColor: tokens.colors.surface,
     },
     imageButtonText: {
       marginLeft: 8,
       fontSize: 16,
-      color: theme.blue10?.val ?? "#007AFF",
+      color: tokens.colors.primary,
     },
     addServiceButton: {
       flexDirection: "row",
@@ -74,21 +75,21 @@ export const createStyles = (theme: any) =>
       width: 36,
       height: 36,
       borderRadius: 18,
-      backgroundColor: theme.blue2?.val ?? "#e3f2fd",
+      backgroundColor: tokens.colors.primaryMuted,
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,
-      borderColor: theme.blue4?.val ?? "#bbdefb",
+      borderColor: tokens.palette.brand[200],
     },
     requiredText: {
-      color: theme.red10?.val ?? "#ff3b30",
+      color: tokens.colors.error,
       fontSize: 16,
     },
     errorInput: {
-      borderColor: theme.red10?.val ?? "#ff3b30",
+      borderColor: tokens.colors.error,
     },
     errorText: {
-      color: theme.red10?.val ?? "#ff3b30",
+      color: tokens.colors.error,
     },
     removeServiceButton: {
       padding: 4,
@@ -96,11 +97,11 @@ export const createStyles = (theme: any) =>
     },
     priceTypeContainer: {
       flexDirection: "row",
-      backgroundColor: theme.gray2?.val ?? "#f8f9fa",
+      backgroundColor: tokens.colors.surfaceMuted,
       borderRadius: 8,
       padding: 2,
       borderWidth: 1,
-      borderColor: theme.gray4?.val ?? "#e9ecef",
+      borderColor: tokens.palette.gray[200],
     },
     priceTypeButton: {
       flex: 1,
@@ -113,8 +114,8 @@ export const createStyles = (theme: any) =>
       gap: 6,
     },
     priceTypeButtonActive: {
-      backgroundColor: theme.blue10?.val ?? "#007AFF",
-      shadowColor: theme.blue10?.val ?? "#007AFF",
+      backgroundColor: tokens.colors.primary,
+      shadowColor: tokens.colors.primary,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.2,
       shadowRadius: 4,
@@ -122,14 +123,14 @@ export const createStyles = (theme: any) =>
     },
     priceTypeButtonText: {
       fontSize: 13,
-      color: theme.gray11?.val ?? "#666",
+      color: tokens.colors.muted,
       fontWeight: "500",
     },
     priceTypeButtonTextActive: {
-      color: theme.background?.val,
+      color: tokens.colors.surface,
     },
     submitButton: {
-      backgroundColor: theme.blue10?.val ?? "#6a5af9",
+      backgroundColor: tokens.colors.primary,
       paddingVertical: 16,
       borderRadius: 8,
       alignItems: "center",
@@ -137,7 +138,7 @@ export const createStyles = (theme: any) =>
       marginTop: 0,
     },
     submitButtonText: {
-      color: theme.background?.val,
+      color: tokens.colors.surface,
       fontSize: 16,
       fontWeight: "600",
     },
@@ -258,31 +259,31 @@ export const createStyles = (theme: any) =>
       justifyContent: "space-between",
       paddingVertical: 10,
       paddingHorizontal: 12,
-      backgroundColor: theme.background?.val ?? "#fff",
+      backgroundColor: tokens.colors.surface,
       borderRadius: 8,
       borderWidth: 1,
-      borderColor: theme.gray4?.val ?? "#e9ecef",
+      borderColor: tokens.palette.gray[200],
       marginBottom: 8,
     },
     calculationMethodButtonActive: {
-      backgroundColor: theme.blue10?.val ?? "#007AFF",
-      borderColor: theme.blue10?.val ?? "#007AFF",
+      backgroundColor: tokens.colors.primary,
+      borderColor: tokens.colors.primary,
     },
     methodTitle: {
       fontSize: 14,
       fontWeight: "500",
-      color: theme.color?.val ?? "#333",
+      color: tokens.colors.foreground,
       marginLeft: 4,
     },
     methodTitleActive: {
-      color: theme.background?.val ?? "#fff",
+      color: tokens.colors.surface,
     },
     methodDescription: {
       fontSize: 14,
-      color: theme.gray11?.val ?? "#666",
+      color: tokens.colors.muted,
     },
     methodDescriptionActive: {
-      color: theme.background?.val ?? "#fff",
+      color: tokens.colors.surface,
     },
     methodDetailButton: {
       padding: 4,
@@ -296,7 +297,7 @@ export const createStyles = (theme: any) =>
     },
     expandButtonText: {
       fontSize: 14,
-      color: theme.blue10?.val ?? "#007AFF",
+      color: tokens.colors.primary,
       fontWeight: "500",
     },
     removeServiceItemButton: {

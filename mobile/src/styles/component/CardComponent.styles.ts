@@ -1,22 +1,22 @@
-import { colors } from "@/theme/colors";
+import { tokens } from "@/theme";
 import { StyleSheet } from "react-native";
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.background?.default || "#fff",
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: tokens.colors.surface,
+    borderRadius: tokens.radius.lg,
+    padding: tokens.spacing.md,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: tokens.spacing.sm,
   },
   title: {
     fontSize: 17,
     fontWeight: "bold",
-    color: colors.text.primary || "#1F2937",
+    color: tokens.colors.foreground,
   },
   actionsContainer: {
     flexDirection: "row",
@@ -28,49 +28,44 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: tokens.colors.surfaceMuted,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: tokens.palette.gray[300],
     marginLeft: 4,
   },
   viewButton: {
-    backgroundColor: "#F3F4F6",
-    borderColor: "#E5E7EB",
+    backgroundColor: tokens.colors.surfaceMuted,
+    borderColor: tokens.palette.gray[300],
   },
   renewButton: {
-    backgroundColor: "#F0FDF4",
-    borderColor: "#BBF7D0",
+    backgroundColor: tokens.colors.successSurface,
+    borderColor: tokens.palette.green[200],
   },
   terminateButton: {
-    backgroundColor: "#FEF2F2",
-    borderColor: "#FECACA",
+    backgroundColor: tokens.colors.errorSurface,
+    borderColor: tokens.palette.red[200],
   },
   editButton: {
-    backgroundColor: "#FFF7ED",
-    borderColor: "#FED7AA",
+    backgroundColor: tokens.colors.warningSurface,
+    borderColor: tokens.palette.amber[200],
   },
   deleteButton: {
-    backgroundColor: "#FEF2F2",
-    borderColor: "#FECACA",
+    backgroundColor: tokens.colors.errorSurface,
+    borderColor: tokens.palette.red[200],
   },
   body: {
     // body có thể tuỳ chỉnh thêm nếu cần
   },
   footer: {
-    marginTop: 8,
+    marginTop: tokens.spacing.sm,
   },
   statusBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: tokens.spacing.sm,
     paddingVertical: 4,
-    borderRadius: 12,
-    marginBottom: 8,
-    // marginLeft: 8,
-    // alignSelf: 'center',
-    // position: 'absolute',
-    // right: -80,
-    // top: -35,
+    borderRadius: tokens.radius.lg,
+    marginBottom: tokens.spacing.sm,
   },
   statusText: {
     fontSize: 12,
@@ -78,7 +73,7 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 13,
-    color: "#6B7280", // màu phụ
+    color: tokens.colors.muted,
     marginTop: 2,
     fontStyle: "italic",
   },

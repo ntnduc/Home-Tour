@@ -1,4 +1,5 @@
 import ActionButtonBottom from "@/components/ActionButtonBottom";
+import { tokens } from "@/theme";
 import DatePicker from "@/components/DatePicker";
 import Input from "@/components/Input";
 import Loading from "@/components/Loading";
@@ -359,7 +360,7 @@ const CreateContractForm = forwardRef<
               </View>
               <View className="items-end">
                 <Text className="text-xs text-gray-500 mb-1">Giá thuê</Text>
-                <Text className="text-lg font-bold text-blue-600">
+                <Text className="text-lg font-bold text-info">
                   {formatCurrency(roomData?.rentAmount?.toString() || "0")}
                   đ/tháng
                 </Text>
@@ -627,11 +628,11 @@ const CreateContractForm = forwardRef<
             title="Dịch vụ"
             renderActions={() => (
               <TouchableOpacity
-                className="flex-row items-center px-3 py-2 rounded-full bg-blue-50 border border-blue-200"
+                className="flex-row items-center px-3 py-2 rounded-full bg-info-surface border border-info"
                 onPress={handleAddService}
               >
-                <Ionicons name="add-circle-outline" size={18} color="#2563EB" />
-                <Text className="ml-2 text-sm font-medium text-blue-600">
+                <Ionicons name="add-circle-outline" size={18} color={tokens.colors.info} />
+                <Text className="ml-2 text-sm font-medium text-info">
                   Thêm dịch vụ
                 </Text>
               </TouchableOpacity>
@@ -643,7 +644,7 @@ const CreateContractForm = forwardRef<
                   <Ionicons
                     name="construct-outline"
                     size={24}
-                    color="#9CA3AF"
+                    color={tokens.colors.subtle}
                   />
                 </View>
                 <Text className="text-gray-500 text-base mb-2">

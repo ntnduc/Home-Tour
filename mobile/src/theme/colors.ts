@@ -1,64 +1,68 @@
+import { palette } from "./primitives";
+import { semanticColors } from "./semantic";
+
+/**
+ * @deprecated Bảng màu CŨ (cấu trúc lồng nhau). Được giữ lại làm ALIAS tương
+ * thích ngược cho các file đang import `{ colors }` trong lúc migrate dần.
+ *
+ * Giá trị được DERIVE từ `./primitives` + `./semantic` để chỉ còn MỘT nguồn
+ * chân lý. Code mới KHÔNG dùng file này — hãy dùng class Tailwind semantic
+ * (vd `bg-primary`, `text-muted`) hoặc `tokens` từ `@/theme`.
+ */
 export const colors = {
-  // Primary colors
   primary: {
-    main: "#6a5af9",
-    light: "#eef1fd",
-    dark: "#4a3fd9",
+    main: palette.brand[500],
+    light: palette.brand[50],
+    dark: palette.brand[700],
   },
 
-  // Secondary colors
   secondary: {
-    main: "#ff4d4d",
-    light: "#ffe5e5",
-    dark: "#e63d3d",
+    main: palette.red[500],
+    light: palette.red[50],
+    dark: palette.red[600],
   },
 
-  // Neutral colors
   neutral: {
-    white: "#ffffff",
-    black: "#000000",
+    white: palette.white,
+    black: palette.black,
     gray: {
-      100: "#f8f9fa",
-      200: "#f0f0f0",
-      300: "#e9ecef",
-      400: "#dee2e6",
-      500: "#adb5bd",
-      600: "#6c757d",
-      700: "#495057",
-      800: "#343a40",
-      900: "#212529",
+      100: palette.gray[50],
+      200: palette.gray[100],
+      300: palette.gray[200],
+      400: palette.gray[300],
+      500: palette.gray[500],
+      600: palette.gray[600],
+      700: palette.gray[700],
+      800: palette.gray[800],
+      900: palette.gray[900],
     },
   },
 
-  // Text colors
   text: {
-    primary: "#333333",
-    secondary: "#666666",
-    disabled: "#999999",
-    inverse: "#ffffff",
+    primary: semanticColors.foreground,
+    secondary: semanticColors.muted,
+    disabled: semanticColors.subtle,
+    inverse: semanticColors.onInverse,
   },
 
-  // Background colors
   background: {
-    default: "#ffffff",
-    paper: "#f8f9fa",
-    dark: "#212529",
+    default: semanticColors.surface,
+    paper: semanticColors.surfaceMuted,
+    dark: palette.gray[900],
   },
 
-  // Status colors
   status: {
-    draft: "#6B7280",
-    success: "#28a745",
-    warning: "#ffc107",
-    error: "#dc3545",
-    info: "#17a2b8",
+    draft: semanticColors.draft,
+    success: semanticColors.success,
+    warning: semanticColors.warning,
+    error: palette.red[700],
+    info: palette.blue[700],
   },
 
-  // Border colors
   border: {
-    light: "#f0f0f0",
-    main: "#dee2e6",
-    dark: "#adb5bd",
+    light: semanticColors.border,
+    main: semanticColors.borderStrong,
+    dark: palette.gray[500],
   },
 } as const;
 

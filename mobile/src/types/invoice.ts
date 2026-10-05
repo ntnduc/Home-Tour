@@ -1,4 +1,5 @@
 import { StatusOption } from "@/components/Status";
+import { statusColor } from "@/theme";
 import { ContractDetailResponse } from "./contract";
 import {
   InvoiceItemCreateRequest,
@@ -92,12 +93,12 @@ export const INVOICE_STATUS_COLOR: Record<
   InvoiceStatus,
   { bg: string; color: string }
 > = {
-  [InvoiceStatus.DRAFT]: { bg: "#F3F4F6", color: "#6B7280" },
-  [InvoiceStatus.PENDING]: { bg: "#FFF6E5", color: "#FF9500" },
-  [InvoiceStatus.PAID]: { bg: "#E9F9EF", color: "#34C759" },
-  [InvoiceStatus.PARTIALLY_PAID]: { bg: "#E3F2FD", color: "#1976D2" },
-  [InvoiceStatus.OVERDUE]: { bg: "#FFECEC", color: "#FF3B30" },
-  [InvoiceStatus.CANCELLED]: { bg: "#F2F2F2", color: "#8E8E93" },
+  [InvoiceStatus.DRAFT]: statusColor.draft,
+  [InvoiceStatus.PENDING]: statusColor.pending,
+  [InvoiceStatus.PAID]: statusColor.success,
+  [InvoiceStatus.PARTIALLY_PAID]: statusColor.info,
+  [InvoiceStatus.OVERDUE]: statusColor.error,
+  [InvoiceStatus.CANCELLED]: statusColor.cancelled,
 };
 
 export const INVOICE_STATUS_OPTIONS: StatusOption[] = [

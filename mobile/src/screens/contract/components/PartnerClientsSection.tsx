@@ -1,4 +1,5 @@
 import CardComponent from "@/screens/common/CardComponent";
+import { tokens } from "@/theme";
 import { ClientCreateRequest } from "@/types/client";
 import { cn } from "@/utils/appUtil";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -27,14 +28,14 @@ const PartnerClientsSection: React.FC<PartnerClientsSectionProps> = ({
       className={cn({
         "border border-red-400": error,
       })}
-      style={{ borderColor: "#ef4444" }}
+      style={{ borderColor: tokens.colors.error }}
       title="Người ở cùng"
       renderActions={() => (
         <TouchableOpacity
           className="flex-row items-center px-3 py-2 rounded-full bg-emerald-50 border border-emerald-200"
           onPress={onAdd}
         >
-          <Ionicons name="person-add-outline" size={18} color="#059669" />
+          <Ionicons name="person-add-outline" size={18} color={tokens.colors.success} />
           <Text className="ml-2 text-sm font-medium text-emerald-700">
             Thêm người ở cùng
           </Text>
@@ -43,7 +44,7 @@ const PartnerClientsSection: React.FC<PartnerClientsSectionProps> = ({
     >
       {!hasCompanion ? (
         <View className="items-center justify-center py-6">
-          <Ionicons name="people-circle-outline" size={40} color="#9CA3AF" />
+          <Ionicons name="people-circle-outline" size={40} color={tokens.colors.subtle} />
           <Text className="mt-3 text-sm text-gray-500">
             Chưa thêm người ở cùng nào
           </Text>
@@ -78,9 +79,9 @@ const PartnerClientsSection: React.FC<PartnerClientsSectionProps> = ({
                   <View className="flex-row items-center">
                     <TouchableOpacity
                       onPress={() => onEdit(idx)}
-                      className="px-2 py-1 mr-2 rounded-full bg-blue-50"
+                      className="px-2 py-1 mr-2 rounded-full bg-info-surface"
                     >
-                      <Text className="text-xs font-medium text-blue-600">
+                      <Text className="text-xs font-medium text-info">
                         Cập nhật
                       </Text>
                     </TouchableOpacity>
