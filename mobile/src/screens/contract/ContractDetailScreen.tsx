@@ -1,4 +1,5 @@
 import { getContract } from '@/api/contract/contract.api';
+import { tokens } from "@/theme";
 import ActionButtonBottom from '@/components/ActionButtonBottom';
 import DisplayField from '@/components/DisplayField';
 import Loading from '@/components/Loading';
@@ -180,7 +181,7 @@ const ContractDetailScreen = ({
         {/* Cảnh báo nếu không có ngày kết thúc */}
         {!contract.endDate && (
           <View className="flex-row items-center w-full bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
-            <Ionicons name="alert-circle-outline" size={18} color="#CA8A04" />
+            <Ionicons name="alert-circle-outline" size={18} color={tokens.palette.amber[600]} />
             <Text className="text-sm text-yellow-700 ml-2 flex-1">
               Hợp đồng chưa xác định ngày kết thúc. Vui lòng đảm bảo hai bên đã
               thống nhất.
@@ -267,7 +268,7 @@ const ContractDetailScreen = ({
                 strong
               />
             </View>
-            <Ionicons name="arrow-forward" size={20} color="#6B7280" />
+            <Ionicons name="arrow-forward" size={20} color={tokens.colors.muted} />
             <View className="flex-1 items-end">
               <DisplayField
                 label="Ngày kết thúc"
@@ -288,17 +289,17 @@ const ContractDetailScreen = ({
               <View
                 className={`rounded-lg p-3 border ${daysRemaining <= 7
                   ? 'bg-yellow-50 border-yellow-200'
-                  : 'bg-blue-50 border-blue-200'
+                  : 'bg-info-surface border-info'
                   }`}
               >
                 <Text
-                  className={`text-sm font-semibold mb-1 ${daysRemaining <= 7 ? 'text-yellow-800' : 'text-blue-800'
+                  className={`text-sm font-semibold mb-1 ${daysRemaining <= 7 ? 'text-yellow-800' : 'text-info'
                     }`}
                 >
                   Thời gian còn lại:
                 </Text>
                 <Text
-                  className={`text-base font-bold ${daysRemaining <= 7 ? 'text-yellow-600' : 'text-blue-600'
+                  className={`text-base font-bold ${daysRemaining <= 7 ? 'text-yellow-600' : 'text-info'
                     }`}
                 >
                   {daysRemaining > 0
@@ -337,7 +338,7 @@ const ContractDetailScreen = ({
           {(contract.contractServices || []).length === 0 ? (
             <View className="flex-1 items-center justify-center py-8">
               <View className="w-14 h-14 bg-gray-100 rounded-full items-center justify-center mb-2">
-                <Ionicons name="construct-outline" size={22} color="#9CA3AF" />
+                <Ionicons name="construct-outline" size={22} color={tokens.colors.subtle} />
               </View>
               <Text className="text-gray-500">Chưa có dịch vụ nào</Text>
             </View>
@@ -357,7 +358,7 @@ const ContractDetailScreen = ({
                             : 'close-circle'
                         }
                         size={18}
-                        color={service.isEnabled ? '#34C759' : '#FF3B30'}
+                        color={service.isEnabled ? tokens.colors.success : tokens.colors.error}
                       />
                       <View className="ml-2 flex-1">
                         <Text className="text-base font-medium text-gray-900">
@@ -367,7 +368,7 @@ const ContractDetailScreen = ({
                           {/* <Ionicons
                               name={service.service.icon as any}
                               size={14}
-                              color="#9CA3AF"
+                              color={tokens.colors.subtle}
                             /> */}
                           {/* <Text className="text-xs text-gray-500 ml-1">
                             {formatCurrency(service.price)}đ/tháng
@@ -419,9 +420,9 @@ const ContractDetailScreen = ({
                   <Ionicons
                     name="document-text-outline"
                     size={16}
-                    color="#3B82F6"
+                    color={tokens.colors.info}
                   />
-                  <Text className="text-sm text-blue-600 ml-1">
+                  <Text className="text-sm text-info ml-1">
                     Xem hợp đồng
                   </Text>
                 </TouchableOpacity>

@@ -1,3 +1,4 @@
+import { tokens } from "@/theme";
 import {
   createPayment,
   getInvoice,
@@ -398,7 +399,7 @@ const InvoiceDetailScreen = ({
         {/* Cảnh báo quá hạn */}
         {(invoice.status === InvoiceStatus.OVERDUE || isOverdue) && (
           <View className="bg-red-50 rounded-xl p-3 border border-red-200 flex-row items-center">
-            <Ionicons name="warning" size={20} color="#FF3B30" />
+            <Ionicons name="warning" size={20} color={tokens.colors.error} />
             <View className="ml-3 flex-1">
               <Text className="text-sm font-semibold text-red-800">
                 Hóa đơn quá hạn
@@ -441,11 +442,11 @@ const InvoiceDetailScreen = ({
 
         {/* 2. Tóm tắt thanh toán - nổi bật */}
         <CardComponent>
-          <View className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <View className="bg-info-surface border border-info rounded-xl p-4">
             {/* Còn phải thu - nhấn mạnh */}
             <View className="flex-row items-center mb-2">
-              <Ionicons name="receipt-outline" size={20} color="#1E40AF" />
-              <Text className="ml-2 text-sm font-semibold text-blue-700">
+              <Ionicons name="receipt-outline" size={20} color={tokens.colors.info} />
+              <Text className="ml-2 text-sm font-semibold text-info">
                 {invoice.status === InvoiceStatus.PAID
                   ? "Đã thanh toán đủ"
                   : "Còn phải thu"}
@@ -455,7 +456,7 @@ const InvoiceDetailScreen = ({
               className={`text-3xl font-extrabold text-center ${
                 invoice.status === InvoiceStatus.PAID
                   ? "text-green-600"
-                  : "text-blue-700"
+                  : "text-info"
               }`}
             >
               {formatCurrency(
@@ -470,41 +471,41 @@ const InvoiceDetailScreen = ({
             {/* Thanh tiến trình */}
             {/* {invoice.totalAmount > 0 && (
               <View className="mt-3">
-                <View className="h-2 bg-blue-100 rounded-full overflow-hidden">
+                <View className="h-2 bg-info-surface rounded-full overflow-hidden">
                   <View
                     style={{
                       width: `${Math.min(paidPercentage, 100)}%`,
                       height: "100%",
                       backgroundColor:
                         invoice.status === InvoiceStatus.PAID
-                          ? "#22C55E"
-                          : "#2563EB",
+                          ? tokens.colors.success
+                          : tokens.colors.info,
                       borderRadius: 4,
                     }}
                   />
                 </View>
-                <Text className="text-xs text-blue-600 text-center mt-1">
+                <Text className="text-xs text-info text-center mt-1">
                   Đã thu {paidPercentage}%
                 </Text>
               </View>
             )} */}
 
             {/* Chi tiết số tiền */}
-            <View className="mt-3 pt-3 border-t border-blue-200">
+            <View className="mt-3 pt-3 border-t border-info">
               <View className="flex-row justify-between items-center mb-1">
-                <Text className="text-xs text-blue-600">Tổng tiền</Text>
-                <Text className="text-sm font-semibold text-blue-700">
+                <Text className="text-xs text-info">Tổng tiền</Text>
+                <Text className="text-sm font-semibold text-info">
                   {formatCurrency(invoice.totalAmount.toString())}đ
                 </Text>
               </View>
               <View className="flex-row justify-between items-center mb-1">
-                <Text className="text-xs text-blue-600">Đã thu</Text>
+                <Text className="text-xs text-info">Đã thu</Text>
                 <Text className="text-sm font-semibold text-green-600">
                   {formatCurrency(invoice.paidAmount.toString())}đ
                 </Text>
               </View>
               <View className="flex-row justify-between items-center">
-                <Text className="text-xs text-blue-600">Còn lại</Text>
+                <Text className="text-xs text-info">Còn lại</Text>
                 <Text
                   className={`text-sm font-bold ${
                     remainingAmount > 0 ? "text-red-600" : "text-green-600"
@@ -575,7 +576,7 @@ const InvoiceDetailScreen = ({
           {mappedServiceItems.length === 0 ? (
             <View className="flex-1 items-center justify-center py-8">
               <View className="w-14 h-14 bg-gray-100 rounded-full items-center justify-center mb-2">
-                <Ionicons name="construct-outline" size={22} color="#9CA3AF" />
+                <Ionicons name="construct-outline" size={22} color={tokens.colors.subtle} />
               </View>
               <Text className="text-gray-500">Không có dịch vụ nào</Text>
             </View>
@@ -610,7 +611,7 @@ const InvoiceDetailScreen = ({
             <View className="h-[1px] bg-gray-200 my-2" />
             <View className="flex-row justify-between items-center pt-2">
               <Text className="text-lg font-bold text-gray-900">Tổng cộng</Text>
-              <Text className="text-xl font-extrabold text-blue-600">
+              <Text className="text-xl font-extrabold text-info">
                 {formatCurrency(invoice.totalAmount.toString())}đ
               </Text>
             </View>
@@ -639,7 +640,7 @@ const InvoiceDetailScreen = ({
                         <Ionicons
                           name="checkmark-circle"
                           size={16}
-                          color="#22C55E"
+                          color={tokens.colors.success}
                         />
                         <Text className="text-sm font-medium text-gray-900 ml-2">
                           {formatDate(payment.paymentDate.toString())}

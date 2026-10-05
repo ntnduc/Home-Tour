@@ -1,4 +1,5 @@
 import { createInvoice } from "@/api/invoice/invoice.api";
+import { tokens } from "@/theme";
 import ActionButtonBottom from "@/components/ActionButtonBottom";
 import Loading from "@/components/Loading";
 import { ServiceCalculateMethod } from "@/constant/service.constant";
@@ -211,7 +212,7 @@ const ConfirmCreateInvoiceScreen = ({
               className="px-3 py-2 rounded-lg bg-white border border-gray-200"
             >
               <View className="flex-row items-center">
-                <Ionicons name="create-outline" size={16} color="#374151" />
+                <Ionicons name="create-outline" size={16} color={tokens.colors.foreground} />
                 <Text className="text-gray-700 text-sm font-medium ml-1">
                   Chỉnh sửa
                 </Text>
@@ -222,22 +223,22 @@ const ConfirmCreateInvoiceScreen = ({
 
         {/* Tổng tiền cần thu - nhấn mạnh */}
         <CardComponent>
-          <View className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <View className="bg-info-surface border border-info rounded-xl p-4">
             <View className="flex-row items-center justify-between mb-2">
               <View className="flex-row items-center">
-                <Ionicons name="receipt-outline" size={20} color="#1E40AF" />
-                <Text className="ml-2 text-sm font-semibold text-blue-700">
+                <Ionicons name="receipt-outline" size={20} color={tokens.colors.info} />
+                <Text className="ml-2 text-sm font-semibold text-info">
                   Tổng tiền cần thu
                 </Text>
               </View>
             </View>
-            <Text className="text-3xl font-extrabold text-blue-700 text-center">
+            <Text className="text-3xl font-extrabold text-info text-center">
               {formatCurrency(calculatedInvoiceData.totalAmount.toString())}đ
             </Text>
-            <View className="mt-3 pt-3 border-t border-blue-200">
+            <View className="mt-3 pt-3 border-t border-info">
               <View className="flex-row justify-between items-center mb-1">
-                <Text className="text-xs text-blue-600">Tiền thuê</Text>
-                <Text className="text-sm font-semibold text-blue-700">
+                <Text className="text-xs text-info">Tiền thuê</Text>
+                <Text className="text-sm font-semibold text-info">
                   {formatCurrency(
                     (
                       invoice.invoiceItems?.find(
@@ -249,8 +250,8 @@ const ConfirmCreateInvoiceScreen = ({
                 </Text>
               </View>
               <View className="flex-row justify-between items-center">
-                <Text className="text-xs text-blue-600">Dịch vụ</Text>
-                <Text className="text-sm font-semibold text-blue-700">
+                <Text className="text-xs text-info">Dịch vụ</Text>
+                <Text className="text-sm font-semibold text-info">
                   {formatCurrency(totalServiceAmount.toString())}đ
                 </Text>
               </View>
@@ -301,7 +302,7 @@ const ConfirmCreateInvoiceScreen = ({
           )?.length === 0 ? (
             <View className="flex-1 items-center justify-center py-8">
               <View className="w-14 h-14 bg-gray-100 rounded-full items-center justify-center mb-2">
-                <Ionicons name="construct-outline" size={22} color="#9CA3AF" />
+                <Ionicons name="construct-outline" size={22} color={tokens.colors.subtle} />
               </View>
               <Text className="text-gray-500">Không có dịch vụ nào</Text>
             </View>
@@ -351,7 +352,7 @@ const ConfirmCreateInvoiceScreen = ({
             <View className="h-[1px] bg-gray-200 my-2" />
             <View className="flex-row justify-between items-center pt-2">
               <Text className="text-lg font-bold text-gray-900">Tổng cộng</Text>
-              <Text className="text-xl font-extrabold text-blue-600">
+              <Text className="text-xl font-extrabold text-info">
                 {formatCurrency(calculatedInvoiceData.totalAmount.toString())}đ
               </Text>
             </View>

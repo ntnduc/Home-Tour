@@ -1,3 +1,4 @@
+import { tokens } from "@/theme";
 import { FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -51,7 +52,7 @@ const DashboardScreen = () => {
       title: "Quản lý phòng",
       description: "Xem và quản lý danh sách phòng",
       icon: "business-outline",
-      color: "#007AFF",
+      color: tokens.colors.primary,
       onPress: () => navigation.navigate("RoomList"),
     },
     {
@@ -59,7 +60,7 @@ const DashboardScreen = () => {
       title: "Hợp đồng",
       description: "Xem và quản lý hợp đồng thuê phòng",
       icon: "document-text-outline",
-      color: "#34C759",
+      color: tokens.colors.success,
       onPress: () => navigation.navigate("ContractList"),
     },
     {
@@ -67,7 +68,7 @@ const DashboardScreen = () => {
       title: "Lịch sử hóa đơn",
       description: "Xem lịch sử thanh toán",
       icon: "time-outline",
-      color: "#FF9500",
+      color: tokens.palette.amber[500],
       onPress: () => navigation.navigate("InvoiceHistory"),
     },
     {
@@ -98,10 +99,10 @@ const DashboardScreen = () => {
         {/* Stats */}
         <View style={styles.statsRow}>
           <StatCard
-            icon={<Ionicons name="business" size={28} color="#6a5af9" />}
+            icon={<Ionicons name="business" size={28} color={tokens.colors.primary} />}
             label="Tài sản"
             value={0}
-            bgColor="#eef1fd"
+            bgColor={tokens.colors.primaryMuted}
           />
           <StatCard
             icon={
@@ -160,7 +161,7 @@ const DashboardScreen = () => {
                     {action.description}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#6B7280" />
+                <Ionicons name="chevron-forward" size={20} color={tokens.colors.muted} />
               </View>
             </TouchableOpacity>
           ))}
@@ -172,7 +173,7 @@ const DashboardScreen = () => {
           <View style={styles.recentActivities}>
             <View style={styles.recentActivity}>
               <View
-                style={[styles.activityDot, { backgroundColor: "#34C759" }]}
+                style={[styles.activityDot, { backgroundColor: tokens.colors.success }]}
               />
               <Text style={styles.activityText}>
                 Hợp đồng mới được tạo cho Phòng 101
@@ -181,7 +182,7 @@ const DashboardScreen = () => {
             </View>
             <View style={styles.recentActivity}>
               <View
-                style={[styles.activityDot, { backgroundColor: "#007AFF" }]}
+                style={[styles.activityDot, { backgroundColor: tokens.colors.primary }]}
               />
               <Text style={styles.activityText}>
                 Thanh toán hóa đơn tháng 1/2024
@@ -190,7 +191,7 @@ const DashboardScreen = () => {
             </View>
             <View style={styles.recentActivity}>
               <View
-                style={[styles.activityDot, { backgroundColor: "#FF9500" }]}
+                style={[styles.activityDot, { backgroundColor: tokens.palette.amber[500] }]}
               />
               <Text style={styles.activityText}>
                 Cập nhật thông tin Phòng 202
@@ -215,12 +216,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: "#333",
+    color: tokens.colors.foreground,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: "#666",
+    color: tokens.colors.muted,
   },
   statsRow: {
     flexDirection: "row",
@@ -230,7 +231,7 @@ const styles = StyleSheet.create({
   quickActionTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#333",
+    color: tokens.colors.foreground,
     marginTop: 24,
     marginBottom: 16,
   },
@@ -248,7 +249,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderWidth: 1,
-    borderColor: "#F3F4F6",
+    borderColor: tokens.colors.surfaceMuted,
   },
   quickActionContent: {
     flexDirection: "row",
@@ -268,17 +269,17 @@ const styles = StyleSheet.create({
   quickActionTitleText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#1F2937",
+    color: tokens.colors.foreground,
     marginBottom: 4,
   },
   quickActionDescription: {
     fontSize: 14,
-    color: "#6B7280",
+    color: tokens.colors.muted,
   },
   recentTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#333",
+    color: tokens.colors.foreground,
     marginBottom: 16,
   },
   recentBox: {
@@ -291,7 +292,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderWidth: 1,
-    borderColor: "#F3F4F6",
+    borderColor: tokens.colors.surfaceMuted,
   },
   recentActivities: {
     gap: 12,
@@ -309,11 +310,11 @@ const styles = StyleSheet.create({
   activityText: {
     flex: 1,
     fontSize: 14,
-    color: "#374151",
+    color: tokens.colors.foreground,
   },
   activityTime: {
     fontSize: 12,
-    color: "#9CA3AF",
+    color: tokens.colors.subtle,
   },
 });
 

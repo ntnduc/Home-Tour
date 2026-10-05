@@ -7,6 +7,7 @@ import { ServiceCreateOrUpdateRequest } from "@/types/service";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import React, { useEffect, useState } from "react";
+import { tokens } from "@/theme";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 const ServiceSelectedSearchComponent = ({
@@ -93,7 +94,7 @@ const ServiceSelectedSearchComponent = ({
       }}
       icon={service && service?.icon ? (service.icon as any) : ICON_DEFAULT}
       iconProps={{
-        color: "#007AFF",
+        color: tokens.colors.primary,
       }}
       renderResultList={(list: any) => {
         const flatData = list?.data;
@@ -111,7 +112,7 @@ const ServiceSelectedSearchComponent = ({
                     className="mr-3"
                     name={option?.icon ? option?.icon : ICON_DEFAULT}
                     size={20}
-                    color="#007AFF"
+                    color={tokens.colors.primary}
                   />
                   <Text style={[styles.itemText]}>{option.name}</Text>
                 </TouchableOpacity>

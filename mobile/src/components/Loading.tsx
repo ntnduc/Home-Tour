@@ -1,3 +1,4 @@
+import { tokens } from "@/theme";
 import React from "react";
 import { ActivityIndicator, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -5,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const Loading = () => {
   return (
     <SafeAreaView style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color="#6a5af9" />
+      <ActivityIndicator size="large" color={tokens.colors.primary} />
     </SafeAreaView>
   );
 };

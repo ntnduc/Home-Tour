@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useState } from "react";
+import { tokens } from "@/theme";
 import {
   Alert,
   ScrollView,
@@ -87,7 +88,7 @@ const TerminateContractScreen = ({
             <Ionicons
               name="warning"
               size={24}
-              color="#DC2626"
+              color={tokens.colors.error}
               className="mr-3 mt-1"
             />
             <View className="flex-1">
@@ -166,7 +167,7 @@ const TerminateContractScreen = ({
                 }
               }}
               placeholder="Nhập lý do kết thúc hợp đồng..."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={tokens.colors.subtle}
               multiline
               numberOfLines={4}
               textAlignVertical="top"
@@ -180,22 +181,22 @@ const TerminateContractScreen = ({
         </View>
 
         {/* Thông tin hoàn trả */}
-        <View className="bg-blue-50 rounded-xl p-4 mb-3 border border-blue-200">
-          <Text className="text-lg font-bold text-blue-800 mb-4">
+        <View className="bg-info-surface rounded-xl p-4 mb-3 border border-info">
+          <Text className="text-lg font-bold text-info mb-4">
             Thông tin hoàn trả
           </Text>
 
           <View className="space-y-3">
             <View className="flex-row justify-between items-center">
-              <Text className="text-sm text-blue-700">Tiền cọc</Text>
-              <Text className="text-sm font-semibold text-blue-800">
+              <Text className="text-sm text-info">Tiền cọc</Text>
+              <Text className="text-sm font-semibold text-info">
                 {formatCurrency(contract.deposit)}đ
               </Text>
             </View>
 
             <View className="flex-row justify-between items-center">
-              <Text className="text-sm text-blue-700">Dịch vụ đã trả</Text>
-              <Text className="text-sm font-semibold text-blue-800">
+              <Text className="text-sm text-info">Dịch vụ đã trả</Text>
+              <Text className="text-sm font-semibold text-info">
                 {formatCurrency(
                   contract.services
                     .filter((service) => service.isIncluded)
@@ -205,12 +206,12 @@ const TerminateContractScreen = ({
               </Text>
             </View>
 
-            <View className="border-t border-blue-200 pt-3">
+            <View className="border-t border-info pt-3">
               <View className="flex-row justify-between items-center">
-                <Text className="text-base font-semibold text-blue-800">
+                <Text className="text-base font-semibold text-info">
                   Tổng hoàn trả
                 </Text>
-                <Text className="text-lg font-bold text-blue-600">
+                <Text className="text-lg font-bold text-info">
                   {formatCurrency(
                     contract.deposit +
                       contract.services
@@ -223,8 +224,8 @@ const TerminateContractScreen = ({
             </View>
           </View>
 
-          <View className="mt-3 p-3 bg-blue-100 rounded-lg">
-            <Text className="text-xs text-blue-800">
+          <View className="mt-3 p-3 bg-info-surface rounded-lg">
+            <Text className="text-xs text-info">
               💡 Lưu ý: Số tiền hoàn trả sẽ được tính toán dựa trên thời gian sử
               dụng thực tế và tình trạng phòng.
             </Text>
@@ -279,7 +280,7 @@ const TerminateContractScreen = ({
         onPress={() => navigation.goBack()}
         disabled={isLoading}
       >
-        <Ionicons name="arrow-back" size={20} color="#374151" />
+        <Ionicons name="arrow-back" size={20} color={tokens.colors.foreground} />
       </TouchableOpacity>
     </View>
   );

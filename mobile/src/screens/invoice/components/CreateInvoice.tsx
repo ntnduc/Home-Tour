@@ -1,3 +1,4 @@
+import { tokens } from "@/theme";
 import {
   confirmInvoice,
   getInvoice,
@@ -347,7 +348,7 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
     return (
       <View className="flex-1 items-center justify-center px-6">
         <View className="w-16 h-16 bg-gray-100 rounded-full items-center justify-center mb-3">
-          <Ionicons name="receipt-outline" size={26} color="#9CA3AF" />
+          <Ionicons name="receipt-outline" size={26} color={tokens.colors.subtle} />
         </View>
         <Text className="text-base font-semibold text-gray-900 mb-1">
           Không tìm thấy hóa đơn
@@ -387,7 +388,7 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
         {/* Thông báo tạo thành công */}
         <CardComponent>
           <View className="flex-row items-center w-full bg-green-50 border border-green-200 p-3 rounded-lg">
-            <Ionicons name="checkmark-circle" size={20} color="#16A34A" />
+            <Ionicons name="checkmark-circle" size={20} color={tokens.colors.success} />
             <Text className="text-sm text-green-700 ml-2 flex-1">
               Hợp đồng đã được tạo cùng hóa đơn đầu tiên. Kiểm tra lại thông tin
               bên dưới.
@@ -423,7 +424,7 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
           <Text className="text-sm text-gray-600 mb-1">
             Số tiền cần thanh toán
           </Text>
-          <Text className="text-3xl font-extrabold text-blue-700 text-center">
+          <Text className="text-3xl font-extrabold text-info text-center">
             {formatCurrency((Number(invoice.remainingAmount) || 0).toString())}đ
           </Text>
         </CardComponent>
@@ -483,7 +484,7 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
           {invoiceItems.length === 0 ? (
             <View className="flex-1 items-center justify-center py-8">
               <View className="w-14 h-14 bg-gray-100 rounded-full items-center justify-center mb-2">
-                <Ionicons name="list-outline" size={22} color="#9CA3AF" />
+                <Ionicons name="list-outline" size={22} color={tokens.colors.subtle} />
               </View>
               <Text className="text-gray-500">Chưa có khoản mục nào</Text>
             </View>
@@ -504,7 +505,7 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
                             : "construct-outline"
                         }
                         size={18}
-                        color="#6B7280"
+                        color={tokens.colors.muted}
                       />
                       <View className="ml-2 flex-1">
                         <Text className="text-base font-medium text-gray-900">

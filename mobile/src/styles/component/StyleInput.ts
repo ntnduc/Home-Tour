@@ -1,29 +1,30 @@
 import { StyleSheet } from "react-native";
+import { Tokens } from "@/theme";
 
-export const createStyles = (theme: any) =>
+export const createStyles = (tokens: Tokens) =>
   StyleSheet.create({
     container: {
       width: "100%",
     },
     input: {
-      lineHeight: theme?.input?.lineHeight ?? 20,
-      fontSize: theme?.input?.fontSize ?? 16,
-      paddingVertical: theme?.input?.paddingVertical ?? 4,
+      lineHeight: tokens.typography.lineHeight.sm,
+      fontSize: tokens.typography.fontSize.md,
+      paddingVertical: tokens.spacing.xs,
       minHeight: 32,
     },
     inputError: {
-      borderColor: "#ff3b30",
+      borderColor: tokens.colors.error,
     },
     errorText: {
-      color: theme.red10?.val ?? "#ff3b30",
+      color: tokens.colors.error,
     },
     label: {
-      fontSize: theme?.input?.label?.fontSize ?? 16,
-      fontWeight: theme?.input?.label?.fontWeight ?? "600",
-      marginBottom: theme?.input?.label?.marginBottom ?? 8,
-      color: theme.color?.val,
+      fontSize: tokens.typography.fontSize.md,
+      fontWeight: "600",
+      marginBottom: tokens.spacing.sm,
+      color: tokens.colors.foreground,
     },
     requiredText: {
-      color: "#ff3b30",
+      color: tokens.colors.error,
     },
   });

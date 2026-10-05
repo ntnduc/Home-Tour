@@ -9,6 +9,7 @@ import InputBase from '@/components/Input';
 import Loading from '@/components/Loading';
 import { ServiceCalculateMethod } from '@/constant/service.constant';
 import { createStyles } from '@/styles/StyleCreateTenantScreen';
+import { tokens } from "@/theme";
 import { ComboOption } from '@/types/comboOption';
 import { PropertyCreateRequest } from '@/types/property';
 import { formatCurrency, generateId } from '@/utils/appUtil';
@@ -319,7 +320,7 @@ const CreatePropertyScreen = ({ navigation }: CreatePropertyScreenProps) => {
           <View className="mb-3">
             <Text style={styles.label}>Vị trí trên bản đồ</Text>
             <TouchableOpacity style={styles.mapButton}>
-              <Ionicons name="map-outline" size={24} color="#007AFF" />
+              <Ionicons name="map-outline" size={24} color={tokens.colors.primary} />
               <Text style={styles.mapButtonText}>Chọn vị trí trên bản đồ</Text>
             </TouchableOpacity>
           </View>
@@ -445,7 +446,7 @@ const CreatePropertyScreen = ({ navigation }: CreatePropertyScreenProps) => {
                   services.map((service, index) => (
                     <View
                       key={service.fieldId || String(index)}
-                      className="gap-2 bg-white p-3 rounded-lg border border-[#e9ecef] mb-2"
+                      className="gap-2 bg-white p-3 rounded-lg border border-border-strong mb-2"
                       style={{ position: 'relative' }}
                     >
                       <TouchableOpacity
@@ -494,7 +495,7 @@ const CreatePropertyScreen = ({ navigation }: CreatePropertyScreenProps) => {
                                   }
                                   icon="cash-outline"
                                   iconProps={{
-                                    color: '#007AFF',
+                                    color: tokens.colors.primary,
                                   }}
                                   value={
                                     currentMethod ===

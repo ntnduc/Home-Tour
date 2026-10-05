@@ -1,4 +1,4 @@
-import { colors } from "@/theme/colors";
+import { tokens } from "@/theme";
 import React, { useCallback } from "react";
 import { StyleSheet, Text, TextStyle, View, ViewStyle } from "react-native";
 
@@ -103,34 +103,34 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   text_success: {
-    color: colors.status.success,
+    color: tokens.colors.success,
   },
   text_warning: {
-    color: colors.status.warning,
+    color: tokens.palette.amber[500],
   },
   text_error: {
-    color: colors.status.error,
+    color: tokens.colors.error,
   },
   text_info: {
-    color: colors.status.info,
+    color: tokens.colors.info,
   },
   text_default: {
-    color: colors.status.success,
+    color: tokens.colors.success,
   },
   success: {
-    backgroundColor: colors.status.success + "20",
+    backgroundColor: tokens.colors.successSurface,
   },
   warning: {
-    backgroundColor: colors.status.warning + "20",
+    backgroundColor: tokens.colors.warningSurface,
   },
   error: {
-    backgroundColor: colors.status.error + "20",
+    backgroundColor: tokens.colors.errorSurface,
   },
   info: {
-    backgroundColor: colors.status.info + "20",
+    backgroundColor: tokens.colors.infoSurface,
   },
   default: {
-    backgroundColor: "20",
+    backgroundColor: tokens.colors.surfaceMuted,
   },
 });
 

@@ -1,4 +1,5 @@
 import { deactivateContract, getContract } from "@/api/contract/contract.api";
+import { tokens } from "@/theme";
 import ActionButtonBottom from "@/components/ActionButtonBottom";
 import CardContent from "@/components/CardContent";
 import DisplayField from "@/components/DisplayField";
@@ -122,7 +123,7 @@ const TerminateContractScreen = ({
             <Ionicons
               name="warning"
               size={24}
-              color="#DC2626"
+              color={tokens.colors.error}
               className="mr-3 mt-1"
             />
             <View className="flex-1">
@@ -149,8 +150,8 @@ const TerminateContractScreen = ({
         </CardContent>
 
         {/* Thông tin hoàn trả */}
-        <View className="bg-blue-50 rounded-xl p-4 mb-3 border border-blue-200">
-          <Text className="text-lg font-bold text-blue-800 mb-4">
+        <View className="bg-info-surface rounded-xl p-4 mb-3 border border-info">
+          <Text className="text-lg font-bold text-info mb-4">
             Thông tin hoàn trả
           </Text>
 
@@ -158,8 +159,8 @@ const TerminateContractScreen = ({
             <DisplayField
               label="Tiền cọc"
               value={formatCurrency(contract.depositAmountPaid ?? 0)}
-              labelClassName="text-base text-blue-700"
-              valueClassName="text-base font-semibold text-blue-800"
+              labelClassName="text-base text-info"
+              valueClassName="text-base font-semibold text-info"
             />
             {contract.contractServices && contract.contractServices.length > 0 && <DisplayField
               label="Dịch vụ đã trả"
@@ -168,10 +169,10 @@ const TerminateContractScreen = ({
                   .filter((service) => service?.isEnabled)
                   .reduce((sum, service) => sum + Number(service?.price), 0)
               )}
-              labelClassName="text-base text-blue-700"
-              valueClassName="text-base font-semibold text-blue-800" />}
+              labelClassName="text-base text-info"
+              valueClassName="text-base font-semibold text-info" />}
 
-            <View className="border-t border-blue-200 pt-3">
+            <View className="border-t border-info pt-3">
               {contract.depositAmountPaid && contract.contractServices && contract.contractServices.length > 0 && <DisplayField
                 label="Tổng hoàn trả"
                 value={formatCurrency(
@@ -180,13 +181,13 @@ const TerminateContractScreen = ({
                     .filter((service) => service?.isEnabled)
                     .reduce((sum, service) => sum + Number(service?.price), 0)
                 )}
-                labelClassName="text-base font-semibold text-blue-800"
-                valueClassName="text-lg font-bold text-blue-600" />}
+                labelClassName="text-base font-semibold text-info"
+                valueClassName="text-lg font-bold text-info" />}
             </View>
           </View>
 
-          <View className="mt-3 p-3 bg-blue-100 rounded-lg">
-            <Text className="text-xs text-blue-800">
+          <View className="mt-3 p-3 bg-info-surface rounded-lg">
+            <Text className="text-xs text-info">
               💡 Lưu ý: Số tiền hoàn trả sẽ được tính toán dựa trên thời gian sử
               dụng thực tế và tình trạng phòng.
             </Text>
@@ -196,7 +197,7 @@ const TerminateContractScreen = ({
         {/* Lý do kết thúc */}
         <CardContent title={<Text className="text-lg font-bold text-gray-900 mb-4">
           Lý do kết thúc
-          <Text style={{ color: "#ff3b30" }}> * </Text>
+          <Text style={{ color: tokens.colors.error }}> * </Text>
         </Text>}>
           <Controller
             control={control}
