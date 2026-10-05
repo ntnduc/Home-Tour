@@ -1,12 +1,13 @@
+import { tokens } from "@/theme";
 import React from "react";
 import {
   StyleProp,
   StyleSheet,
   Text,
+  TextStyle,
   TouchableOpacity,
   View,
 } from "react-native";
-import { TextStyle } from "tamagui";
 
 interface QuickActionButtonProps {
   label: string;
@@ -43,7 +44,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   gradient: {
-    backgroundColor: "#6a5af9", // Đơn giản hóa, nếu muốn gradient thực sự thì dùng LinearGradient
+    backgroundColor: tokens.colors.primary, // Đơn giản hóa, nếu muốn gradient thực sự thì dùng LinearGradient
   },
   icon: {
     marginBottom: 8,

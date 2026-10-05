@@ -1,4 +1,5 @@
 import CardComponent from "@/screens/common/CardComponent";
+import { tokens } from "@/theme";
 import { colors } from "@/theme/colors";
 import { formatCurrency, formatPhoneNumber } from "@/utils/appUtil";
 import { formatDate } from "@/utils/dateUtil";
@@ -38,7 +39,7 @@ const ContractCard = ({
   };
 
   // const getStatusColor = (status: ContractStatus) => {
-  //   return CONTRACT_STATUS_COLOR[status] || { bg: "#F3F4F6", color: "#6B7280" };
+  //   return CONTRACT_STATUS_COLOR[status] || { bg: tokens.colors.surfaceMuted, color: tokens.colors.muted };
   // };
 
   const daysRemaining = getDaysRemaining();
@@ -74,7 +75,7 @@ const ContractCard = ({
       {/* Tenant Info */}
       <View style={styles.tenantSection}>
         <View style={styles.tenantHeader}>
-          <Ionicons name="person" size={16} color="#6B7280" />
+          <Ionicons name="person" size={16} color={tokens.colors.muted} />
           <Text style={styles.tenantName}>{tenantContract?.name}</Text>
         </View>
         <Text style={styles.tenantPhone}>📞 {formatPhoneNumber(tenantContract?.phoneNumber ?? "")}</Text>
@@ -83,7 +84,7 @@ const ContractCard = ({
       {/* Contract Period */}
       <View style={styles.periodSection}>
         <View style={styles.periodHeader}>
-          <Ionicons name="calendar" size={16} color="#6B7280" />
+          <Ionicons name="calendar" size={16} color={tokens.colors.muted} />
           <Text style={styles.periodHeaderText}>Thời hạn hợp đồng</Text>
         </View>
         <View style={styles.periodRow}>
@@ -94,7 +95,7 @@ const ContractCard = ({
             </Text>
           </View>
           {contract.endDate &&
-            <Ionicons name="arrow-forward" size={16} color="#6B7280" />}
+            <Ionicons name="arrow-forward" size={16} color={tokens.colors.muted} />}
           {contract.endDate && <View style={[styles.periodItem, { alignItems: 'flex-end' }]}>
             <Text style={styles.periodLabel}>Kết thúc</Text>
             <Text style={styles.periodDate}>
@@ -129,7 +130,7 @@ const ContractCard = ({
       {/* Financial Info */}
       <View style={styles.financialSection}>
         <View style={styles.financialHeader}>
-          <Ionicons name="cash" size={16} color="#6B7280" />
+          <Ionicons name="cash" size={16} color={tokens.colors.muted} />
           <Text style={styles.financialHeaderText}>Thông tin tài chính</Text>
         </View>
         <View style={styles.financialRow}>
@@ -178,12 +179,12 @@ const styles = StyleSheet.create({
   contractId: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#1F2937",
+    color: tokens.colors.foreground,
     marginBottom: 2,
   },
   roomInfo: {
     fontSize: 14,
-    color: "#6B7280",
+    color: tokens.colors.muted,
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -202,25 +203,25 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: tokens.colors.surfaceMuted,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: tokens.palette.gray[300],
   },
   renewButton: {
-    backgroundColor: "#F0FDF4",
-    borderColor: "#BBF7D0",
+    backgroundColor: tokens.colors.successSurface,
+    borderColor: tokens.palette.green[200],
   },
   terminateButton: {
-    backgroundColor: "#FEF2F2",
-    borderColor: "#FECACA",
+    backgroundColor: tokens.colors.errorSurface,
+    borderColor: tokens.palette.red[200],
   },
   tenantSection: {
     marginBottom: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    borderBottomColor: tokens.colors.surfaceMuted,
   },
   tenantHeader: {
     flexDirection: "row",
@@ -230,30 +231,30 @@ const styles = StyleSheet.create({
   tenantHeaderText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#374151",
+    color: tokens.colors.foreground,
     marginLeft: 6,
   },
   tenantName: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#1F2937",
+    color: tokens.colors.foreground,
     marginBottom: 2,
     marginLeft: 6,
   },
   tenantPhone: {
     fontSize: 13,
-    color: "#6B7280",
+    color: tokens.colors.muted,
     marginBottom: 1,
   },
   tenantEmail: {
     fontSize: 13,
-    color: "#6B7280",
+    color: tokens.colors.muted,
   },
   periodSection: {
     marginBottom: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    borderBottomColor: tokens.colors.surfaceMuted,
   },
   periodHeader: {
     flexDirection: "row",
@@ -263,7 +264,7 @@ const styles = StyleSheet.create({
   periodHeaderText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#374151",
+    color: tokens.colors.foreground,
     marginLeft: 6,
   },
   periodRow: {
@@ -279,31 +280,31 @@ const styles = StyleSheet.create({
   },
   periodLabel: {
     fontSize: 12,
-    color: "#6B7280",
+    color: tokens.colors.muted,
     marginBottom: 2,
   },
   periodDate: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#1F2937",
+    color: tokens.colors.foreground,
   },
   remainingDays: {
-    backgroundColor: "#EFF6FF",
+    backgroundColor: tokens.colors.infoSurface,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
     alignSelf: "flex-start",
   },
   urgentDays: {
-    backgroundColor: "#FEF3C7",
+    backgroundColor: tokens.colors.warningSurface,
   },
   remainingDaysText: {
     fontSize: 12,
     fontWeight: "500",
-    color: "#1D4ED8",
+    color: tokens.colors.info,
   },
   urgentDaysText: {
-    color: "#D97706",
+    color: tokens.palette.amber[600],
   },
   financialSection: {
     marginBottom: 12,
@@ -316,7 +317,7 @@ const styles = StyleSheet.create({
   financialHeaderText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#374151",
+    color: tokens.colors.foreground,
     marginLeft: 6,
   },
   financialRow: {
@@ -327,12 +328,12 @@ const styles = StyleSheet.create({
   },
   financialLabel: {
     fontSize: 13,
-    color: "#6B7280",
+    color: tokens.colors.muted,
   },
   financialValue: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#1F2937",
+    color: tokens.colors.foreground,
   },
 });
 

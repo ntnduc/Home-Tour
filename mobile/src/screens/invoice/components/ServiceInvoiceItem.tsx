@@ -1,4 +1,5 @@
 import Input from '@/components/Input';
+import { tokens } from "@/theme";
 import {
   SERVICE_CALCULATE_METHOD_WITH_INFO,
   ServiceCalculateMethod,
@@ -110,14 +111,14 @@ const ServiceInvoiceItem = () => {
               size={18}
               color={
                 getValues(`invoiceItems.${index}.isUpdated`)
-                  ? '#eab308'
-                  : '#1D4ED8'
+                  ? tokens.palette.amber[600]
+                  : tokens.colors.info
               }
             />
             <Text
               className={`ml-1 text-sm font-semibold ${getValues(`invoiceItems.${index}.isUpdated`)
                 ? 'text-yellow-500'
-                : 'text-blue-700'
+                : 'text-info'
                 }`}
             >
               {getValues(`invoiceItems.${index}.isUpdated`)
@@ -187,7 +188,7 @@ const ServiceInvoiceItem = () => {
           <Text className="text-base font-semibold text-gray-800">
             Tạm tính
           </Text>
-          <Text className="text-xl font-extrabold text-blue-700">
+          <Text className="text-xl font-extrabold text-info">
             {formatCurrency(calPrice(serviceItem, index))} đ
           </Text>
         </View>
@@ -209,7 +210,7 @@ const ServiceInvoiceItem = () => {
           <Text className="text-base font-semibold text-gray-800">
             Tạm tính
           </Text>
-          <Text className="text-xl font-extrabold text-blue-700">
+          <Text className="text-xl font-extrabold text-info">
             {formatCurrency(serviceItem.amount)} đ
           </Text>
         </View>
@@ -247,14 +248,14 @@ const ServiceInvoiceItem = () => {
               size={18}
               color={
                 getValues(`invoiceItems.${index}.isUpdated`)
-                  ? '#eab308'
-                  : '#1D4ED8'
+                  ? tokens.palette.amber[600]
+                  : tokens.colors.info
               }
             />
             <Text
               className={`ml-1 text-sm font-semibold ${getValues(`invoiceItems.${index}.isUpdated`)
                 ? 'text-yellow-500'
-                : 'text-blue-700'
+                : 'text-info'
                 }`}
             >
               {getValues(`invoiceItems.${index}.isUpdated`)
@@ -294,7 +295,7 @@ const ServiceInvoiceItem = () => {
               render={({ field: { onChange, value } }) => {
                 const calPrice = Number(serviceItem.amount) * (value ?? 0);
                 return (
-                  <Text className="text-xl font-extrabold text-blue-700">
+                  <Text className="text-xl font-extrabold text-info">
                     {formatCurrency(calPrice)} đ
                   </Text>
                 );
@@ -338,14 +339,14 @@ const ServiceInvoiceItem = () => {
               size={18}
               color={
                 getValues(`invoiceItems.${index}.isUpdated`)
-                  ? '#eab308'
-                  : '#1D4ED8'
+                  ? tokens.palette.amber[600]
+                  : tokens.colors.info
               }
             />
             <Text
               className={`ml-1 text-sm font-semibold ${getValues(`invoiceItems.${index}.isUpdated`)
                 ? 'text-yellow-500'
-                : 'text-blue-700'
+                : 'text-info'
                 }`}
             >
               {getValues(`invoiceItems.${index}.isUpdated`)
@@ -384,7 +385,7 @@ const ServiceInvoiceItem = () => {
             render={({ field: { onChange, value } }) => {
               const calPrice = Number(serviceItem.amount) * (value ?? 0);
               return (
-                <Text className="text-xl font-extrabold text-blue-700">
+                <Text className="text-xl font-extrabold text-info">
                   {formatCurrency(calPrice)} đ
                 </Text>
               );

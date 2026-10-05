@@ -1,33 +1,34 @@
 import { StyleSheet } from "react-native";
+import { Tokens } from "@/theme";
 
-export const createStyles = (theme: any) =>
+export const createStyles = (tokens: Tokens) =>
   StyleSheet.create({
     container: {
       position: "relative",
     },
     label: {
-      fontSize: theme?.input?.label?.fontSize ?? 16,
+      fontSize: tokens.typography.fontSize.md,
       fontWeight: "600",
-      marginBottom: theme?.input?.label?.marginBottom ?? 8,
-      color: theme.color?.val,
+      marginBottom: tokens.spacing.sm,
+      color: tokens.colors.foreground,
     },
     selectInput: {
       borderWidth: 1,
-      borderColor: theme.borderColor?.val,
+      borderColor: tokens.colors.borderStrong,
       borderRadius: 8,
       padding: 12,
-      backgroundColor: theme.background?.val,
+      backgroundColor: tokens.colors.surface,
       minHeight: 48,
     },
     selectText: {
       fontSize: 16,
-      color: theme.color?.val,
+      color: tokens.colors.foreground,
     },
     errorInput: {
-      borderColor: theme.red10?.val ?? "#ff3b30",
+      borderColor: tokens.colors.error,
     },
     errorText: {
-      color: theme.red10?.val ?? "#ff3b30",
+      color: tokens.colors.error,
     },
     dropdownContainer: {
       backgroundColor: "#fff",

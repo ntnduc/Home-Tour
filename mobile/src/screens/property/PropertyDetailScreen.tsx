@@ -39,7 +39,7 @@ const PropertyDetailScreen = ({
           </Text>
           <TouchableOpacity
             onPress={handleEditProperty}
-            className="p-2 bg-blue-100 rounded-full"
+            className="p-2 bg-primary-muted rounded-full"
           >
             <Ionicons name="pencil" size={24} color={colors.primary.main} />
           </TouchableOpacity>
@@ -57,7 +57,7 @@ const PropertyDetailScreen = ({
 
         <View className="mt-6 space-y-3">
           <TouchableOpacity
-            className="bg-blue-600 flex-row items-center justify-center p-4 rounded-xl"
+            className="bg-primary flex-row items-center justify-center p-4 rounded-xl"
             onPress={handleViewRooms}
           >
             <Ionicons name="list" size={20} color="white" />

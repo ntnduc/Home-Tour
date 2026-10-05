@@ -6,6 +6,7 @@ import { createStyles } from "@/styles/StyleCreateTenantScreen";
 import { useTheme } from "@/theme/ThemeProvider";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
+import { tokens } from "@/theme";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
 
 const CalculatorMethodComponent = ({
@@ -85,7 +86,7 @@ const CalculatorMethodComponent = ({
                     <Ionicons
                       name={SERVICE_CALCULATE_METHOD_WITH_INFO[method].icon}
                       size={20}
-                      color="#007AFF"
+                      color={tokens.colors.primary}
                     />
                     <Text style={[styles.methodTitle]}>
                       {SERVICE_CALCULATE_METHOD_WITH_INFO[method].label}
@@ -103,7 +104,7 @@ const CalculatorMethodComponent = ({
                     <Ionicons
                       name="information-circle-outline"
                       size={20}
-                      color="#666"
+                      color={tokens.colors.muted}
                     />
                   </TouchableOpacity>
                 </TouchableOpacity>
@@ -122,7 +123,7 @@ const CalculatorMethodComponent = ({
             <Ionicons
               name={isExpanded ? "chevron-up" : "chevron-down"}
               size={16}
-              color="#007AFF"
+              color={tokens.colors.primary}
             />
           </View>
         </TouchableOpacity>

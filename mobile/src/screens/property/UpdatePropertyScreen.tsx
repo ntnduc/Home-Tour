@@ -11,6 +11,7 @@ import InputBase from '@/components/Input';
 import Loading from '@/components/Loading';
 import { ServiceCalculateMethod } from '@/constant/service.constant';
 import { createStyles } from '@/styles/StyleCreateTenantScreen';
+import { tokens } from "@/theme";
 import { useTheme } from '@/theme/ThemeProvider';
 import { ComboOption } from '@/types/comboOption';
 import {
@@ -400,7 +401,7 @@ const UpdatePropertyScreen = ({
                   services?.map((service, index) => (
                     <View
                       key={service.fieldId || String(index)}
-                      className="gap-2 bg-white p-3 rounded-lg border border-[#e9ecef] mb-2"
+                      className="gap-2 bg-white p-3 rounded-lg border border-border-strong mb-2"
                       style={{ position: 'relative' }}
                     >
                       <TouchableOpacity
@@ -449,7 +450,7 @@ const UpdatePropertyScreen = ({
                                   }
                                   icon="cash-outline"
                                   iconProps={{
-                                    color: '#007AFF',
+                                    color: tokens.colors.primary,
                                   }}
                                   value={
                                     currentMethod ===

@@ -48,10 +48,10 @@ const getButtonStyle = (
     "flex-row items-center justify-center py-4 px-6 rounded-xl shadow-sm";
 
   const variantStyles = {
-    primary: "bg-blue-600 shadow-[0_1px_5px_rgb(0,0,0,0.12)]",
-    secondary: "bg-amber-500 shadow-[0_1px_5px_rgb(0,0,0,0.12)]",
-    danger: "bg-red-500 shadow-[0_1px_5px_rgb(0,0,0,0.12)]",
-    success: "bg-green-600 shadow-[0_1px_5px_rgb(0,0,0,0.12)]",
+    primary: "bg-primary shadow-[0_1px_5px_rgb(0,0,0,0.12)]",
+    secondary: "bg-warning shadow-[0_1px_5px_rgb(0,0,0,0.12)]",
+    danger: "bg-error shadow-[0_1px_5px_rgb(0,0,0,0.12)]",
+    success: "bg-success shadow-[0_1px_5px_rgb(0,0,0,0.12)]",
   };
 
   return `${baseStyle} ${variantStyles[variant]} ${customStyle || ""}`;

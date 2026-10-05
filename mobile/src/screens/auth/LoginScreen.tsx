@@ -1,3 +1,4 @@
+import { tokens } from "@/theme";
 import { requestOTP } from '@/api/auth/api';
 import { RootStackParamList } from '@/navigation';
 import { checkLogin } from '@/utils/appUtil';
@@ -105,36 +106,36 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: 'bold',
     textAlign: 'center',
-    color: '#222',
+    color: tokens.colors.foreground,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: tokens.colors.muted,
     textAlign: 'center',
     marginBottom: 28,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: tokens.palette.gray[300],
     padding: 15,
     borderRadius: 12,
     fontSize: 16,
     marginBottom: 20,
   },
   button: {
-    backgroundColor: '#6a5af9',
+    backgroundColor: tokens.colors.primary,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 8,
-    shadowColor: '#6a5af9',
+    shadowColor: tokens.colors.primary,
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 2,
   },
   buttonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: tokens.palette.gray[400],
   },
   buttonText: {
     color: '#fff',

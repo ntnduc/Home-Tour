@@ -132,7 +132,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
                   }
                   closeAppSheet();
                 }}
-                className="px-4 py-2 bg-blue-500 rounded-lg"
+                className="px-4 py-2 bg-primary rounded-lg"
               >
                 <Text className="text-white font-semibold">Xong</Text>
               </TouchableOpacity>

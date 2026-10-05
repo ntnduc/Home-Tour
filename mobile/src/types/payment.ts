@@ -1,3 +1,5 @@
+import { statusColor } from "@/theme";
+
 export interface Payment {
   id: string;
   invoiceId?: string;
@@ -96,10 +98,10 @@ export const PAYMENT_STATUS_COLOR: Record<
   PaymentStatus,
   { bg: string; color: string }
 > = {
-  [PaymentStatus.PENDING]: { bg: "#FFF6E5", color: "#FF9500" },
-  [PaymentStatus.PAID]: { bg: "#E9F9EF", color: "#34C759" },
-  [PaymentStatus.OVERDUE]: { bg: "#FFECEC", color: "#FF3B30" },
-  [PaymentStatus.CANCELLED]: { bg: "#F2F2F2", color: "#8E8E93" },
-  [PaymentStatus.PARTIALLY_PAID]: { bg: "#E3F2FD", color: "#1976D2" },
-  [PaymentStatus.DRAFT]: { bg: "#F3F4F6", color: "#6B7280" },
+  [PaymentStatus.PENDING]: statusColor.pending,
+  [PaymentStatus.PAID]: statusColor.success,
+  [PaymentStatus.OVERDUE]: statusColor.error,
+  [PaymentStatus.CANCELLED]: statusColor.cancelled,
+  [PaymentStatus.PARTIALLY_PAID]: statusColor.info,
+  [PaymentStatus.DRAFT]: statusColor.draft,
 };

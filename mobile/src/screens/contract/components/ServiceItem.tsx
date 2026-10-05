@@ -1,4 +1,5 @@
 import Input from '@/components/Input';
+import { tokens } from "@/theme";
 import {
   SERVICE_CALCULATE_METHOD_WITH_INFO,
   ServiceCalculateMethod,
@@ -52,7 +53,7 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
       description={
         <View className="mt-1">
           <View className="md:flex-row flex-col">
-            <Text className="text-base font-semibold text-blue-600 md:flex-1">
+            <Text className="text-base font-semibold text-info md:flex-1">
               {formatCurrency(service?.price?.toString() ?? '0') +
                 ' đ/' +
                 SERVICE_CALCULATE_METHOD_WITH_INFO[service.calculationMethod]
@@ -65,7 +66,7 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
                     .icon
                 }
                 size={16}
-                color="#6B7280"
+                color={tokens.colors.muted}
                 className="mr-2"
               />
               <Text
@@ -100,7 +101,7 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
               required
               type="number"
               labelStyles={{
-                color: '#6B7280',
+                color: tokens.colors.muted,
                 fontSize: 13,
               }}
               defaultValue={service.helperValue?.toString()}
@@ -119,7 +120,7 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
               required
               type="number"
               labelStyles={{
-                color: '#6B7280',
+                color: tokens.colors.muted,
                 fontSize: 13,
               }}
               defaultValue={service.helperValue?.toString()}

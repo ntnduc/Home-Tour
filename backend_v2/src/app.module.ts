@@ -10,6 +10,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ClientModule } from './modules/client/client.module';
 import { ContractModule } from './modules/contract/contract.module';
 import { CurrentUserModule } from './modules/current.user';
+import { HomepageModule } from './modules/homepage/homepage.module';
 import { InvoiceModule } from './modules/invoice/invoice.module';
 import { LocationModule } from './modules/location/location.module';
 import { PaymentModule } from './modules/payment/payment.module';
@@ -60,6 +61,7 @@ import { UsersModule } from './modules/users/users.module';
     TestModule,
     ServicesModule,
     ReportModule,
+    HomepageModule,
     RbacModule,
     UploadFileModule,
   ],

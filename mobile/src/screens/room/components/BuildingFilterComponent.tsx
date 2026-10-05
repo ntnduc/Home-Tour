@@ -3,6 +3,7 @@ import { PropertyDetail } from "@/types/property";
 import { Ionicons } from "@expo/vector-icons";
 import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import React from "react";
+import { tokens } from "@/theme";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type Props = {
@@ -49,7 +50,7 @@ const BuildingFilterComponent = ({
             </Text>
           </View>
           {selectedBuilding === item.value && (
-            <Ionicons name="checkmark-circle" size={20} color="#007AFF" />
+            <Ionicons name="checkmark-circle" size={20} color={tokens.colors.primary} />
           )}
         </TouchableOpacity>
       );
@@ -92,7 +93,7 @@ const BuildingFilterComponent = ({
           </Text>
         </View>
         {selectedBuilding === item.value && (
-          <Ionicons name="checkmark-circle" size={20} color="#007AFF" />
+          <Ionicons name="checkmark-circle" size={20} color={tokens.colors.primary} />
         )}
       </TouchableOpacity>
     );
@@ -116,14 +117,14 @@ const BuildingFilterComponent = ({
 
 const styles = StyleSheet.create({
   selector: {
-    backgroundColor: "#fff",
+    backgroundColor: tokens.colors.surface,
     borderRadius: 8,
     padding: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: tokens.palette.gray[300],
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -141,13 +142,13 @@ const styles = StyleSheet.create({
   },
   selectorLabel: {
     fontSize: 10,
-    color: "#666",
+    color: tokens.colors.muted,
     marginBottom: 1,
   },
   selectorValue: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#222",
+    color: tokens.colors.foreground,
   },
   modalOverlay: {
     flex: 1,
@@ -155,7 +156,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: tokens.colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: "70%",
@@ -166,12 +167,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
+    borderBottomColor: tokens.colors.border,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#222",
+    color: tokens.colors.foreground,
   },
   closeButton: {
     padding: 4,
@@ -183,10 +184,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
+    borderBottomColor: tokens.colors.border,
   },
   selectedBuildingItem: {
-    backgroundColor: "#F0F4FF",
+    backgroundColor: tokens.colors.primaryMuted,
   },
   buildingInfo: {
     flex: 1,
@@ -194,26 +195,26 @@ const styles = StyleSheet.create({
   buildingName: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#222",
+    color: tokens.colors.foreground,
     marginBottom: 4,
   },
   selectedBuildingName: {
-    color: "#007AFF",
+    color: tokens.colors.primary,
   },
   buildingAddress: {
     fontSize: 14,
-    color: "#666",
+    color: tokens.colors.muted,
     marginBottom: 2,
   },
   selectedBuildingAddress: {
-    color: "#007AFF",
+    color: tokens.colors.primary,
   },
   roomCount: {
     fontSize: 12,
-    color: "#888",
+    color: tokens.colors.subtle,
   },
   selectedRoomCount: {
-    color: "#007AFF",
+    color: tokens.colors.primary,
   },
 });
 
