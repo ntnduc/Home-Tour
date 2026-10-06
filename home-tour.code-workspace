@@ -15,6 +15,20 @@
   ],
   "settings": {
     "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+    // Mirror of the chat keys in .vscode/settings.json — in a multi-root window,
+    // window-scoped chat.* settings are only read from this workspace file.
+    "chat.promptFilesLocations": {
+      ".github/prompts": true
+    },
+    "chat.promptFilesRecommendations": {
+      "ui-planner": true
+    },
+    "chat.subagents.allowInvocationsFromSubagents": false,
+    "chat.tools.terminal.autoApprove": {
+      "/^npx tsc --noEmit( -p tsconfig\\.json)?$/": true,
+      "/^npm run (-s )?check:colors$/": true,
+      "/^git (--no-pager )?(status|diff|log)\\b/": true
+    },
     "files.exclude": {
       "**/.DS_Store": true
     },

@@ -1,0 +1,31 @@
+{
+  // ── GitHub Copilot: instructions ─────────────────────────────────────────
+  // Always load .github/copilot-instructions.md (+ .github/instructions/*.instructions.md
+  // via their applyTo / description) for every chat & agent request.
+  "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+
+  // ── Prompt files (slash commands /ui-planner, /ui-coder, /ui-reviewer) ───
+  // .github/prompts is the default location; declared explicitly so the pipeline
+  // keeps working if someone adds extra prompt folders later.
+  "chat.promptFilesLocations": {
+    ".github/prompts": true
+  },
+  // Suggest Stage A when a new chat session starts.
+  "chat.promptFilesRecommendations": {
+    "ui-planner": true
+  },
+
+  // ── Custom agents / subagents (UI Pipeline orchestrator) ─────────────────
+  // Workers (Planner/Coder/Reviewer) must not spawn their own subagents:
+  // keeps the Planner → Coder → Reviewer loop bounded and cheap.
+  "chat.subagents.allowInvocationsFromSubagents": false,
+
+  // ── Agent terminal: auto-approve read-only validation commands ───────────
+  // Lets the Coder/Reviewer run the Definition-of-Done checks without a
+  // confirmation prompt each time. Anything else still asks for approval.
+  "chat.tools.terminal.autoApprove": {
+    "/^npx tsc --noEmit( -p tsconfig\\.json)?$/": true,
+    "/^npm run (-s )?check:colors$/": true,
+    "/^git (--no-pager )?(status|diff|log)\\b/": true
+  }
+}
