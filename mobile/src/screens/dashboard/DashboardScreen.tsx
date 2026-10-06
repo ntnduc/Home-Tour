@@ -18,7 +18,7 @@ import PropertyFilterChips from "./components/PropertyFilterChips";
 import QuickActionGrid, { QuickAction } from "./components/QuickActionGrid";
 import RevenueHeroCard from "./components/RevenueHeroCard";
 import RoomStatusCarousel from "./components/RoomStatusCarousel";
-import SectionError from "./components/SectionError";
+import SectionError from "@/components/SectionError";
 import SectionHeader from "./components/SectionHeader";
 import StatBento from "./components/StatBento";
 import { HomeNavigation, openAlert, openRoomAction } from "./homeNavigation";

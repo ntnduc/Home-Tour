@@ -9,7 +9,7 @@ import {
   homeShadow,
   homeWeight,
 } from "../homeStyles";
-import PressableScale from "./PressableScale";
+import PressableScale from "@/components/PressableScale";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 

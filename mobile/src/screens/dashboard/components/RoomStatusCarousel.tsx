@@ -14,8 +14,8 @@ import {
   homeType,
   homeWeight,
 } from "../homeStyles";
-import PressableScale from "./PressableScale";
-import SkeletonBlock from "./SkeletonBlock";
+import PressableScale from "@/components/PressableScale";
+import SkeletonBlock from "@/components/SkeletonBlock";
 
 const CARD_WIDTH = 232;
 const CARD_GAP = 12;
