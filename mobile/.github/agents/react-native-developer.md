@@ -90,6 +90,9 @@ export const getProperty = async (id: string): Promise<ApiResponse<PropertyDetai
 - **Default to NativeWind** (`className="..."`, config in [tailwind.config.js](../../tailwind.config.js), `global.css` imported in `App.tsx`).
 - When editing a screen that already uses the `useTheme()` + `createStyles(theme)` StyleSheet
   pattern (`src/styles/`, [ThemeProvider](../../src/theme/ThemeProvider.tsx)), stay consistent with that screen instead of mixing approaches.
+- **New screens, new sections, and redesigns** follow the Modern Minimalist design system instead
+  (`StyleSheet` + `@/theme` tokens): [mobile-ui-design.instructions.md](../../../.github/instructions/mobile-ui-design.instructions.md).
+  For larger UI work prefer the `UI Pipeline` agent (Planner → Coder → Reviewer).
 
 ### Reuse these components before creating new ones
 `src/components/` includes `Input`, `ComboBox`, `SelectList`, `DatePicker`, `Loading`,

@@ -85,7 +85,22 @@ Security is enforced by four global guards in order: `StickAuthGaurd` (JWT), `Ro
 ### Conventions
 
 - Import alias: `@/` → `src/` (configured in both [babel.config.js](../mobile/babel.config.js) module-resolver and [tsconfig.json](../mobile/tsconfig.json)). Prefer `@/...` imports.
-- **Styling is NativeWind** (Tailwind classes via `className`), configured in [tailwind.config.js](../mobile/tailwind.config.js) with `global.css` imported in `App.tsx`.
+- **Styling is NativeWind** (Tailwind classes via `className`), configured in [tailwind.config.js](../mobile/tailwind.config.js) with `global.css` imported in `App.tsx`. **Exception:** new screens, new sections, and redesigns follow the Modern Minimalist design system below (`StyleSheet` + `@/theme` tokens).
 - `tsconfig` `strict` is on — type props, API responses, and form data; avoid `any`.
 - Screen files stay focused on layout/orchestration; put reusable logic in `src/components/`, `src/api/`, or `src/utils/`.
 - Agent-oriented guidance for this project: [.cursor/agents/react-native-developer.md](../mobile/.cursor/agents/react-native-developer.md).
+
+### UI design system — "Modern Minimalist" (new screens & redesigns)
+
+Full rules: [.github/instructions/mobile-ui-design.instructions.md](instructions/mobile-ui-design.instructions.md). Reference implementation: [mobile/src/screens/dashboard/](../mobile/src/screens/dashboard). Non-negotiables:
+
+- `StyleSheet.create` + `tokens` from `@/theme` only — no `className`, no hex (`npm run check:colors` must pass).
+- Depth by layering: canvas `surfaceMuted` → white cards → one brand hero. Cards `borderRadius ≥ 20` (hero 28 / card 24 / tile 20); shadows from the soft / medium / hero tiers, always with Android `elevation`.
+- Asymmetric bento for KPIs, symmetric grid for actions, full-width hero, snapping horizontal carousels.
+- Every touchable: `PressableScale` (`activeOpacity={0.6}` + spring scale).
+- One `use<Feature>Data` hook per screen; independent sections fetched in parallel (`useQueries` / backend `Promise.all`); per-section skeleton / error-retry / empty states; `RefreshControl` pull-to-refresh.
+- JSDoc layout/UX note on every section component; Vietnamese UI copy.
+
+### UI agent pipeline (Planner → Coder → Reviewer)
+
+Custom agents in [.github/agents/](agents) (`UI Planner`, `UI Coder`, `UI Reviewer`, `UI Pipeline`) and slash commands in [.github/prompts/](prompts) (`/ui-planner`, `/ui-coder`, `/ui-reviewer`). Stages exchange one artifact per feature: a blueprint in [.github/ui-blueprints/](ui-blueprints) (template: `_TEMPLATE.md`). The Planner never writes code; the Reviewer never edits source.

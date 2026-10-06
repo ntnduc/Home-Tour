@@ -67,8 +67,8 @@ Không có.
 - [ ] `src/styles/` & `src/screens/*/styles/` (41 `StyleSheet.create`) — thay hex bằng token.
 
 ### Phase 3 — Gom bảng màu trùng lặp + component dùng chung (ĐÃ XONG)
-- [x] `src/theme/status.ts` (MỚI) — nguồn chân lý DUY NHẤT cho màu badge trạng thái (`statusColor`: draft/pending/success/info/error/cancelled → {bg, color} semantic). Re-export qua `@/theme`.
-- [x] `src/types/invoice.ts` — `INVOICE_STATUS_COLOR` bỏ 6 cặp hex trùng → tham chiếu `statusColor`.
+- [ ] `src/theme/status.ts` (MỚI) — nguồn chân lý DUY NHẤT cho màu badge trạng thái (`statusColor`: draft/pending/success/info/error/cancelled → {bg, color} semantic). Re-export qua `@/theme`.
+- [ ] `src/types/invoice.ts` — `INVOICE_STATUS_COLOR` bỏ 6 cặp hex trùng → tham chiếu `statusColor`.
 - [x] `src/types/payment.ts` — `PAYMENT_STATUS_COLOR` (trùng y hệt invoice) → tham chiếu `statusColor`.
 - [x] `src/components/Status.tsx` — dùng `tokens` semantic; bỏ hack `color + "20"`, dùng `*Surface`; sửa bug `default` bg (`"20"` → `surfaceMuted`).
 - [x] `src/components/StepByStep/colors.ts` — `bg-[#6a5af9]/#28a745/#dc3545`, `bg-amber-500` → `bg-primary/bg-success/bg-error/bg-warning`.
