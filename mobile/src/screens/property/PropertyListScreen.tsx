@@ -1,11 +1,13 @@
 /**
  * PROPERTY LIST SCREEN — Modern Minimalist redesign.
  *
- * Layout (fixed header + infinite FlatList on muted canvas):
+ * Layout (full-bleed fixed header + infinite FlatList on muted canvas):
  * ```
- * SafeAreaView edges={["top"]}  ·  canvas = colors.surfaceMuted
+ * SafeAreaView edges={[]}  ·  canvas = colors.surfaceMuted
  * ┌──────────────────────────────────────────────┐
- * │  FIXED HEADER (title + count + "+ Thêm" + search)
+ * │  FULL-BLEED HEADER (covers top inset)         │
+ * │  soft blurred orbs · title + count + "+ Thêm" │
+ * │  + search · bottom shadow grows on body scroll│
  * ├──────────────────────────────────────────────┤
  * │  FlatList (gap 12, pull-to-refresh)
  * │  ┌──────────────────────────────────────────┐
@@ -32,10 +34,15 @@
 import { tokens } from "@/theme";
 import { useNavigation } from "@react-navigation/native";
 import React from "react";
-import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
+import { RefreshControl, StyleSheet, View } from "react-native";
+import Animated, {
+  useAnimatedScrollHandler,
+  useSharedValue,
+} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import EmptyState from "@/components/EmptyState";
 import SectionError from "@/components/SectionError";
+import { PropertyListResponse } from "@/types/property";
 import { PropertyListNavigation } from "./propertyNavigation";
 import { usePropertyListData } from "./hooks/usePropertyListData";
 import PropertyListHeader from "./components/PropertyListHeader";
@@ -59,6 +66,12 @@ const PropertyListScreen = () => {
     isFetchingNextPage,
     loadMore,
   } = usePropertyListData();
+
+  // Global body scroll — shared offset drives the fixed header's bottom shadow.
+  const scrollY = useSharedValue(0);
+  const onBodyScroll = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
 
   const handlePressCreate = () => {
     navigation.navigate("CreateProperty");
@@ -84,7 +97,7 @@ const PropertyListScreen = () => {
   if (isLoading) {
     return (
       <SafeAreaView
-        edges={["top"]}
+        edges={[]}
         style={[styles.container, { backgroundColor: propColors.canvas }]}
       >
         <PropertyListHeader
@@ -92,6 +105,7 @@ const PropertyListScreen = () => {
           isLoading={isLoading}
           onPressCreate={handlePressCreate}
           onSearch={setSearch}
+          scrollY={scrollY}
         />
         <View style={styles.loadingWrapper}>
           {[0, 1, 2].map((i) => (
@@ -106,7 +120,7 @@ const PropertyListScreen = () => {
   if (isError && properties.length === 0) {
     return (
       <SafeAreaView
-        edges={["top"]}
+        edges={[]}
         style={[styles.container, { backgroundColor: propColors.canvas }]}
       >
         <PropertyListHeader
@@ -114,6 +128,7 @@ const PropertyListScreen = () => {
           isLoading={false}
           onPressCreate={handlePressCreate}
           onSearch={setSearch}
+          scrollY={scrollY}
         />
         <View style={styles.errorWrapper}>
           <SectionError
@@ -127,7 +142,7 @@ const PropertyListScreen = () => {
 
   return (
     <SafeAreaView
-      edges={["top"]}
+      edges={[]}
       style={[styles.container, { backgroundColor: propColors.canvas }]}
     >
       <PropertyListHeader
@@ -135,6 +150,7 @@ const PropertyListScreen = () => {
         isLoading={isLoading}
         onPressCreate={handlePressCreate}
         onSearch={setSearch}
+        scrollY={scrollY}
       />
 
       {/* FlatList — dim to 0.6 opacity while isFetching (background refetch) */}
@@ -144,7 +160,7 @@ const PropertyListScreen = () => {
           { opacity: isFetching && !isRefreshing ? 0.6 : 1 },
         ]}
       >
-        <FlatList
+        <Animated.FlatList<PropertyListResponse>
           data={properties}
           renderItem={({ item }) => (
             <PropertyCardComponent
@@ -156,6 +172,8 @@ const PropertyListScreen = () => {
             />
           )}
           keyExtractor={(item) => item.id}
+          onScroll={onBodyScroll}
+          scrollEventThrottle={16}
           ItemSeparatorComponent={() => (
             <View style={{ height: PROP_SPACE.gap }} />
           )}
