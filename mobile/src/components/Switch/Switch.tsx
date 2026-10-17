@@ -1,7 +1,7 @@
-import { createStyles } from '@/styles/component/StyleInput';
-import { useTheme } from '@/theme/ThemeProvider';
+import { FieldError, FieldLabel } from '@/components/FormField';
+import { tokens, uiColors, uiType } from '@/theme';
 import React from 'react';
-import { Switch as RNSwitch, Text, View } from 'react-native';
+import { Switch as RNSwitch, StyleSheet, Text, View } from 'react-native';
 import { SwitchProps } from './types';
 
 const Switch: React.FC<SwitchProps> = ({
@@ -20,18 +20,10 @@ const Switch: React.FC<SwitchProps> = ({
   labelStyle,
   alignLabel = 'vertical',
   descriptionStyle,
-  errorStyle,
-  containerClassName,
-  labelClassName,
-  descriptionClassName,
-  errorClassName,
   testID,
   accessibilityLabel,
   accessibilityHint,
 }) => {
-  const theme = useTheme();
-  const styles = createStyles(theme);
-
   // Tính toán size cho switch
   const getSwitchSize = () => {
     switch (size) {
@@ -47,65 +39,35 @@ const Switch: React.FC<SwitchProps> = ({
   // Tính toán màu sắc
   const getActiveColor = () => {
     if (activeColor) return activeColor;
-    if (error) return '#ff3b30';
-    return '#007AFF';
+    if (error) return tokens.colors.error;
+    return tokens.colors.primary;
   };
 
   const getInactiveColor = () => {
     if (inactiveColor) return inactiveColor;
-    return '#E5E7EB';
+    return uiColors.fieldBorder;
   };
 
   const getThumbColor = () => {
     if (thumbColor) return thumbColor;
-    return '#FFFFFF';
+    return tokens.colors.surface;
   };
 
-  // Style cho description
-  const descriptionStyles = {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 8,
-    ...(descriptionStyle as object),
-  };
-
-  // Style cho error text
-  const errorStyles = {
-    fontSize: 14,
-    color: '#ff3b30',
-    marginTop: 4,
-    ...(errorStyle as object),
-  };
+  const isHorizontal = alignLabel === 'horizontal';
 
   return (
-    <View
-      style={[{ marginVertical: 8 }, containerStyle]}
-      className={containerClassName}
-      testID={testID}
-    >
-      <View
-        className={`flex-row  ${
-          alignLabel === 'horizontal'
-            ? 'flex-row items-center align-center'
-            : 'flex-col items-start'
-        }`}
-      >
-        <View className="mr-4">
+    <View style={[styles.container, containerStyle]} testID={testID}>
+      <View style={isHorizontal ? styles.rowHorizontal : styles.rowVertical}>
+        <View style={isHorizontal ? styles.textColHorizontal : undefined}>
           {label && (
-            <Text
-              style={[
-                styles.label,
-                labelStyle,
-                { marginBottom: alignLabel === 'horizontal' ? 0 : 8 },
-              ]}
-              className={labelClassName}
-            >
-              {label}
-              {required && <Text style={styles.requiredText}> *</Text>}
-            </Text>
+            <FieldLabel
+              label={label}
+              required={required}
+              style={[isHorizontal && styles.labelInline, labelStyle]}
+            />
           )}
           {description && (
-            <Text style={descriptionStyles} className={descriptionClassName}>
+            <Text style={[uiType.caption, styles.description, descriptionStyle]}>
               {description}
             </Text>
           )}
@@ -131,14 +93,34 @@ const Switch: React.FC<SwitchProps> = ({
           }}
         />
       </View>
-
-      {error && (
-        <Text style={errorStyles} className={errorClassName}>
-          {error}
-        </Text>
-      )}
+      <FieldError message={error} />
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    marginVertical: 8,
+  },
+  rowHorizontal: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 16,
+  },
+  rowVertical: {
+    alignItems: 'flex-start',
+  },
+  textColHorizontal: {
+    flex: 1,
+  },
+  labelInline: {
+    marginBottom: 0,
+  },
+  description: {
+    marginTop: 2,
+    marginBottom: 8,
+  },
+});
 
 export default Switch;

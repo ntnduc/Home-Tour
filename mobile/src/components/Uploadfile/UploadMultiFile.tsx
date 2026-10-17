@@ -1,16 +1,14 @@
-import { createStyles } from '@/styles/component/StyleUploadFile';
-import { useTheme } from '@/theme/ThemeProvider';
+import Card from '@/components/Card';
+import Chip from '@/components/Chip';
+import { FieldError } from '@/components/FormField';
+import IconButton from '@/components/IconButton';
+import NoticeBanner from '@/components/NoticeBanner';
+import PressableScale from '@/components/PressableScale';
+import { tokens, uiColors, uiRadius, uiType, uiWeight } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Alert, Image, StyleSheet, Text, View } from 'react-native';
 import ImageView from 'react-native-image-viewing';
 import LabelForm from '../LabelForm';
 import {
@@ -81,8 +79,6 @@ const UploadMultiFile: React.FC<UploadMultiFileProps> = ({
   onUploadEnd,
   onError,
 }) => {
-  const theme = useTheme();
-  const styles = createStyles(theme);
 
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -216,46 +212,46 @@ const UploadMultiFile: React.FC<UploadMultiFileProps> = ({
 
   return (
     <>
-      <View className="bg-white p-4 rounded-2xl border border-gray-100">
-        {label && (
-          <LabelForm {...(typeof label === 'object' ? label : { label, required })} />
-        )}
-
-        <View className="flex-row justify-between items-center mb-3 mt-1">
-          <View>
-            {!label && <Text className="text-lg font-semibold text-gray-900">Ảnh thực tế</Text>}
-            <Text className="text-sm text-gray-500">Tải lên ít nhất {minFiles} ảnh</Text>
+      <Card style={ui.card}>
+        <View style={ui.headerRow}>
+          <View style={ui.flex}>
+            {label ? (
+              <LabelForm {...(typeof label === 'object' ? label : { label, required })} />
+            ) : (
+              <Text style={uiType.section}>Ảnh thực tế</Text>
+            )}
+            <Text style={uiType.caption}>Tải lên ít nhất {minFiles} ảnh</Text>
           </View>
-          <Text className="text-blue-600 font-medium">{files.length}/{maxFiles}</Text>
+          <Chip variant="primary" label={`${files.length}/${maxFiles}`} />
         </View>
 
-        <View className="flex-row flex-wrap -m-1">
+        <View style={ui.grid}>
           {files.map((file, index) => {
-
             const uri = file?.id ? getFileUrl(file.id) : file.uri;
-
             return (
-              <View key={file.id || `${file.uri}_${index}`} className="w-1/3 p-1">
-                <View className="relative aspect-square rounded-2xl overflow-hidden border border-gray-100 bg-gray-100">
-                  <TouchableOpacity
-                    className="w-full h-full"
+              <View key={file.id || `${file.uri}_${index}`} style={ui.cell}>
+                <View style={ui.thumb}>
+                  <PressableScale
+                    style={ui.fill}
+                    scaleTo={0.97}
                     onPress={() => {
                       setPreviewIndex(index);
                       setPreviewVisible(true);
                     }}
                     disabled={disabled}
+                    accessibilityLabel={`Xem ảnh ${index + 1}`}
                   >
-                    <Image source={{ uri }} className="w-full h-full" resizeMode="cover" />
-                  </TouchableOpacity>
-
+                    <Image source={{ uri }} style={ui.fill} resizeMode="cover" />
+                  </PressableScale>
                   {!disabled && (
-                    <TouchableOpacity
+                    <IconButton
+                      icon="close"
+                      tone="error"
+                      size="sm"
                       onPress={() => handleRemove(index)}
-                      className="absolute top-1 right-1 bg-white/90 rounded-full"
-                      style={styles.removeButton}
-                    >
-                      <Ionicons name="close-circle" size={20} color="#ef4444" />
-                    </TouchableOpacity>
+                      accessibilityLabel={`Xoá ảnh ${index + 1}`}
+                      style={ui.remove}
+                    />
                   )}
                 </View>
               </View>
@@ -263,37 +259,32 @@ const UploadMultiFile: React.FC<UploadMultiFileProps> = ({
           })}
 
           {canAddMore && (
-            <View className="w-1/3 p-1">
-              <TouchableOpacity
+            <View style={ui.cell}>
+              <PressableScale
                 onPress={handlePickImages}
                 disabled={disabled || isLoading}
-                className="aspect-square rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 items-center justify-center"
+                scaleTo={0.95}
+                accessibilityLabel="Thêm ảnh"
+                style={[ui.thumb, ui.addTile]}
               >
                 {isLoading ? (
-                  <ActivityIndicator size="small" color="#6b7280" />
+                  <ActivityIndicator size="small" color={tokens.colors.primary} />
                 ) : (
                   <>
-                    <Ionicons name="add" size={24} color="#9ca3af" />
-                    <Text className="text-xs text-gray-400 mt-1">Thêm ảnh</Text>
+                    <Ionicons name="add" size={24} color={tokens.colors.primary} />
+                    <Text style={ui.addText}>Thêm ảnh</Text>
                   </>
                 )}
-              </TouchableOpacity>
+              </PressableScale>
             </View>
           )}
         </View>
 
         {files.length < minFiles && (
-          <Text className="text-amber-600 text-xs mt-2">
-            Bạn cần tải tối thiểu {minFiles} ảnh.
-          </Text>
+          <NoticeBanner tone="warning" message={`Bạn cần tải tối thiểu ${minFiles} ảnh.`} />
         )}
-
-        {error && (
-          <Text style={styles.errorText} className="mt-1">
-            {error}
-          </Text>
-        )}
-      </View>
+        <FieldError message={error} />
+      </Card>
 
       <ImageView
         images={imageSources}
@@ -306,3 +297,55 @@ const UploadMultiFile: React.FC<UploadMultiFileProps> = ({
 };
 
 export default UploadMultiFile;
+
+const ui = StyleSheet.create({
+  card: {
+    gap: 12,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  flex: {
+    flex: 1,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    margin: -4,
+  },
+  cell: {
+    width: '33.333%',
+    padding: 4,
+  },
+  thumb: {
+    aspectRatio: 1,
+    borderRadius: uiRadius.icon,
+    overflow: 'hidden',
+    backgroundColor: uiColors.canvas,
+  },
+  fill: {
+    width: '100%',
+    height: '100%',
+  },
+  remove: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+  },
+  addTile: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: tokens.colors.primary,
+    backgroundColor: tokens.colors.primaryMuted,
+  },
+  addText: {
+    fontSize: 12,
+    fontWeight: uiWeight.semibold,
+    color: tokens.colors.primary,
+  },
+});

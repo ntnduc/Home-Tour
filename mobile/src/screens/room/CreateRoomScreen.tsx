@@ -1,8 +1,10 @@
+import ActionButtonBottom from "@/components/ActionButtonBottom";
+import EmptyState from "@/components/EmptyState";
+import { uiColors, uiSpace } from "@/theme";
 import { RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { RootStackParamList } from "../../navigation/types";
 
 type CreateRoomScreenProps = {
@@ -10,6 +12,7 @@ type CreateRoomScreenProps = {
   route: RouteProp<RootStackParamList, "CreateRoom">;
 };
 
+/** Placeholder until the create-room form is implemented. */
 const CreateRoomScreen = ({ navigation, route }: CreateRoomScreenProps) => {
   const { propertyId } = route.params;
 
@@ -19,29 +22,29 @@ const CreateRoomScreen = ({ navigation, route }: CreateRoomScreenProps) => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      <ScrollView className="flex-1 p-4">
-        <Text className="text-2xl font-bold text-gray-900 mb-6">
-          Tạo Phòng Mới
-        </Text>
-
-        <View className="bg-white rounded-xl p-4 mb-6 shadow-sm">
-          <Text className="text-sm text-gray-500 text-center py-10">
-            Form tạo phòng cho tài sản ID: {propertyId}
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          className="bg-green-600 p-4 rounded-xl items-center"
-          onPress={handleSave}
-        >
-          <Text className="text-white text-base font-semibold">Lưu Phòng</Text>
-        </TouchableOpacity>
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <EmptyState
+          icon="construct-outline"
+          title="Form tạo phòng đang phát triển"
+          description={`Tài sản: ${propertyId}`}
+        />
       </ScrollView>
-    </SafeAreaView>
+      <ActionButtonBottom
+        actions={[{ label: "Lưu phòng", icon: "checkmark-circle", variant: "success", onPress: handleSave }]}
+      />
+    </View>
   );
 };
 
-// Styles moved to Tailwind classes
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: uiColors.canvas,
+  },
+  content: {
+    padding: uiSpace.screen,
+  },
+});
 
 export default CreateRoomScreen;

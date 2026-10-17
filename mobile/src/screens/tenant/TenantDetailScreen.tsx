@@ -1,11 +1,13 @@
-import { Ionicons } from "@expo/vector-icons";
+import ActionButtonBottom from "@/components/ActionButtonBottom";
+import FormScreen from "@/components/FormScreen";
+import FormSection from "@/components/FormSection";
+import IconButton from "@/components/IconButton";
+import { uiType } from "@/theme";
 import { RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Text } from "react-native";
 import { RootStackParamList } from "../../navigation/types";
-import { colors } from "../../theme/colors";
 
 type TenantDetailScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, "TenantDetail">;
@@ -24,43 +26,31 @@ const TenantDetailScreen = ({ navigation, route }: TenantDetailScreenProps) => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      <ScrollView className="flex-1 p-4">
-        <View className="flex-row justify-between items-center mb-6">
-          <Text className="text-2xl font-bold text-gray-900">
-            Chi Tiết Khách Thuê
-          </Text>
-          <TouchableOpacity
+    <FormScreen
+      footer={
+        <ActionButtonBottom
+          actions={[
+            { label: "Tạo hợp đồng", icon: "document-text", onPress: handleCreateContract },
+          ]}
+        />
+      }
+    >
+      <FormSection
+        title="Thông tin cá nhân"
+        icon="person-outline"
+        action={
+          <IconButton
+            icon="create-outline"
+            tone="primary"
             onPress={handleEditTenant}
-            className="p-2 bg-primary-muted rounded-full"
-          >
-            <Ionicons name="pencil" size={24} color={colors.primary.main} />
-          </TouchableOpacity>
-        </View>
-
-        <View className="bg-white rounded-xl p-4 mb-4 shadow-sm">
-          <Text className="text-lg font-semibold text-gray-900 mb-3">
-            Thông Tin Cá Nhân
-          </Text>
-          <Text className="text-sm text-gray-500">Tenant ID: {tenantId}</Text>
-        </View>
-
-        <View className="mt-6">
-          <TouchableOpacity
-            className="bg-primary flex-row items-center justify-center p-4 rounded-xl"
-            onPress={handleCreateContract}
-          >
-            <Ionicons name="document-text" size={20} color="white" />
-            <Text className="text-white text-base font-semibold ml-2">
-              Tạo Hợp Đồng
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+            accessibilityLabel="Sửa khách thuê"
+          />
+        }
+      >
+        <Text style={uiType.caption}>Mã khách thuê: {tenantId}</Text>
+      </FormSection>
+    </FormScreen>
   );
 };
-
-// Styles moved to Tailwind classes
 
 export default TenantDetailScreen;

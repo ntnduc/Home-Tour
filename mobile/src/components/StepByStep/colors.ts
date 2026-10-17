@@ -1,4 +1,4 @@
-import { colors } from "@/theme/colors";
+import { tokens, uiColors } from "@/theme";
 
 /**
  * Bảng màu cho phần hiển thị tiến trình (icon tròn, đường nối, label) của
@@ -8,79 +8,27 @@ import { colors } from "@/theme/colors";
  * - Bước đã hoàn thành  -> xanh lá (success)
  * - Bước đang thực hiện -> màu thương hiệu (primary)
  * - Bước chưa tới       -> xám nhạt (disabled)
- *
- * Toàn bộ giá trị được lấy từ `@/theme/colors` để đồng bộ với UI của app.
  */
 export const stepProgressColors = {
   // --- Bước đang thực hiện (active) ---
-  activeStepIconColor: colors.primary.main,
-  activeStepIconBorderColor: colors.primary.main,
-  activeStepNumColor: colors.neutral.white,
-  activeLabelColor: colors.primary.main,
+  activeStepIconColor: tokens.colors.primary,
+  activeStepIconBorderColor: tokens.colors.primary,
+  activeStepNumColor: tokens.colors.onPrimary,
+  activeLabelColor: tokens.colors.primary,
 
   // --- Bước đã hoàn thành (completed) ---
-  completedStepIconColor: colors.status.success,
-  completedStepNumColor: colors.neutral.white,
-  completedCheckColor: colors.neutral.white,
-  completedProgressBarColor: colors.status.success,
-  completedLabelColor: colors.status.success,
+  completedStepIconColor: tokens.colors.success,
+  completedStepNumColor: tokens.colors.onPrimary,
+  completedCheckColor: tokens.colors.onPrimary,
+  completedProgressBarColor: tokens.colors.success,
+  completedLabelColor: tokens.colors.success,
 
   // --- Bước chưa tới (disabled / upcoming) ---
-  disabledStepIconColor: colors.neutral.gray[300],
-  disabledStepNumColor: colors.neutral.gray[600],
-  progressBarColor: colors.neutral.gray[300],
-  labelColor: colors.text.secondary,
+  disabledStepIconColor: tokens.palette.gray[300],
+  disabledStepNumColor: tokens.palette.gray[600],
+  progressBarColor: tokens.palette.gray[300],
+  labelColor: uiColors.textMuted,
 } as const;
 
-/**
- * Các "mẫu" (preset) style cho nút hành động trong từng bước.
- * Mỗi variant gồm class Tailwind cho container/text và mã màu cho icon/spinner.
- *
- * Dùng chung một hệ variant giống `ActionButtonBottom` để tái sử dụng dễ dàng.
- */
-export type StepButtonVariant =
-  | "primary"
-  | "secondary"
-  | "success"
-  | "danger"
-  | "outline";
-
-interface StepButtonVariantStyle {
-  /** Class Tailwind cho container (nền, viền). */
-  container: string;
-  /** Class Tailwind cho text. */
-  text: string;
-  /** Màu icon / spinner (loading). */
-  contentColor: string;
-}
-
-export const stepButtonVariants: Record<
-  StepButtonVariant,
-  StepButtonVariantStyle
-> = {
-  primary: {
-    container: "bg-primary border border-transparent",
-    text: "text-white",
-    contentColor: colors.neutral.white,
-  },
-  secondary: {
-    container: "bg-warning border border-transparent",
-    text: "text-white",
-    contentColor: colors.neutral.white,
-  },
-  success: {
-    container: "bg-success border border-transparent",
-    text: "text-white",
-    contentColor: colors.neutral.white,
-  },
-  danger: {
-    container: "bg-error border border-transparent",
-    text: "text-white",
-    contentColor: colors.neutral.white,
-  },
-  outline: {
-    container: "bg-white border border-gray-300",
-    text: "text-gray-700",
-    contentColor: colors.text.primary,
-  },
-};
+/** Variant name accepted by step actions (rendered through `Button`). */
+export type StepButtonVariant = "primary" | "secondary" | "success" | "danger" | "outline";

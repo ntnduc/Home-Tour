@@ -8,6 +8,7 @@ import type {
   ViewStyle,
 } from "react-native";
 import { FlatList, Platform, StyleSheet, Text, View } from "react-native";
+import { uiColors } from "@/theme";
 import Input, { InputIconProps } from "./Input";
 
 export type AutocompleteInputProps<Item> = TextInputProps & {
@@ -51,7 +52,7 @@ export const AutocompleteInput = React.forwardRef(
       onStartShouldSetResponderCapture = () => false,
       renderResultList: ResultList = FlatList,
       renderTextInput: customRenderTextInput = (props) => {
-        return <Input {...props} height={30} keyboardType="default" />;
+        return <Input {...props} keyboardType="default" />;
       },
       flatListProps,
       style,
@@ -109,16 +110,12 @@ const androidStyles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  input: {
-    backgroundColor: "white",
-    height: 40,
-    paddingLeft: 3,
-  },
+  input: {},
   inputContainer: {
     marginBottom: 0,
   },
   list: {
-    backgroundColor: "white",
+    backgroundColor: uiColors.card,
     borderTopWidth: 0,
     margin: 10,
     marginTop: 0,
@@ -130,12 +127,9 @@ const iosStyles = StyleSheet.create({
     zIndex: 1,
   },
   inputContainer: {},
-  input: {
-    height: 40,
-    paddingLeft: 3,
-  },
+  input: {},
   list: {
-    backgroundColor: "white",
+    backgroundColor: uiColors.card,
     borderTopWidth: 0,
     left: 0,
     position: "absolute",

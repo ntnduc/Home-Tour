@@ -1,5 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import { tokens } from "@/theme";
+import DisplayField from '@/components/DisplayField';
+import { fieldStyles } from '@/components/FormField';
+import IconButton from '@/components/IconButton';
+import StatusBadge from '@/components/StatusBadge';
+import { uiColors, uiRadius, uiSpace, uiType } from '@/theme';
 import React, {
   forwardRef,
   useCallback,
@@ -7,7 +11,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
 // Components
 import Input from '@/components/Input';
@@ -24,8 +28,6 @@ import {
   SERVICE_CALCULATE_METHOD_WITH_INFO,
   ServiceCalculateMethod,
 } from '@/constant/service.constant';
-import { createStyles } from '@/styles/component/StyleComboBox';
-import { useTheme } from '@/theme/ThemeProvider';
 import { ContractServiceDetailResponse } from '@/types/contract-service';
 import { formatCurrency } from '@/utils/appUtil';
 import BottomSheet, {
@@ -60,8 +62,6 @@ const ContractServiceComponent = forwardRef<
   ContractServiceComponentRef,
   ContractServiceComponentProps
 >(({ onSuccess }, ref) => {
-  const theme = useTheme();
-  const styles = createStyles(theme);
   const styleHeader = stylesHeader;
   const bottomSheetRef = useRef<BottomSheet>(null);
   const [index, setIndex] = useState<number>(0);
@@ -149,30 +149,19 @@ const ContractServiceComponent = forwardRef<
             paddingHorizontal: 10,
           }}
         >
-          <View className="flex-row items-center flex-1">
-            <Ionicons
-              className="mr-4"
-              name={item.icon as any}
-              size={17}
-              color={tokens.colors.muted}
-            />
-            <Text style={styles.itemText}>{item.label}</Text>
+          <View style={sheetStyles.itemRow}>
+            <Ionicons name={item.icon as any} size={17} color={uiColors.textMuted} />
+            <Text style={fieldStyles.text}>{item.label}</Text>
           </View>
-          <TouchableOpacity
+          <IconButton
+            icon="information-circle-outline"
+            tone="info"
+            size="sm"
             onPress={() => {
-              Alert.alert(
-                'Thông tin',
-                SERVICE_CALCULATE_METHOD_WITH_INFO[item.key].info,
-              );
+              Alert.alert('Thông tin', SERVICE_CALCULATE_METHOD_WITH_INFO[item.key].info);
             }}
-          >
-            <Ionicons
-              className="mr-1"
-              name={'information-circle-outline'}
-              size={20}
-              color={tokens.colors.info}
-            />
-          </TouchableOpacity>
+            accessibilityLabel={`Giải thích: ${item.label}`}
+          />
         </View>
       );
     },
@@ -183,7 +172,7 @@ const ContractServiceComponent = forwardRef<
     switch (calculationMethod) {
       case ServiceCalculateMethod.PER_UNIT_SIMPLE:
         return (
-          <View className="mb-3">
+          <View>
             <Controller
               control={control}
               name="helperValue"
@@ -213,7 +202,7 @@ const ContractServiceComponent = forwardRef<
         );
       case ServiceCalculateMethod.FIXED_PER_NUMBER:
         return (
-          <View className="mb-3">
+          <View>
             <Controller
               control={control}
               name="helperValue"
@@ -316,11 +305,12 @@ const ContractServiceComponent = forwardRef<
           />
         </View>
         <BottomSheetScrollView
-          className="p-4 mt-[60px] mb-[90px]"
+          style={sheetStyles.scroll}
+          contentContainerStyle={sheetStyles.body}
           nestedScrollEnabled={true}
           showsVerticalScrollIndicator={true}
         >
-          <View className="mb-3">
+          <View>
             <Controller
               control={control}
               name="name"
@@ -343,7 +333,7 @@ const ContractServiceComponent = forwardRef<
             />
           </View>
 
-          <View className="mb-3">
+          <View>
             <Controller
               control={control}
               name="calculationMethod"
@@ -371,8 +361,8 @@ const ContractServiceComponent = forwardRef<
                           <Ionicons
                             name={findIconInOptions.icon as any}
                             size={18}
-                            className="mr-3 ml-[-1px]"
-                            color={tokens.colors.muted}
+                            style={sheetStyles.leftIcon}
+                            color={uiColors.textMuted}
                           />
                         );
                       }
@@ -382,8 +372,8 @@ const ContractServiceComponent = forwardRef<
                         <Ionicons
                           name={value.icon as any}
                           size={18}
-                          className="mr-3 ml-[-1px]"
-                          color={tokens.colors.muted}
+                          style={sheetStyles.leftIcon}
+                          color={uiColors.textMuted}
                         />
                       );
                     }
@@ -396,7 +386,7 @@ const ContractServiceComponent = forwardRef<
 
           {_renderHelpInfo()}
 
-          <View className="mb-3">
+          <View>
             <Controller
               control={control}
               name="price"
@@ -431,7 +421,7 @@ const ContractServiceComponent = forwardRef<
             />
           </View>
 
-          <View className="mb-3">
+          <View>
             <Controller
               control={control}
               name="isEnabled"
@@ -448,57 +438,34 @@ const ContractServiceComponent = forwardRef<
             />
           </View>
 
-          <View className="bg-info-surface rounded-2xl p-6 border border-info mb-6">
-            <Text className="text-lg font-semibold text-gray-800 mb-4 text-center">
-              Tóm tắt cấu hình
-            </Text>
-
-            <View className="space-y-3">
-              <View className="flex-row justify-between items-center py-2 border-b border-info">
-                <Text className="text-base text-gray-600 font-medium">
-                  Phương thức:
-                </Text>
-                <Text className="text-base text-gray-800 font-semibold text-right flex-1">
-                  {SERVICE_CALCULATE_METHOD_WITH_INFO[calculationMethod].label}
-                </Text>
-              </View>
-
-              {helperValue && (
-                <View className="flex-row justify-between items-center py-2 border-b border-info">
-                  <Text className="text-base text-gray-600 font-medium">
-                    Số lượng / Giá trị:
-                  </Text>
-                  <Text className="text-base text-gray-800 font-semibold text-right flex-1">
-                    {helperValue?.toString()}
-                  </Text>
-                </View>
-              )}
-
-              {defaultValues?.calculationMethod !==
-                ServiceCalculateMethod.FREE && (
-                <View className="flex-row justify-between items-center py-2 border-b border-info">
-                  <Text className="text-base text-gray-600 font-medium">
-                    Giá dịch vụ:
-                  </Text>
-                  <Text className="text-base text-gray-800 font-semibold text-right flex-1">
-                    {formatCurrency(price?.toString() || '0')} VNĐ
-                  </Text>
-                </View>
-              )}
-
-              <View className="flex-row justify-between items-center py-2">
-                <Text className="text-base text-gray-600 font-medium">
-                  Sử dụng:
-                </Text>
-                <Text
-                  className={`text-base ${
-                    isEnabled ? 'text-green-600' : 'text-red-600'
-                  } font-semibold text-right flex-1`}
-                >
-                  {isEnabled ? 'Đang sử dụng' : 'Không sử dụng'}
-                </Text>
-              </View>
-            </View>
+          <View style={sheetStyles.summary}>
+            <Text style={uiType.eyebrow}>Tóm tắt cấu hình</Text>
+            <DisplayField
+              label="Phương thức"
+              value={SERVICE_CALCULATE_METHOD_WITH_INFO[calculationMethod].label}
+              strong
+            />
+            {helperValue && (
+              <DisplayField label="Số lượng / Giá trị" value={helperValue?.toString()} strong />
+            )}
+            {defaultValues?.calculationMethod !== ServiceCalculateMethod.FREE && (
+              <DisplayField
+                label="Giá dịch vụ"
+                value={`${formatCurrency(price?.toString() || '0')}đ`}
+                strong
+              />
+            )}
+            <DisplayField
+              compact
+              label="Sử dụng"
+              value={
+                <StatusBadge
+                  size="sm"
+                  tone={isEnabled ? 'success' : 'error'}
+                  label={isEnabled ? 'Đang sử dụng' : 'Không sử dụng'}
+                />
+              }
+            />
           </View>
         </BottomSheetScrollView>
       </BottomSheet>
@@ -507,5 +474,31 @@ const ContractServiceComponent = forwardRef<
 });
 
 ContractServiceComponent.displayName = 'ContractServiceComponent';
+
+const sheetStyles = StyleSheet.create({
+  scroll: {
+    marginTop: 60,
+    marginBottom: 90,
+  },
+  body: {
+    padding: uiSpace.screen,
+    gap: uiSpace.gap,
+  },
+  itemRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  leftIcon: {
+    marginRight: 10,
+  },
+  summary: {
+    gap: 4,
+    padding: 16,
+    borderRadius: uiRadius.tile,
+    backgroundColor: uiColors.canvas,
+  },
+});
 
 export default ContractServiceComponent;

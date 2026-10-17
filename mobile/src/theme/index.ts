@@ -56,8 +56,10 @@ export { palette } from "./primitives";
 export { semanticColors } from "./semantic";
 export { radius } from "./radius";
 export { colors } from "./colors";
-export { statusColor } from "./status";
+export { statusColor, STATUS_TONE_COLOR } from "./status";
+export type { StatusBadgeSpec, StatusTone } from "./status";
 export { shadows } from "./shadows";
+export { uiColors, uiRadius, uiSpace, uiType, uiWeight } from "./ui";
 
 // Re-export types
 export type { Palette } from "./primitives";

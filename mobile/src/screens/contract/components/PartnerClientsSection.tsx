@@ -1,10 +1,12 @@
-import CardComponent from "@/screens/common/CardComponent";
-import { tokens } from "@/theme";
+import AddButton from "@/components/AddButton";
+import { FieldError } from "@/components/FormField";
+import FormSection from "@/components/FormSection";
+import IconButton from "@/components/IconButton";
+import IconSquircle from "@/components/IconSquircle";
+import { tokens, uiColors, uiRadius, uiType } from "@/theme";
 import { ClientCreateRequest } from "@/types/client";
-import { cn } from "@/utils/appUtil";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 type PartnerClientsSectionProps = {
   onAdd: () => void;
@@ -14,6 +16,15 @@ type PartnerClientsSectionProps = {
   error?: string;
 };
 
+/**
+ * "Người ở cùng" section of the create-contract form.
+ *
+ * ```
+ * ▣ Người ở cùng                    [+ Thêm]
+ * ───────────────────────────────────────────
+ * ╭ ▣ Nguyễn B · SĐT · CCCD        (✎)(🗑) ╮  tile per companion
+ * ```
+ */
 const PartnerClientsSection: React.FC<PartnerClientsSectionProps> = ({
   onAdd,
   onEdit,
@@ -21,90 +32,78 @@ const PartnerClientsSection: React.FC<PartnerClientsSectionProps> = ({
   error,
   data,
 }) => {
-  const hasCompanion = data && data.length > 0;
+  const hasCompanion = !!data && data.length > 0;
 
   return (
-    <CardComponent
-      className={cn({
-        "border border-red-400": error,
-      })}
-      style={{ borderColor: tokens.colors.error }}
+    <FormSection
       title="Người ở cùng"
-      renderActions={() => (
-        <TouchableOpacity
-          className="flex-row items-center px-3 py-2 rounded-full bg-emerald-50 border border-emerald-200"
+      icon="people-outline"
+      caption={hasCompanion ? `${data.length} người` : "Có thể bỏ qua nếu không có người ở cùng"}
+      style={error ? styles.cardError : undefined}
+      action={
+        <AddButton
+          label="Thêm"
+          icon="person-add-outline"
+          variant="soft"
           onPress={onAdd}
-        >
-          <Ionicons name="person-add-outline" size={18} color={tokens.colors.success} />
-          <Text className="ml-2 text-sm font-medium text-emerald-700">
-            Thêm người ở cùng
-          </Text>
-        </TouchableOpacity>
-      )}
+          accessibilityLabel="Thêm người ở cùng"
+        />
+      }
     >
       {!hasCompanion ? (
-        <View className="items-center justify-center py-6">
-          <Ionicons name="people-circle-outline" size={40} color={tokens.colors.subtle} />
-          <Text className="mt-3 text-sm text-gray-500">
-            Chưa thêm người ở cùng nào
-          </Text>
-          <Text className="text-xs text-gray-400 mt-1 text-center">
-            Bạn có thể bỏ qua bước này nếu không có người ở cùng
-          </Text>
-        </View>
+        <Text style={uiType.caption}>Chưa thêm người ở cùng nào.</Text>
       ) : (
-        <View className="flex flex-col gap-3">
-          {data.map((client, idx) => {
-            return (
-              <View
-                key={`companion-${idx}`}
-                className="p-3 rounded-xl border border-gray-100 bg-gray-50"
-              >
-                <View className="flex-row items-center justify-between mb-2">
-                  <View className="flex-1 pr-3">
-                    <Text className="text-sm font-semibold text-gray-900">
-                      {client.name}
-                    </Text>
-                    {client.phoneNumber ? (
-                      <Text className="text-xs text-gray-500 mt-1">
-                        SĐT: {client.phoneNumber}
-                      </Text>
-                    ) : null}
-                    {client.idCardNumber ? (
-                      <Text className="text-xs text-gray-500">
-                        CCCD/CMND: {client.idCardNumber}
-                      </Text>
-                    ) : null}
-                  </View>
-                  <View className="flex-row items-center">
-                    <TouchableOpacity
-                      onPress={() => onEdit(idx)}
-                      className="px-2 py-1 mr-2 rounded-full bg-info-surface"
-                    >
-                      <Text className="text-xs font-medium text-info">
-                        Cập nhật
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => onDelete(idx)}
-                      className="px-2 py-1 rounded-full bg-red-50"
-                    >
-                      <Text className="text-xs font-medium text-red-500">
-                        Xóa
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            );
-          })}
-        </View>
+        data.map((client, idx) => (
+          <View key={`companion-${idx}`} style={styles.tile}>
+            <IconSquircle icon="person-outline" tone="neutral" size="sm" />
+            <View style={styles.flex}>
+              <Text style={uiType.bodyStrong} numberOfLines={1}>
+                {client.name}
+              </Text>
+              {client.phoneNumber ? (
+                <Text style={uiType.caption}>SĐT: {client.phoneNumber}</Text>
+              ) : null}
+              {client.idCardNumber ? (
+                <Text style={uiType.caption}>CCCD/CMND: {client.idCardNumber}</Text>
+              ) : null}
+            </View>
+            <IconButton
+              icon="create-outline"
+              size="sm"
+              onPress={() => onEdit(idx)}
+              accessibilityLabel={`Cập nhật ${client.name}`}
+            />
+            <IconButton
+              icon="trash-outline"
+              tone="error"
+              size="sm"
+              onPress={() => onDelete(idx)}
+              accessibilityLabel={`Xoá ${client.name}`}
+            />
+          </View>
+        ))
       )}
-      {error ? (
-        <Text className="text-xs text-red-500 mt-2">{error}</Text>
-      ) : null}
-    </CardComponent>
+      <FieldError message={error} />
+    </FormSection>
   );
 };
+
+const styles = StyleSheet.create({
+  cardError: {
+    borderWidth: 1,
+    borderColor: tokens.colors.error,
+  },
+  tile: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 12,
+    borderRadius: uiRadius.tile,
+    backgroundColor: uiColors.canvas,
+  },
+  flex: {
+    flex: 1,
+  },
+});
 
 export default PartnerClientsSection;

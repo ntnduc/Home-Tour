@@ -1,31 +1,16 @@
 import React from "react";
-import { StyleProp, Text, TextStyle, View } from "react-native";
-import { createStyles } from "../styles/component/StyleInput";
-import { useTheme } from "../theme/ThemeProvider";
+import { StyleProp, TextStyle } from "react-native";
+import { FieldLabel } from "./FormField";
 
 export interface LabelProps {
   label: string;
   required?: boolean;
   labelStyles?: StyleProp<TextStyle>;
-  labelClassName?: string;
 }
 
-const LabelForm = ({
-  label,
-  required,
-  labelStyles,
-  labelClassName,
-}: LabelProps) => {
-  const theme = useTheme();
-  const styles = createStyles(theme);
-  return (
-    <View>
-      <Text style={[styles.label, labelStyles]} className={labelClassName}>
-        {label}
-        {required && <Text style={styles.requiredText}> *</Text>}
-      </Text>
-    </View>
-  );
-};
+/** Form label for custom fields — same look as Input/ComboBox labels (`FieldLabel`). */
+const LabelForm = ({ label, required, labelStyles }: LabelProps) => (
+  <FieldLabel label={label} required={required} style={labelStyles} />
+);
 
 export default LabelForm;

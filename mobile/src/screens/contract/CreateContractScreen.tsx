@@ -1,5 +1,6 @@
 import { ChildStep, ParrentStep } from "@/components/StepByStep";
 import { RootStackParamList } from "@/navigation/types";
+import { uiColors } from "@/theme";
 import {
   ContractCreateRequest,
   ContractDetailResponse,
@@ -63,7 +64,7 @@ const CreateContractScreen = ({
   };
 
   return (
-    <View className="flex-1">
+    <View style={{ flex: 1, backgroundColor: uiColors.canvas }}>
       <ParrentStep activeStep={activeStep} isComplete={activeStep === 2}>
         <ChildStep label="Thông tin" hideButtonRow={true}>
           <CreateContractForm

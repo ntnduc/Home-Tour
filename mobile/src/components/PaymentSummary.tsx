@@ -1,6 +1,8 @@
+import { STATUS_TONE_COLOR, StatusTone, uiColors, uiType, uiWeight, tokens } from "@/theme";
+import { formatCurrency } from "@/utils/appUtil";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { PAYMENT_STATUS_COLOR, PaymentStatus } from "../types/payment";
+import Card from "./Card";
 
 interface PaymentSummaryProps {
   totalRooms: number;
@@ -10,6 +12,21 @@ interface PaymentSummaryProps {
   totalAmount: number;
 }
 
+type Stat = { label: string; value: number; tone: StatusTone | "primary" };
+
+/**
+ * Payment overview card (room list header).
+ *
+ * ```
+ * ┌─────────────────────────────────────────────┐ Card soft
+ * │ TỔNG QUAN THANH TOÁN                        │ eyebrow
+ * │  (12)      (3)       (1)        (8)         │ tinted number circles
+ * │ Tổng phòng  Chờ TT   Quá hạn   Đã TT        │ caption
+ * │ ─────────────────────────────────────────   │
+ * │ Tổng tiền cần thu              12.500.000đ  │
+ * └─────────────────────────────────────────────┘
+ * ```
+ */
 const PaymentSummary = ({
   totalRooms,
   pendingPayments,
@@ -17,126 +34,81 @@ const PaymentSummary = ({
   paidPayments,
   totalAmount,
 }: PaymentSummaryProps) => {
-  const pendingColor = PAYMENT_STATUS_COLOR[PaymentStatus.PENDING];
-  const overdueColor = PAYMENT_STATUS_COLOR[PaymentStatus.OVERDUE];
-  const paidColor = PAYMENT_STATUS_COLOR[PaymentStatus.PAID];
+  const stats: Stat[] = [
+    { label: "Tổng phòng", value: totalRooms, tone: "primary" },
+    { label: "Chờ thanh toán", value: pendingPayments, tone: "warning" },
+    { label: "Quá hạn", value: overduePayments, tone: "error" },
+    { label: "Đã thanh toán", value: paidPayments, tone: "success" },
+  ];
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Tổng quan thanh toán</Text>
-
-      <View style={styles.statsContainer}>
-        <View style={styles.statItem}>
-          <View style={[styles.statBadge, { backgroundColor: "#E3F2FD" }]}>
-            <Text style={[styles.statNumber, { color: "#1976D2" }]}>
-              {totalRooms}
-            </Text>
-          </View>
-          <Text style={styles.statLabel}>Tổng phòng</Text>
-        </View>
-
-        <View style={styles.statItem}>
-          <View
-            style={[styles.statBadge, { backgroundColor: pendingColor.bg }]}
-          >
-            <Text style={[styles.statNumber, { color: pendingColor.color }]}>
-              {pendingPayments}
-            </Text>
-          </View>
-          <Text style={styles.statLabel}>Chờ thanh toán</Text>
-        </View>
-
-        <View style={styles.statItem}>
-          <View
-            style={[styles.statBadge, { backgroundColor: overdueColor.bg }]}
-          >
-            <Text style={[styles.statNumber, { color: overdueColor.color }]}>
-              {overduePayments}
-            </Text>
-          </View>
-          <Text style={styles.statLabel}>Quá hạn</Text>
-        </View>
-
-        <View style={styles.statItem}>
-          <View style={[styles.statBadge, { backgroundColor: paidColor.bg }]}>
-            <Text style={[styles.statNumber, { color: paidColor.color }]}>
-              {paidPayments}
-            </Text>
-          </View>
-          <Text style={styles.statLabel}>Đã thanh toán</Text>
-        </View>
+    <Card style={styles.card}>
+      <Text style={uiType.eyebrow}>Tổng quan thanh toán</Text>
+      <View style={styles.statsRow}>
+        {stats.map((stat) => {
+          const colors =
+            stat.tone === "primary"
+              ? { bg: tokens.colors.primaryMuted, color: tokens.colors.primary }
+              : STATUS_TONE_COLOR[stat.tone];
+          return (
+            <View key={stat.label} style={styles.stat}>
+              <View style={[styles.statCircle, { backgroundColor: colors.bg }]}>
+                <Text style={[styles.statNumber, { color: colors.color }]}>{stat.value}</Text>
+              </View>
+              <Text style={[uiType.caption, styles.center]} numberOfLines={2}>
+                {stat.label}
+              </Text>
+            </View>
+          );
+        })}
       </View>
-
-      <View style={styles.totalContainer}>
-        <Text style={styles.totalLabel}>Tổng tiền cần thu:</Text>
-        <Text style={styles.totalAmount}>{totalAmount.toLocaleString()}đ</Text>
+      <View style={styles.totalRow}>
+        <Text style={uiType.body}>Tổng tiền cần thu</Text>
+        <Text style={styles.totalAmount}>{formatCurrency(String(totalAmount))}đ</Text>
       </View>
-    </View>
+    </Card>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 12,
-    marginHorizontal: 16,
-    marginVertical: 2,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+  card: {
+    gap: 14,
   },
-  title: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#222",
-    marginBottom: 12,
-  },
-  statsContainer: {
+  statsRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 12,
+    gap: 8,
   },
-  statItem: {
-    alignItems: "center",
+  stat: {
     flex: 1,
+    alignItems: "center",
+    gap: 6,
   },
-  statBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  statCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 6,
   },
   statNumber: {
-    fontSize: 14,
-    fontWeight: "bold",
+    fontSize: 15,
+    fontWeight: uiWeight.bold,
   },
-  statLabel: {
-    fontSize: 10,
-    color: "#666",
+  center: {
     textAlign: "center",
   },
-  totalContainer: {
+  totalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: 10,
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#F0F0F0",
-  },
-  totalLabel: {
-    fontSize: 13,
-    color: "#666",
+    borderTopColor: uiColors.hairline,
   },
   totalAmount: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#007AFF",
+    fontWeight: uiWeight.bold,
+    color: tokens.colors.primary,
   },
 });
 

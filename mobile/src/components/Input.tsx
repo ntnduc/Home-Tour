@@ -1,50 +1,57 @@
-import { createStyles } from '@/styles/component/StyleInput';
-import { useTheme } from '@/theme/ThemeProvider';
-import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import React, { useState } from "react";
 import {
   StyleProp,
-  Text,
+  StyleSheet,
   TextInput,
   TextInputProps,
   TextStyle,
   View,
   ViewStyle,
-} from 'react-native';
+} from "react-native";
+import { FieldError, FieldLabel, fieldColors, fieldStyles } from "./FormField";
 
 export interface InputIconProps {
   name?: keyof typeof Ionicons.glyphMap;
   size?: number;
   color?: string;
-  className?: string;
 }
 
-interface InputProps extends TextInputProps {
+interface InputProps extends Omit<TextInputProps, "onChangeText" | "editable"> {
   label?: string;
   value?: string;
-  onChangeText?: (text: string) => void | undefined;
+  onChangeText?: (text: string) => void;
   placeholder?: string;
   error?: string;
   required?: boolean;
-  type?: 'text' | 'number' | 'area';
+  type?: "text" | "number" | "area";
   formatMoney?: boolean;
   min?: number;
   max?: number;
   numberOfLines?: number;
-  keyboardType?: 'default' | 'numeric' | 'email-address' | 'phone-pad';
   icon?: keyof typeof Ionicons.glyphMap;
   disabled?: boolean;
-  inputStyles?: StyleProp<ViewStyle>;
+  /** Extra style for the TextInput itself. */
+  inputStyles?: StyleProp<TextStyle>;
+  /** Extra style for the field box. */
+  containerStyle?: StyleProp<ViewStyle>;
   labelStyles?: StyleProp<TextStyle>;
-  labelClassName?: string;
-  onBlur?: (e: any) => void;
-  onSubmitEditing?: (e: any) => void;
   iconProps?: InputIconProps;
   onClear?: () => void;
   showClear?: boolean;
-  [key: string]: any;
 }
 
+type FocusEvent = Parameters<NonNullable<TextInputProps["onFocus"]>>[0];
+
+const formatThousands = (text: string) =>
+  text.replace(/[^0-9]/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+/**
+ * Text field — label, leading icon, clear button, error. Look defined in `FormField`.
+ *
+ * `type="number"` keeps digits only (respects min/max) · `formatMoney` groups
+ * thousands with "." · `type="area"` is a 96pt multiline box.
+ */
 const Input: React.FC<InputProps> = ({
   label,
   value,
@@ -52,115 +59,119 @@ const Input: React.FC<InputProps> = ({
   placeholder,
   error,
   required = false,
-  type = 'text',
+  type = "text",
   formatMoney = false,
   min,
   max,
   numberOfLines = 1,
-  keyboardType = 'default',
+  keyboardType = "default",
   icon,
   disabled = false,
   inputStyles,
-  onBlur,
-  onSubmitEditing,
-  readOnly,
+  containerStyle,
+  labelStyles,
   iconProps,
   onClear,
   showClear = true,
-  labelStyles,
-  labelClassName,
+  onFocus,
+  onBlur,
   ...props
 }) => {
-  const theme = useTheme();
-  const styles = createStyles(theme);
-
-  const formatCurrency = (text: string) => {
-    if (!text) return '';
-    const numericValue = text.replace(/[^0-9]/g, '');
-    return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  };
+  const [focused, setFocused] = useState(false);
+  const isArea = type === "area";
 
   const handleChangeText = (text: string) => {
-    if (type === 'number') {
-      const numericValue = text.replace(/[^0-9]/g, '');
-      const num = parseInt(numericValue);
-
-      if (min !== undefined && num < min) {
-        return;
-      }
-      if (max !== undefined && num > max) {
-        return;
-      }
-
+    if (type === "number") {
+      const numericValue = text.replace(/[^0-9]/g, "");
+      const num = parseInt(numericValue, 10);
+      if (min !== undefined && num < min) return;
+      if (max !== undefined && num > max) return;
       onChangeText?.(numericValue);
     } else if (formatMoney) {
-      onChangeText?.(formatCurrency(text));
+      onChangeText?.(formatThousands(text));
     } else {
       onChangeText?.(text);
     }
   };
 
+  const handleFocus = (e: FocusEvent) => {
+    setFocused(true);
+    onFocus?.(e);
+  };
+  const handleBlur = (e: FocusEvent) => {
+    setFocused(false);
+    onBlur?.(e);
+  };
+
   return (
     <View>
-      {label && (
-        <Text style={[styles.label, labelStyles]} className={labelClassName}>
-          {label}
-          {required && <Text style={styles.requiredText}> *</Text>}
-        </Text>
-      )}
+      {label && <FieldLabel label={label} required={required} style={labelStyles} />}
       <View
-        className={`flex flex-row items-center content-center justify-center  rounded-lg px-3 py-2 border ${error ? 'border-red-300 bg-red-50' : 'border-gray-200'
-          } ${disabled ? 'bg-gray-100' : 'bg-white'}`}
+        style={[
+          fieldStyles.box,
+          isArea && styles.areaBox,
+          focused && fieldStyles.boxFocused,
+          !!error && fieldStyles.boxError,
+          disabled && fieldStyles.boxDisabled,
+          containerStyle,
+        ]}
       >
         {icon && (
           <Ionicons
-            name={icon}
-            size={18}
-            color={'#6B7280'}
-            className="mr-3"
-            {...iconProps}
+            name={iconProps?.name ?? icon}
+            size={iconProps?.size ?? 18}
+            color={iconProps?.color ?? fieldColors.icon}
+            style={isArea && styles.areaIcon}
           />
         )}
         <TextInput
-          className={`flex-1 ${type === 'area' ? 'h-24' : ''}`}
           value={value}
-          onSubmitEditing={onSubmitEditing}
-          style={[
-            styles.input,
-            inputStyles,
-            { borderColor: error ? '#ff3b30' : '#ddd' },
-          ]}
-          readOnly={readOnly}
+          style={[fieldStyles.text, styles.input, isArea && styles.areaInput, inputStyles]}
           onChangeText={handleChangeText}
-          placeholder={placeholder ?? `Nhập ${label?.toLowerCase()}...`}
-          keyboardType={type === 'number' ? 'numeric' : keyboardType}
-          placeholderTextColor={error ? '#ff3b30' : '#9CA3AF'}
-          multiline={type === 'area'}
-          numberOfLines={type === 'area' ? numberOfLines : 1}
+          placeholder={placeholder ?? (label ? `Nhập ${label.toLowerCase()}...` : undefined)}
+          keyboardType={type === "number" ? "numeric" : keyboardType}
+          placeholderTextColor={fieldColors.placeholder}
+          multiline={isArea}
+          numberOfLines={isArea ? numberOfLines : 1}
+          textAlignVertical={isArea ? "top" : "center"}
           editable={!disabled}
-          onBlur={(e: any) => onBlur?.(e)}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           {...props}
         />
-        {value && showClear && !disabled && (
+        {!!value && showClear && !disabled && !props.readOnly && (
           <Ionicons
-            name="close-outline"
+            name="close-circle"
             size={18}
-            color={'#6B7280'}
-            className="mr-3"
+            color={fieldColors.icon}
+            accessibilityLabel="Xoá nội dung"
+            suppressHighlighting
             onPress={() => {
-              onChangeText?.('');
+              onChangeText?.("");
               onClear?.();
             }}
           />
         )}
       </View>
-      {error && (
-        <Text className="mt-1" style={styles.errorText}>
-          {error}
-        </Text>
-      )}
+      <FieldError message={error} />
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  input: {
+    flex: 1,
+    paddingVertical: 12,
+  },
+  areaBox: {
+    alignItems: "flex-start",
+  },
+  areaIcon: {
+    marginTop: 13,
+  },
+  areaInput: {
+    minHeight: 96,
+  },
+});
 
 export default Input;

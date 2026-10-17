@@ -1,5 +1,6 @@
 import { tokens } from "@/theme";
 import { Ionicons } from "@expo/vector-icons";
+import CountBadge from "@/components/CountBadge";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { formatHeaderDate, getGreeting, getInitials } from "../homeFormat";
@@ -56,13 +57,7 @@ const HomeHeader = ({
             size={22}
             color={homeColors.ink}
           />
-          {alertCount > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>
-                {alertCount > 9 ? "9+" : alertCount}
-              </Text>
-            </View>
-          )}
+          <CountBadge count={alertCount} max={9} tone="alert" size="sm" style={styles.badge} />
         </PressableScale>
         <PressableScale
           onPress={onPressAvatar}
@@ -112,20 +107,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 6,
     right: 6,
-    minWidth: 18,
-    height: 18,
-    paddingHorizontal: 4,
-    borderRadius: HOME_RADIUS.pill,
-    backgroundColor: tokens.colors.secondary,
-    borderWidth: 2,
-    borderColor: homeColors.card,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  badgeText: {
-    color: tokens.colors.onSecondary,
-    fontSize: 9,
-    fontWeight: homeWeight.bold,
   },
 });
 

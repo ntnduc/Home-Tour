@@ -1,8 +1,10 @@
 import { TenantListResponse } from "@/api/tenant/tenant.api";
-import ButtonAction from "@/components/ButtomAction";
-import { StatusType } from "@/components/Status";
+import Button from "@/components/Button";
 import CardComponent from "@/screens/common/CardComponent";
-import { colors } from "@/theme/colors";
+import Chip from "@/components/Chip";
+import { StatusBadgeSpec, tokens, uiType } from "@/theme";
+import { formatCurrency } from "@/utils/appUtil";
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
@@ -19,27 +21,27 @@ const TenantCardComponent = ({
 }: TenantCardComponentProps) => {
   const getStatusInfo = (
     status: "active" | "expired" | "pending"
-  ): { label: string; key: StatusType } => {
+  ): StatusBadgeSpec => {
     switch (status) {
       case "active":
         return {
           label: "Đang thuê",
-          key: "success",
+          tone: "success",
         };
       case "expired":
         return {
           label: "Hết hạn",
-          key: "error",
+          tone: "error",
         };
       case "pending":
         return {
           label: "Chờ xử lý",
-          key: "warning",
+          tone: "warning",
         };
       default:
         return {
           label: "Không xác định",
-          key: "warning",
+          tone: "warning",
         };
     }
   };
@@ -48,66 +50,55 @@ const TenantCardComponent = ({
 
   return (
     <CardComponent
-      className="mt-3"
       title={tenant.name}
       actions={["edit", "delete"]}
       onActionPress={(key) => {
         if (key === "edit") onUpdate();
       }}
-      classNameBadge="absolute right-[-80] top-[-35]"
-      statusBadge={{ ...status }}
+      statusBadge={status}
       onPress={onPress}
     >
-      <View className="flex flex-col">
-        <View className="mb-2">
-          <Text style={styles.tenantEmail}>{tenant.email}</Text>
-          <Text style={styles.tenantPhone}>{tenant.phone}</Text>
+      <View style={styles.body}>
+        <View style={styles.contact}>
+          {!!tenant.email && <Text style={uiType.caption}>{tenant.email}</Text>}
+          {!!tenant.phone && <Text style={uiType.caption}>{tenant.phone}</Text>}
         </View>
 
         {tenant.roomName && (
-          <View className="mb-3">
-            <Text style={styles.roomInfo}>
-              📍 {tenant.propertyName} - {tenant.roomName}
+          <View style={styles.roomRow}>
+            <Ionicons name="location-outline" size={14} color={tokens.colors.primary} />
+            <Text style={styles.roomInfo} numberOfLines={1}>
+              {tenant.propertyName} - {tenant.roomName}
             </Text>
           </View>
         )}
 
-        <View style={styles.basicInfoRow}>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoIcon}>💰</Text>
-            <Text style={styles.infoLabel}>
-              {tenant.rentAmount.toLocaleString()} VNĐ
-            </Text>
-          </View>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoIcon}>🛡️</Text>
-            <Text style={styles.infoLabel}>
-              {tenant.depositAmount.toLocaleString()} VNĐ
-            </Text>
-          </View>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoIcon}>📅</Text>
-            <Text style={styles.infoLabel}>
-              {new Date(tenant.startDate).toLocaleDateString("vi-VN")}
-            </Text>
-          </View>
+        <View style={styles.chips}>
+          <Chip icon="cash-outline" label={`${formatCurrency(tenant.rentAmount)}đ`} />
+          <Chip icon="shield-checkmark-outline" label={`${formatCurrency(tenant.depositAmount)}đ`} />
+          <Chip
+            icon="calendar-outline"
+            label={new Date(tenant.startDate).toLocaleDateString("vi-VN")}
+          />
         </View>
 
         <View style={styles.actionRow}>
-          <ButtonAction
-            text="Xem hợp đồng"
-            type="secondary"
+          <Button
+            label="Xem hợp đồng"
+            variant="soft"
+            size="sm"
             icon="document-text"
-            containerStyle={{ flex: 1 }}
+            block
             onPress={() => {
               // TODO: Navigate to contract detail
             }}
           />
-          <ButtonAction
-            text="Tạo hóa đơn"
-            type="success"
+          <Button
+            label="Tạo hóa đơn"
+            variant="successSoft"
+            size="sm"
             icon="receipt"
-            containerStyle={{ flex: 1 }}
+            block
             onPress={() => {
               // TODO: Navigate to create invoice
             }}
@@ -119,44 +110,30 @@ const TenantCardComponent = ({
 };
 
 const styles = StyleSheet.create({
-  tenantEmail: {
-    fontSize: 13,
-    color: colors.text.secondary,
-    marginBottom: 2,
+  body: {
+    gap: 12,
   },
-  tenantPhone: {
-    fontSize: 13,
-    color: colors.text.secondary,
+  contact: {
+    gap: 2,
+  },
+  roomRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   roomInfo: {
-    fontSize: 13,
-    color: colors.primary.main,
-    fontWeight: "500",
-  },
-  basicInfoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 12,
-  },
-  infoItem: {
-    flexDirection: "row",
-    alignItems: "center",
+    ...uiType.bodyStrong,
+    color: tokens.colors.primary,
     flex: 1,
   },
-  infoIcon: {
-    fontSize: 13,
-    marginRight: 6,
-  },
-  infoLabel: {
-    fontSize: 12,
-    color: colors.text.secondary,
-    flex: 1,
+  chips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
   },
   actionRow: {
     flexDirection: "row",
     gap: 8,
-    marginTop: 4,
   },
 });
 

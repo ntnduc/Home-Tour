@@ -31,16 +31,6 @@ export interface SwitchProps {
   alignLabel?: "vertical" | "horizontal";
   /** Style cho description */
   descriptionStyle?: StyleProp<TextStyle>;
-  /** Style cho error text */
-  errorStyle?: StyleProp<TextStyle>;
-  /** Class name cho container */
-  containerClassName?: string;
-  /** Class name cho label */
-  labelClassName?: string;
-  /** Class name cho description */
-  descriptionClassName?: string;
-  /** Class name cho error text */
-  errorClassName?: string;
   /** Test ID cho testing */
   testID?: string;
   /** Accessibility label */

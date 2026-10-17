@@ -1,9 +1,10 @@
-import { createStyles } from "@/styles/component/StyleComboBox";
-import { useTheme } from "@/theme/ThemeProvider";
+import SkeletonBlock from "@/components/SkeletonBlock";
+import { shadows, tokens, uiColors, uiRadius } from "@/theme";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import React, { useCallback, useEffect, useState } from "react";
-import { Text, TextInput, View } from "react-native";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 import { Dropdown } from "react-native-element-dropdown";
+import { FieldError, FieldLabel, fieldColors, fieldStyles } from "./FormField";
 import { InputIconProps } from "./Input";
 
 interface ComboBoxProps<T> {
@@ -45,6 +46,7 @@ export const ComboBox = <T,>({
   error,
   isLoading = false,
   isActive = false,
+  onFocus,
   label,
   required = false,
   isSearch = true,
@@ -56,8 +58,6 @@ export const ComboBox = <T,>({
   labelKey,
   valueKey,
 }: ComboBoxProps<T>) => {
-  const theme = useTheme();
-  const styles = createStyles(theme);
   const [open, setOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
 
@@ -73,29 +73,14 @@ export const ComboBox = <T,>({
     setSearchText("");
   };
 
-  const _renderLoading = useCallback(() => {
-    return (
-      <View style={styles.container}>
-        <View
-          style={{
-            padding: 12,
-            backgroundColor: "#f5f5f5",
-            borderRadius: 8,
-            minHeight: 48,
-          }}
-        >
-          <View
-            style={{
-              height: 20,
-              width: "70%",
-              backgroundColor: "#e0e0e0",
-              borderRadius: 4,
-            }}
-          />
-        </View>
+  const _renderLoading = useCallback(
+    () => (
+      <View style={[fieldStyles.box, fieldStyles.boxDisabled]}>
+        <SkeletonBlock width="70%" height={16} radius={6} />
       </View>
-    );
-  }, [isLoading]);
+    ),
+    []
+  );
 
   const _renderSearch = useCallback(
     (onSearch: (text: string) => void) => {
@@ -103,14 +88,13 @@ export const ComboBox = <T,>({
         <View style={styles.searchInputContainer}>
           <Ionicons
             name="search"
-            size={20}
-            color="#666"
-            style={styles.searchIcon}
+            size={18}
+            color={fieldColors.icon}
           />
           <TextInput
             style={styles.searchInput}
             placeholder="Tìm kiếm..."
-            placeholderTextColor="#999"
+            placeholderTextColor={fieldColors.placeholder}
             value={searchText}
             onChangeText={onSearch}
           />
@@ -128,8 +112,8 @@ export const ComboBox = <T,>({
           <Ionicons
             name={icon as keyof typeof Ionicons.glyphMap}
             size={18}
-            color={"#6B7280"}
-            className="mr-3 ml-[-1px]"
+            color={fieldColors.icon}
+            style={styles.leftIcon}
             {...iconProps}
           />
         );
@@ -141,8 +125,8 @@ export const ComboBox = <T,>({
             <Ionicons
               name={_renderIconType as keyof typeof Ionicons.glyphMap}
               size={18}
-              color={"#6B7280"}
-              className="mr-3 ml-[-1px]"
+              color={fieldColors.icon}
+              style={styles.leftIcon}
               {...iconProps}
             />
           );
@@ -154,8 +138,8 @@ export const ComboBox = <T,>({
         icon as React.ReactElement,
         {
           size: 18,
-          color: "#6B7280",
-          className: "mr-3 ml-[-1px]",
+          color: fieldColors.icon,
+          style: styles.leftIcon,
           ...iconProps,
         } as any
       );
@@ -171,8 +155,7 @@ export const ComboBox = <T,>({
           <Ionicons
             name="chevron-up"
             size={18}
-            color={"#6B7280"}
-            className="mr-3 "
+            color={fieldColors.icon}
           />
         );
       }
@@ -180,8 +163,7 @@ export const ComboBox = <T,>({
         <Ionicons
           name="chevron-down"
           size={18}
-          color={"#6B7280"}
-          className="mr-3 "
+          color={fieldColors.icon}
         />
       );
     },
@@ -194,11 +176,7 @@ export const ComboBox = <T,>({
 
   return (
     <View style={styles.container}>
-      {label && (
-        <Text style={styles.label}>
-          {label} {required && <Text style={{ color: "red" }}>*</Text>}
-        </Text>
-      )}
+      {label && <FieldLabel label={label} required={required} />}
 
       {isLoading ? (
         _renderLoading()
@@ -219,10 +197,10 @@ export const ComboBox = <T,>({
             }}
             placeholder={placeholder}
             style={[
-              styles.selectInput,
-              error && styles.errorInput,
-              { borderWidth: 1, borderColor: error ? "#ff3b30" : "#e5e7eb" },
-              disabled ? { backgroundColor: "#f3f4f6" } : {},
+              fieldStyles.box,
+              open && fieldStyles.boxFocused,
+              !!error && fieldStyles.boxError,
+              disabled && fieldStyles.boxDisabled,
             ]}
             autoScroll={true}
             containerStyle={styles.dropdownContainer}
@@ -242,18 +220,64 @@ export const ComboBox = <T,>({
               ListEmptyComponent: _renderEmpty,
             }}
             disable={isLoading || disabled}
-            placeholderStyle={{ color: "#999" }}
+            placeholderStyle={[fieldStyles.text, styles.placeholder]}
+            onFocus={() => {
+              setOpen(true);
+              onFocus?.();
+            }}
+            onBlur={() => setOpen(false)}
             labelField={labelKey ?? "label"}
             valueField={valueKey ?? "key"}
           />
 
-          {error && (
-            <Text className="mt-1" style={styles.errorText}>
-              {error}
-            </Text>
-          )}
+          <FieldError message={error} />
         </>
       )}
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    position: "relative",
+  },
+  leftIcon: {
+    marginRight: 10,
+  },
+  placeholder: {
+    color: fieldColors.placeholder,
+  },
+  dropdownContainer: {
+    backgroundColor: uiColors.card,
+    borderRadius: uiRadius.field,
+    borderWidth: 0,
+    marginTop: 6,
+    overflow: "hidden",
+    ...shadows.medium,
+  },
+  itemText: {
+    ...fieldStyles.text,
+  },
+  itemTextSelected: {
+    ...fieldStyles.text,
+  },
+  searchInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: uiColors.hairline,
+  },
+  searchInput: {
+    ...fieldStyles.text,
+    flex: 1,
+    paddingVertical: 12,
+  },
+  noResults: {
+    padding: 16,
+    textAlign: "center",
+    color: uiColors.textMuted,
+    fontSize: tokens.typography.fontSize.sm,
+  },
+});

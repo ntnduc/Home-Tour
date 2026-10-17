@@ -1,25 +1,19 @@
-import { createStyles } from '@/styles/component/StyleInput';
-import { useTheme } from '@/theme/ThemeProvider';
+import { tokens, uiColors, uiType, uiWeight } from '@/theme';
 import { isAndroidSystem } from '@/utils/appUtil';
 import { formatDate, getCurrentDate } from '@/utils/dateUtil';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomSheetView } from '@gorhom/bottom-sheet';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  StyleProp,
-  Text,
-  TouchableOpacity,
-  View,
-  ViewStyle,
-} from 'react-native';
+import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { FieldError, FieldLabel, fieldColors, fieldStyles } from './FormField';
 import { useGlobalAppSheet } from './GlobalAppSheet';
+import PressableScale from './PressableScale';
 
 export interface DatePickerIconProps {
   name?: keyof typeof Ionicons.glyphMap;
   size?: number;
   color?: string;
-  className?: string;
 }
 
 interface DatePickerProps {
@@ -55,9 +49,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   maxDate,
   minDate,
 }) => {
-  const theme = useTheme();
   const { openAppSheet, closeAppSheet } = useGlobalAppSheet();
-  const styles = createStyles(theme);
   const [isOpen, setIsOpen] = useState(false);
   const [currentValue, setCurrentValue] = useState<typeof value>(value);
   // Ref để lưu giá trị hiện tại trong picker, tránh closure issue
@@ -116,26 +108,25 @@ const DatePicker: React.FC<DatePickerProps> = ({
         snapPoints: ['35%'],
         header: {
           element: (
-            <View className="flex-row justify-between items-center border-b border-gray-200 w-full p-4 rounded-t-2xl h-[60px]">
-              <TouchableOpacity onPress={closeAppSheet} className="py-2">
-                <Text className="text-gray-600 font-medium">Hủy</Text>
-              </TouchableOpacity>
-              <Text className="text-lg font-semibold text-gray-900">
-                Chọn ngày
-              </Text>
-              <TouchableOpacity
+            <View style={styles.sheetHeader}>
+              <PressableScale onPress={closeAppSheet} hitSlop={8} style={styles.sheetAction}>
+                <Text style={styles.sheetCancel}>Hủy</Text>
+              </PressableScale>
+              <Text style={uiType.section}>Chọn ngày</Text>
+              <PressableScale
                 onPress={() => {
                   // Sử dụng ref để tránh closure issue, đảm bảo lấy giá trị mới nhất
                   const selectedValue = pickerValueRef.current;
                   if (selectedValue) {
-                    onChange?.(selectedValue as any);
+                    onChange?.(new Date(selectedValue));
                   }
                   closeAppSheet();
                 }}
-                className="px-4 py-2 bg-primary rounded-lg"
+                scaleTo={0.94}
+                style={styles.sheetDone}
               >
-                <Text className="text-white font-semibold">Xong</Text>
-              </TouchableOpacity>
+                <Text style={styles.sheetDoneText}>Xong</Text>
+              </PressableScale>
             </View>
           ),
         },
@@ -165,8 +156,8 @@ const DatePicker: React.FC<DatePickerProps> = ({
         locale="vi-VN"
         maximumDate={maxDate}
         minimumDate={minDate}
-        positiveButton={{ label: 'Xác nhận', textColor: 'green' }}
-        negativeButton={{ label: 'Hủy', textColor: 'red' }}
+        positiveButton={{ label: 'Xác nhận', textColor: tokens.colors.primary }}
+        negativeButton={{ label: 'Hủy', textColor: uiColors.textMuted }}
         onChange={(event, date) => {
           if (event.type === 'dismissed') {
             setIsOpen(false);
@@ -183,67 +174,95 @@ const DatePicker: React.FC<DatePickerProps> = ({
   }, [value, isOpen]);
 
   return (
-    <View className="">
-      {label && (
-        <Text style={styles.label}>
-          {label}
-          {required && <Text style={styles.requiredText}> *</Text>}
-        </Text>
-      )}
+    <View>
+      {label && <FieldLabel label={label} required={required} />}
       <View
-        className={`flex flex-row items-center content-center justify-center rounded-lg px-3 py-2 border  ${
-          error ? 'border-red-300 bg-red-50' : 'border-gray-200'
-        } ${disabled ? 'bg-gray-100' : ''}`}
-        style={inputStyles}
+        style={[
+          fieldStyles.box,
+          !!error && fieldStyles.boxError,
+          disabled && fieldStyles.boxDisabled,
+          inputStyles,
+        ]}
       >
-        <TouchableOpacity
-          className="flex-1"
+        <PressableScale
+          style={styles.trigger}
           onPress={handleOpen}
           disabled={disabled}
+          scaleTo={0.99}
+          accessibilityRole="button"
+          accessibilityLabel={label ?? placeholder}
         >
-          <View className="flex-row items-center ">
-            {icon && (
-              <Ionicons
-                name={icon}
-                size={18}
-                color={'#6B7280'}
-                className="mr-3"
-                {...iconProps}
-              />
-            )}
-            <Text
-              className={` text-base mt-1 ${
-                value ? 'text-gray-900' : 'text-gray-500'
-              }`}
-              style={[
-                styles.input,
-                inputStyles,
-                { borderColor: error ? '#ff3b30' : '#ddd' },
-              ]}
-            >
-              {value ? formatDate(value?.toString() ?? '') : placeholder}
-            </Text>
-          </View>
-        </TouchableOpacity>
-        {value && showClear && !disabled && !required && (
-          <TouchableOpacity onPress={handleClear}>
+          {icon && (
             <Ionicons
-              name="close-outline"
-              size={18}
-              color={'#6B7280'}
-              className="mr-3"
+              name={iconProps?.name ?? icon}
+              size={iconProps?.size ?? 18}
+              color={iconProps?.color ?? fieldColors.icon}
             />
-          </TouchableOpacity>
+          )}
+          <Text
+            style={[fieldStyles.text, !value && styles.placeholder]}
+            numberOfLines={1}
+          >
+            {value ? formatDate(value?.toString() ?? '') : placeholder}
+          </Text>
+        </PressableScale>
+        {!!value && showClear && !disabled && !required && (
+          <Ionicons
+            name="close-circle"
+            size={18}
+            color={fieldColors.icon}
+            accessibilityLabel="Xoá ngày"
+            suppressHighlighting
+            onPress={handleClear}
+          />
         )}
       </View>
-      {error && (
-        <Text className="mt-1" style={styles.errorText}>
-          {error}
-        </Text>
-      )}
+      <FieldError message={error} />
       {isAndroidSystem() && _renderDateTimePickerAndroid()}
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  trigger: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 12,
+  },
+  placeholder: {
+    color: fieldColors.placeholder,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    height: 60,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: uiColors.hairline,
+  },
+  sheetAction: {
+    paddingVertical: 8,
+  },
+  sheetCancel: {
+    fontSize: tokens.typography.fontSize.sm,
+    fontWeight: uiWeight.medium,
+    color: uiColors.textMuted,
+  },
+  sheetDone: {
+    paddingHorizontal: 16,
+    height: 36,
+    justifyContent: 'center',
+    borderRadius: 999,
+    backgroundColor: tokens.colors.primary,
+  },
+  sheetDoneText: {
+    color: tokens.colors.onPrimary,
+    fontWeight: uiWeight.semibold,
+  },
+});
 
 export default DatePicker;

@@ -4,22 +4,22 @@ import {
   Ionicons,
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
+import Button from "@/components/Button";
+import Card from "@/components/Card";
+import Chip from "@/components/Chip";
+import FormSection from "@/components/FormSection";
+import IconSquircle from "@/components/IconSquircle";
+import ListRow from "@/components/ListRow";
+import NoticeBanner from "@/components/NoticeBanner";
+import StatusBadge from "@/components/StatusBadge";
+import { tokens, uiColors, uiRadius, uiSpace, uiType } from "@/theme";
 import { useNavigation } from "@react-navigation/native";
-import { tokens } from "@/theme";
 import React from "react";
-import {
-  FlatList,
-  Image,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { FlatList, Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import {
   Contract,
-  CONTRACT_STATUS_COLOR,
-  CONTRACT_STATUS_LABEL,
+  CONTRACT_STATUS_BADGE,
   ContractStatus,
 } from "../../types/contract";
 
@@ -147,6 +147,12 @@ const mockViolations = [
   { date: "2024-05-02", content: "Gây ồn ào sau 22h." },
 ];
 
+/** Contract status → StatusBadge (falls back to neutral for unknown statuses). */
+const ContractBadge = ({ status }: { status: ContractStatus }) => {
+  const badge = CONTRACT_STATUS_BADGE[status] ?? { label: String(status), tone: "neutral" as const };
+  return <StatusBadge size="sm" label={badge.label} tone={badge.tone} />;
+};
+
 // Carousel ảnh phòng
 const RoomImageCarousel = ({ images }: { images: string[] }) => (
   <FlatList
@@ -154,84 +160,56 @@ const RoomImageCarousel = ({ images }: { images: string[] }) => (
     horizontal
     showsHorizontalScrollIndicator={false}
     keyExtractor={(_, idx) => idx.toString()}
-    renderItem={({ item }) => (
-      <Image
-        source={{ uri: item }}
-        style={{ width: 180, height: 120, borderRadius: 12, marginRight: 12 }}
-      />
-    )}
-    style={{ marginBottom: 12 }}
+    renderItem={({ item }) => <Image source={{ uri: item }} style={styles.image} />}
+    contentContainerStyle={styles.imageRow}
   />
 );
 
-// Component hiển thị thông tin phòng nâng cao
+// Thông tin phòng
 const RoomInfoCard = ({ room }: { room: typeof mockRoom }) => (
-  <View className="bg-white rounded-xl p-4 mb-4 shadow-sm border border-gray-100">
+  <Card style={styles.cardGap}>
     <RoomImageCarousel images={room.images} />
-    <Text className="text-xl font-bold text-gray-900 mb-1">
-      {room.name} ({room.code})
-    </Text>
-    <View className="flex-row flex-wrap mb-2">
-      <Text className="text-sm text-gray-600 mr-4">Tầng: {room.floor}</Text>
-      <Text className="text-sm text-gray-600 mr-4">Loại: {room.type}</Text>
-      <Text className="text-sm text-gray-600 mr-4">
-        Diện tích: {room.area}m²
-      </Text>
-      <Text className="text-sm text-gray-600">
-        Giá: {room.price.toLocaleString()}đ/tháng
-      </Text>
-    </View>
-    <View className="flex-row flex-wrap mb-2">
-      <Text className="text-sm text-gray-600 mr-4">
-        Số người tối đa: {room.maxPeople}
-      </Text>
-      <Text className="text-sm text-gray-600 mr-4">
-        Vệ sinh: {room.cleaningStatus}
-      </Text>
-      {room.status === "AVAILABLE" && (
-        <Text className="text-sm text-gray-600">
-          Sẵn sàng từ: {formatDate(room.availableDate)}
+    <View style={styles.titleRow}>
+      <View style={styles.flex}>
+        <Text style={uiType.section}>
+          {room.name} ({room.code})
         </Text>
+        <Text style={styles.price}>{room.price.toLocaleString()}đ/tháng</Text>
+      </View>
+      <StatusBadge
+        label={room.status === "RENTED" ? "Đã thuê" : "Đang trống"}
+        tone={room.status === "RENTED" ? "success" : "info"}
+      />
+    </View>
+    <View style={styles.chipWrap}>
+      <Chip icon="layers-outline" label={`Tầng ${room.floor}`} />
+      <Chip icon="grid-outline" label={room.type} />
+      <Chip icon="resize-outline" label={`${room.area}m²`} />
+      <Chip icon="people-outline" label={`Tối đa ${room.maxPeople} người`} />
+      <Chip icon="sparkles-outline" label={room.cleaningStatus} />
+      {room.status === "AVAILABLE" && (
+        <Chip icon="calendar-outline" label={`Trống từ ${formatDate(room.availableDate)}`} />
       )}
     </View>
-    <View className="flex-row items-center mt-1 mb-2">
-      <View
-        className="px-3 py-1 rounded-full mr-2"
-        style={{
-          backgroundColor: room.status === "RENTED" ? tokens.colors.errorSurface : tokens.colors.successSurface,
-        }}
-      >
-        <Text
-          className="text-xs font-semibold"
-          style={{ color: room.status === "RENTED" ? tokens.colors.error : tokens.colors.success }}
-        >
-          {room.status === "RENTED" ? "Đã thuê" : "Đang trống"}
-        </Text>
-      </View>
-    </View>
-    <View className="flex-row flex-wrap items-center mb-2">
+    <View style={styles.utilities}>
       {room.utilities.map((u, idx) => (
-        <View key={idx} className="flex-row items-center mr-4 mb-1">
+        <View key={idx} style={styles.utility}>
           {u.icon}
-          <Text className="text-xs text-gray-700 ml-1">{u.name}</Text>
+          <Text style={uiType.caption}>{u.name}</Text>
         </View>
       ))}
     </View>
-    {room.note && (
-      <View className="bg-yellow-50 border-l-4 border-yellow-400 p-2 rounded mt-2">
-        <Text className="text-xs text-yellow-800">Ghi chú: {room.note}</Text>
-      </View>
-    )}
-    <View className="flex-row items-center mt-3">
+    {room.note && <NoticeBanner tone="warning" title="Ghi chú" message={room.note} />}
+    <View style={styles.qrRow}>
       <QRCode value={room.qrCode} size={60} />
-      <Text className="ml-3 text-xs text-gray-500">
+      <Text style={[uiType.caption, styles.flex]}>
         QR phòng: Quét để check-in/check-out hoặc chia sẻ nhanh
       </Text>
     </View>
-  </View>
+  </Card>
 );
 
-// Component hiển thị hợp đồng hiện tại
+// Hợp đồng hiện tại
 const CurrentContractCard = ({
   contract,
   onPress,
@@ -239,118 +217,77 @@ const CurrentContractCard = ({
   contract: Contract;
   onPress: () => void;
 }) => (
-  <View className="bg-white rounded-xl p-4 mb-4 shadow-sm border border-gray-100">
-    <Text className="text-lg font-bold text-gray-900 mb-2">
-      Hợp đồng hiện tại
-    </Text>
-    <View className="mb-2">
-      <Text className="text-base font-medium text-gray-900">
-        {contract.tenantName}
+  <FormSection
+    title="Hợp đồng hiện tại"
+    icon="document-text-outline"
+    action={<ContractBadge status={contract.status} />}
+  >
+    <View style={styles.rowGap}>
+      <Text style={uiType.bodyStrong}>{contract.tenantName}</Text>
+      <Text style={uiType.caption}>SĐT: {contract.tenantPhone}</Text>
+      <Text style={uiType.caption}>
+        Thời gian: {formatDate(contract.startDate)} – {formatDate(contract.endDate)}
       </Text>
-      <Text className="text-sm text-gray-600">SĐT: {contract.tenantPhone}</Text>
-      <Text className="text-sm text-gray-600">
-        Thời gian: {formatDate(contract.startDate)} -{" "}
-        {formatDate(contract.endDate)}
-      </Text>
-      <Text className="text-sm text-gray-600">
+      <Text style={uiType.caption}>
         Giá thuê: {contract.monthlyRent.toLocaleString()}đ/tháng
       </Text>
-      <View
-        className="px-3 py-1 rounded-full mt-2 self-start"
-        style={{ backgroundColor: CONTRACT_STATUS_COLOR[contract.status].bg }}
-      >
-        <Text
-          className="text-xs font-semibold"
-          style={{ color: CONTRACT_STATUS_COLOR[contract.status].color }}
-        >
-          {CONTRACT_STATUS_LABEL[contract.status]}
-        </Text>
-      </View>
     </View>
-    <TouchableOpacity
-      className="flex-row items-center mt-2"
-      style={{ alignSelf: "flex-start" }}
+    <Button
+      label="Xem chi tiết hợp đồng"
+      icon="document-text-outline"
+      variant="soft"
+      size="sm"
       onPress={onPress}
-    >
-      <Ionicons
-        name="document-text-outline"
-        size={18}
-        color={tokens.colors.primary}
-        style={{ marginRight: 4 }}
-      />
-      <Text className="text-sm font-semibold text-primary">
-        Xem chi tiết hợp đồng
-      </Text>
-    </TouchableOpacity>
-  </View>
+      style={styles.selfStart}
+    />
+  </FormSection>
 );
 
-// Component hiển thị danh sách người ở hiện tại
+// Người ở hiện tại
 const CurrentResidentsCard = ({
   residents,
 }: {
   residents: { name: string; phone: string; relation: string }[];
 }) => (
-  <View className="bg-white rounded-xl p-4 mb-4 shadow-sm border border-gray-100">
-    <Text className="text-lg font-bold text-gray-900 mb-2">
-      Người ở hiện tại ({residents.length})
-    </Text>
-    {residents.map((r, idx) => (
-      <View key={idx} className="flex-row items-center mb-2">
-        <Ionicons
-          name="person-circle-outline"
-          size={20}
-          color={tokens.colors.primary}
-          style={{ marginRight: 6 }}
+  <FormSection title={`Người ở hiện tại (${residents.length})`} icon="people-outline">
+    <View style={styles.bleedList}>
+      {residents.map((r, idx) => (
+        <ListRow
+          key={idx}
+          divider={idx > 0}
+          icon="person-outline"
+          title={`${r.name} · ${r.relation}`}
+          subtitle={`SĐT: ${r.phone}`}
         />
-        <View>
-          <Text className="text-base text-gray-900 font-medium">
-            {r.name}{" "}
-            <Text className="text-xs text-gray-500">({r.relation})</Text>
-          </Text>
-          <Text className="text-xs text-gray-600">SĐT: {r.phone}</Text>
-        </View>
-      </View>
-    ))}
-  </View>
+      ))}
+    </View>
+  </FormSection>
 );
 
-// Component hiển thị lịch sử vi phạm
+// Lịch sử vi phạm
 const ViolationHistoryCard = ({
   violations,
 }: {
   violations: { date: string; content: string }[];
 }) => (
-  <View className="bg-white rounded-xl p-4 mb-4 shadow-sm border border-gray-100">
-    <Text className="text-lg font-bold text-gray-900 mb-2">
-      Lịch sử vi phạm
-    </Text>
+  <FormSection title="Lịch sử vi phạm" icon="alert-circle-outline" iconTone="warning">
     {violations.length === 0 ? (
-      <Text className="text-sm text-gray-500">
-        Không có vi phạm nào được ghi nhận.
-      </Text>
+      <Text style={uiType.caption}>Không có vi phạm nào được ghi nhận.</Text>
     ) : (
       violations.map((v, idx) => (
-        <View key={idx} className="mb-2 flex-row items-start">
-          <MaterialCommunityIcons
-            name="alert-circle-outline"
-            size={18}
-            color={tokens.palette.amber[500]}
-            style={{ marginRight: 6, marginTop: 2 }}
-          />
-          <View>
-            <Text className="text-xs text-gray-600 mb-1">
-              {formatDate(v.date)}
-            </Text>
-            <Text className="text-sm text-gray-800">{v.content}</Text>
+        <View key={idx} style={styles.violation}>
+          <IconSquircle icon="alert-circle-outline" tone="warning" size="sm" />
+          <View style={styles.flex}>
+            <Text style={uiType.caption}>{formatDate(v.date)}</Text>
+            <Text style={uiType.body}>{v.content}</Text>
           </View>
         </View>
       ))
     )}
-  </View>
+  </FormSection>
 );
 
-// Component hiển thị danh sách hợp đồng lịch sử
+// Lịch sử hợp đồng
 const ContractHistoryList = ({
   contracts,
   onPressItem,
@@ -358,52 +295,29 @@ const ContractHistoryList = ({
   contracts: Contract[];
   onPressItem: (contract: Contract) => void;
 }) => (
-  <View className="bg-white rounded-xl p-4 mb-4 shadow-sm border border-gray-100">
-    <Text className="text-lg font-bold text-gray-900 mb-2">
-      Lịch sử hợp đồng
-    </Text>
+  <FormSection title="Lịch sử hợp đồng" icon="time-outline">
     {contracts.length === 0 ? (
-      <Text className="text-sm text-gray-500">
-        Chưa có hợp đồng nào trong quá khứ.
-      </Text>
+      <Text style={uiType.caption}>Chưa có hợp đồng nào trong quá khứ.</Text>
     ) : (
-      contracts.map((contract) => (
-        <TouchableOpacity
-          key={contract.id}
-          className="flex-row items-center justify-between py-2 border-b border-gray-100"
-          onPress={() => onPressItem(contract)}
-        >
-          <View>
-            <Text className="text-base font-medium text-gray-900">
-              {contract.tenantName}
-            </Text>
-            <Text className="text-xs text-gray-600">
-              {formatDate(contract.startDate)} - {formatDate(contract.endDate)}
-            </Text>
-          </View>
-          <View
-            className="px-3 py-1 rounded-full"
-            style={{
-              backgroundColor: CONTRACT_STATUS_COLOR[contract.status].bg,
-            }}
-          >
-            <Text
-              className="text-xs font-semibold"
-              style={{ color: CONTRACT_STATUS_COLOR[contract.status].color }}
-            >
-              {CONTRACT_STATUS_LABEL[contract.status]}
-            </Text>
-          </View>
-          <Ionicons
-            name="chevron-forward"
-            size={18}
-            color={tokens.colors.subtle}
-            style={{ marginLeft: 8 }}
+      <View style={styles.bleedList}>
+        {contracts.map((contract, idx) => (
+          <ListRow
+            key={contract.id}
+            divider={idx > 0}
+            title={contract.tenantName}
+            subtitle={`${formatDate(contract.startDate)} – ${formatDate(contract.endDate)}`}
+            trailing={
+              <View style={styles.historyTrailing}>
+                <ContractBadge status={contract.status} />
+                <Ionicons name="chevron-forward" size={18} color={uiColors.textSubtle} />
+              </View>
+            }
+            onPress={() => onPressItem(contract)}
           />
-        </TouchableOpacity>
-      ))
+        ))}
+      </View>
     )}
-  </View>
+  </FormSection>
 );
 
 function formatDate(dateString: string) {
@@ -420,40 +334,101 @@ const RoomDetailScreen = () => {
   };
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <ScrollView
-        className="flex-1 px-4 py-3"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Thông tin phòng nâng cao */}
-        <RoomInfoCard room={mockRoom} />
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
+      <RoomInfoCard room={mockRoom} />
 
-        {/* Hợp đồng hiện tại */}
-        {mockRoom.status === "RENTED" && mockCurrentContract && (
-          <CurrentContractCard
-            contract={mockCurrentContract}
-            onPress={() => handlePressContract(mockCurrentContract)}
-          />
-        )}
-
-        {/* Người ở hiện tại */}
-        {mockRoom.status === "RENTED" && (
-          <CurrentResidentsCard residents={mockCurrentResidents} />
-        )}
-
-        {/* Lịch sử vi phạm */}
-        {mockRoom.status === "RENTED" && (
-          <ViolationHistoryCard violations={mockViolations} />
-        )}
-
-        {/* Lịch sử hợp đồng */}
-        <ContractHistoryList
-          contracts={mockContractHistory}
-          onPressItem={handlePressContract}
+      {mockRoom.status === "RENTED" && mockCurrentContract && (
+        <CurrentContractCard
+          contract={mockCurrentContract}
+          onPress={() => handlePressContract(mockCurrentContract)}
         />
-      </ScrollView>
-    </View>
+      )}
+
+      {mockRoom.status === "RENTED" && <CurrentResidentsCard residents={mockCurrentResidents} />}
+
+      {mockRoom.status === "RENTED" && <ViolationHistoryCard violations={mockViolations} />}
+
+      <ContractHistoryList contracts={mockContractHistory} onPressItem={handlePressContract} />
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: uiColors.canvas,
+  },
+  content: {
+    padding: uiSpace.screen,
+    paddingBottom: 40,
+    gap: uiSpace.gap,
+  },
+  cardGap: {
+    gap: 14,
+  },
+  flex: {
+    flex: 1,
+  },
+  imageRow: {
+    gap: 12,
+  },
+  image: {
+    width: 180,
+    height: 120,
+    borderRadius: uiRadius.icon,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  price: {
+    ...uiType.bodyStrong,
+    color: tokens.colors.primary,
+  },
+  chipWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  utilities: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 14,
+  },
+  utility: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  qrRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  rowGap: {
+    gap: 4,
+  },
+  selfStart: {
+    alignSelf: "flex-start",
+  },
+  bleedList: {
+    marginHorizontal: -16,
+  },
+  violation: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  historyTrailing: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+});
 
 export default RoomDetailScreen;

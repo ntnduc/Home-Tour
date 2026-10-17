@@ -20,18 +20,18 @@
  * nested touchables (iOS shadow pitfall).
  */
 
-import { tokens, shadows, statusColor } from "@/theme";
-import { Ionicons } from "@expo/vector-icons";
-import { PropertyListResponse, PropertyRoomsStatus } from "@/types/property";
-import React from "react";
-import { StyleSheet, Text, View, DimensionValue } from "react-native";
+import Button from "@/components/Button";
+import Card from "@/components/Card";
+import Chip from "@/components/Chip";
+import IconButton from "@/components/IconButton";
+import IconSquircle from "@/components/IconSquircle";
 import PressableScale from "@/components/PressableScale";
-import {
-  PROP_RADIUS,
-  PROP_SPACE,
-  propColors,
-  propType,
-} from "../propertyListStyles";
+import StatusBadge, { StatusTone } from "@/components/StatusBadge";
+import { tokens, uiColors, uiSpace, uiType, uiWeight } from "@/theme";
+import { PropertyListResponse, PropertyRoomsStatus } from "@/types/property";
+import { Ionicons } from "@expo/vector-icons";
+import React from "react";
+import { DimensionValue, StyleSheet, Text, View } from "react-native";
 
 export interface PropertyCardComponentProps {
   property: PropertyListResponse;
@@ -41,9 +41,6 @@ export interface PropertyCardComponentProps {
   onAddRoom: () => void;
 }
 
-/**
- * Card body — everything except the action row (which is outside PressableScale).
- */
 const PropertyCardComponent = ({
   property,
   onPress,
@@ -51,192 +48,85 @@ const PropertyCardComponent = ({
   onViewRooms,
   onAddRoom,
 }: PropertyCardComponentProps) => {
-  const statusInfo = getStatusPill(property.statusRooms);
+  const status = getRoomsStatus(property.statusRooms);
   const occupancyRatio =
     property.totalRoom > 0
       ? (property.totalRoomOccupied ?? 0) / property.totalRoom
       : 0;
-  const occupancyPercent = Math.round(occupancyRatio * 100);
-  const fillWidth: DimensionValue = `${occupancyPercent}%`;
+  const fillWidth: DimensionValue = `${Math.round(occupancyRatio * 100)}%`;
   const fillColor = getOccupancyFillColor(occupancyRatio);
 
   return (
-    <View style={[styles.cardContainer, shadows.soft]}>
+    <Card padding="none">
       {/* Card body + meta — whole area is pressable to open PropertyDetail */}
       <PressableScale onPress={onPress} scaleTo={0.97} style={styles.cardBody}>
-        {/* Header: icon + name + status pill */}
         <View style={styles.headerRow}>
-          <View style={styles.iconSquircle}>
-            <Ionicons name="business" size={20} color={tokens.colors.primary} />
-          </View>
+          <IconSquircle icon="business" />
           <View style={styles.titleCol}>
             <Text style={styles.cardTitle} numberOfLines={1}>
               {property.name}
             </Text>
             <View style={styles.addressRow}>
-              <Ionicons
-                name="location-outline"
-                size={12}
-                color={tokens.colors.subtle}
-              />
-              <Text
-                style={[propType.caption, { fontSize: 12 }]}
-                numberOfLines={1}
-              >
+              <Ionicons name="location-outline" size={12} color={uiColors.textSubtle} />
+              <Text style={[uiType.caption, styles.flex]} numberOfLines={1}>
                 {property.address}
               </Text>
             </View>
           </View>
-          <View
-            style={[styles.statusPill, { backgroundColor: statusInfo.bgColor }]}
-          >
-            <View
-              style={[
-                styles.statusDot,
-                { backgroundColor: statusInfo.dotColor },
-              ]}
-            />
-            <Text
-              style={[
-                propType.caption,
-                { color: statusInfo.textColor, fontWeight: "600" },
-              ]}
-            >
-              {statusInfo.label}
-            </Text>
-          </View>
+          <StatusBadge label={status.label} tone={status.tone} />
         </View>
 
-        {/* Meta chip row: floors + rooms */}
         <View style={styles.chipRow}>
-          <View style={styles.chip}>
-            <Ionicons
-              name="layers-outline"
-              size={12}
-              color={tokens.colors.muted}
-            />
-            <Text style={[propType.caption, { fontSize: 12 }]}>
-              {property.numberFloor ?? 0} tầng
-            </Text>
-          </View>
-          <View style={styles.chip}>
-            <Ionicons
-              name="bed-outline"
-              size={12}
-              color={tokens.colors.muted}
-            />
-            <Text style={[propType.caption, { fontSize: 12 }]}>
-              {property.totalRoom} phòng
-            </Text>
-          </View>
+          <Chip icon="layers-outline" label={`${property.numberFloor ?? 0} tầng`} />
+          <Chip icon="bed-outline" label={`${property.totalRoom} phòng`} />
         </View>
 
-        {/* Occupancy: eyebrow + ratio + bar */}
         {property.totalRoom > 0 ? (
           <>
             <View style={styles.occupancyHeader}>
-              <Text style={[propType.eyebrow, { color: tokens.colors.subtle }]}>
-                ĐÃ THUÊ
-              </Text>
+              <Text style={uiType.eyebrow}>Đã thuê</Text>
               <Text style={styles.occupancyRatio}>
                 {property.totalRoomOccupied ?? 0}/{property.totalRoom}
               </Text>
             </View>
             <View style={styles.occupancyTrack}>
               <View
-                style={[
-                  styles.occupancyFill,
-                  { width: fillWidth, backgroundColor: fillColor },
-                ]}
+                style={[styles.occupancyFill, { width: fillWidth, backgroundColor: fillColor }]}
               />
             </View>
           </>
         ) : (
-          <Text style={[propType.caption, { color: tokens.colors.muted }]}>
-            Chưa có phòng nào
-          </Text>
+          <Text style={uiType.caption}>Chưa có phòng nào</Text>
         )}
       </PressableScale>
 
-      {/* Hairline divider */}
       <View style={styles.hairline} />
 
-      {/* Action buttons row — sibling, not nested (iOS shadow fix) */}
+      {/* Action row — sibling of the pressable body, never nested */}
       <View style={styles.actionRow}>
-        <PressableScale
-          onPress={onViewRooms}
-          scaleTo={0.94}
-          style={[styles.actionButton, styles.actionPrimary]}
-        >
-          <Ionicons
-            name="bed-outline"
-            size={16}
-            color={tokens.colors.primary}
-          />
-          <Text style={[styles.actionLabel, { color: tokens.colors.primary }]}>
-            Xem phòng
-          </Text>
-        </PressableScale>
-
-        <PressableScale
-          onPress={onAddRoom}
-          scaleTo={0.94}
-          style={[styles.actionButton, styles.actionSecondary]}
-        >
-          <Ionicons name="add" size={16} color={tokens.palette.gray[900]} />
-          <Text
-            style={[styles.actionLabel, { color: tokens.palette.gray[900] }]}
-          >
-            Thêm phòng
-          </Text>
-        </PressableScale>
-
-        <PressableScale
+        <Button label="Xem phòng" icon="bed-outline" variant="soft" size="md" block onPress={onViewRooms} />
+        <Button label="Thêm phòng" icon="add" variant="outline" size="md" block onPress={onAddRoom} />
+        <IconButton
+          icon="create-outline"
+          shape="squircle"
           onPress={onEdit}
-          scaleTo={0.92}
           accessibilityLabel="Sửa tài sản"
-          hitSlop={4}
-          style={styles.editButton}
-        >
-          <Ionicons
-            name="create-outline"
-            size={18}
-            color={tokens.palette.gray[900]}
-          />
-        </PressableScale>
+        />
       </View>
-    </View>
+    </Card>
   );
 };
 
-/**
- * Status pill (PropertyRoomsStatus → label + color + background).
- * From blueprint §5.1 table, uses statusColor tone table.
- */
-function getStatusPill(status?: PropertyRoomsStatus) {
+/** PropertyRoomsStatus → badge label + tone. */
+function getRoomsStatus(status?: PropertyRoomsStatus): { label: string; tone: StatusTone } {
   switch (status) {
     case PropertyRoomsStatus.FULL:
-      return {
-        label: "Đầy phòng",
-        textColor: statusColor.success.color,
-        dotColor: statusColor.success.color,
-        bgColor: statusColor.success.bg,
-      };
+      return { label: "Đầy phòng", tone: "success" };
     case PropertyRoomsStatus.PARTIAL:
-      return {
-        label: "Còn phòng",
-        textColor: statusColor.pending.color,
-        dotColor: statusColor.pending.color,
-        bgColor: statusColor.pending.bg,
-      };
+      return { label: "Còn phòng", tone: "warning" };
     case PropertyRoomsStatus.EMPTY:
     default:
-      return {
-        label: "Chưa có phòng",
-        textColor: statusColor.draft.color,
-        dotColor: statusColor.draft.color,
-        bgColor: statusColor.draft.bg,
-      };
+      return { label: "Chưa có phòng", tone: "neutral" };
   }
 }
 
@@ -257,70 +147,34 @@ function getOccupancyFillColor(ratio: number): string {
 }
 
 const styles = StyleSheet.create({
-  cardContainer: {
-    borderRadius: PROP_RADIUS.card,
-    backgroundColor: tokens.colors.surface,
-  },
   cardBody: {
-    padding: 16,
-    gap: PROP_SPACE.gap,
+    padding: uiSpace.card,
+    gap: uiSpace.gap,
   },
   headerRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
   },
-  iconSquircle: {
-    width: 44,
-    height: 44,
-    borderRadius: PROP_RADIUS.icon,
-    backgroundColor: tokens.colors.primaryMuted,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
   titleCol: {
     flex: 1,
     gap: 2,
   },
   cardTitle: {
-    fontSize: 18,
+    ...uiType.section,
     lineHeight: 24,
-    fontWeight: "700",
-    letterSpacing: -0.3,
-    color: tokens.palette.gray[900],
   },
   addressRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
   },
-  statusPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    height: 26,
-    paddingHorizontal: 10,
-    borderRadius: 999,
-    flexShrink: 0,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+  flex: {
+    flex: 1,
   },
   chipRow: {
     flexDirection: "row",
     gap: 8,
-  },
-  chip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    height: 26,
-    paddingHorizontal: 10,
-    borderRadius: 999,
-    backgroundColor: tokens.colors.surfaceMuted,
   },
   occupancyHeader: {
     flexDirection: "row",
@@ -330,13 +184,13 @@ const styles = StyleSheet.create({
   occupancyRatio: {
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: "700",
-    color: tokens.palette.gray[900],
+    fontWeight: uiWeight.bold,
+    color: uiColors.ink,
   },
   occupancyTrack: {
     height: 6,
     borderRadius: 999,
-    backgroundColor: tokens.palette.gray[200],
+    backgroundColor: uiColors.track,
     overflow: "hidden",
   },
   occupancyFill: {
@@ -345,43 +199,13 @@ const styles = StyleSheet.create({
   },
   hairline: {
     height: 1,
-    backgroundColor: tokens.colors.border,
+    backgroundColor: uiColors.hairline,
   },
   actionRow: {
     flexDirection: "row",
     gap: 8,
-    padding: 16,
+    padding: uiSpace.card,
     alignItems: "center",
-  },
-  actionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    height: 40,
-    borderRadius: 999,
-  },
-  actionPrimary: {
-    flex: 1,
-    backgroundColor: tokens.colors.primaryMuted,
-  },
-  actionSecondary: {
-    flex: 1,
-    backgroundColor: tokens.colors.surface,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-  },
-  actionLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  editButton: {
-    width: 40,
-    height: 40,
-    borderRadius: PROP_RADIUS.icon,
-    backgroundColor: tokens.colors.surfaceMuted,
-    alignItems: "center",
-    justifyContent: "center",
   },
 });
 

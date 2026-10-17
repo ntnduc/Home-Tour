@@ -1,22 +1,23 @@
-import { tokens } from "@/theme";
+import { tokens, uiColors } from "@/theme";
 import React from "react";
-import { ActivityIndicator, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 
-const Loading = () => {
-  return (
-    <SafeAreaView style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color={tokens.colors.primary} />
-    </SafeAreaView>
-  );
-};
+/**
+ * Full-screen fallback loader on the app canvas. Prefer shaped `SkeletonBlock`s
+ * for first loads of content screens; use this only for blocking transitions.
+ */
+const Loading = () => (
+  <View style={styles.container}>
+    <ActivityIndicator size="large" color={tokens.colors.primary} />
+  </View>
+);
 
 const styles = StyleSheet.create({
-  loadingContainer: {
+  container: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: uiColors.canvas,
   },
 });
 

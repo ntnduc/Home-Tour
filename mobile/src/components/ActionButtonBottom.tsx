@@ -1,25 +1,23 @@
+import { uiColors, uiSpace } from "@/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React, { ReactNode } from "react";
-import {
-  ActivityIndicator,
-  Text,
-  TouchableOpacity,
-  View,
-  ViewStyle,
-} from "react-native";
+import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Button, { ButtonVariant } from "./Button";
+
+type ActionVariant = "primary" | "secondary" | "danger" | "success" | "outline" | "soft";
 
 interface ActionButton {
   label: string;
   onPress: () => void | Promise<void>;
   icon?: keyof typeof Ionicons.glyphMap;
   iconElement?: ReactNode;
-  variant?: "primary" | "secondary" | "danger" | "success";
+  /** `secondary` = warning-colored action (legacy name). */
+  variant?: ActionVariant;
   isLoading?: boolean;
   disabled?: boolean;
-  customStyle?: ViewStyle;
-  isRow?: boolean;
-  hidden?: boolean | ((action: any) => boolean);
+  customStyle?: StyleProp<ViewStyle>;
+  hidden?: boolean | ((actions: ActionButton[]) => boolean);
 }
 
 // A row can be a single button (rendered full-width) or an array of buttons
@@ -28,62 +26,36 @@ type ActionButtonRow = ActionButton | ActionButton[];
 
 interface ActionButtonBottomProps {
   actions: ActionButtonRow[];
-  containerStyle?: ViewStyle;
-  className?: string;
+  containerStyle?: StyleProp<ViewStyle>;
   bottomInsetOffset?: number;
 }
 
-const isActionHidden = (action: ActionButton, allActions: ActionButton[]) => {
-  if (typeof action.hidden === "function") {
-    return action.hidden(allActions);
-  }
-  return !!action.hidden;
+const VARIANT: Record<ActionVariant, ButtonVariant> = {
+  primary: "primary",
+  secondary: "warning",
+  danger: "danger",
+  success: "success",
+  outline: "outline",
+  soft: "soft",
 };
 
-const getButtonStyle = (
-  variant: ActionButton["variant"] = "primary",
-  customStyle?: ViewStyle,
-) => {
-  const baseStyle =
-    "flex-row items-center justify-center py-4 px-6 rounded-xl shadow-sm";
+const isActionHidden = (action: ActionButton, allActions: ActionButton[]) =>
+  typeof action.hidden === "function" ? action.hidden(allActions) : !!action.hidden;
 
-  const variantStyles = {
-    primary: "bg-primary shadow-[0_1px_5px_rgb(0,0,0,0.12)]",
-    secondary: "bg-warning shadow-[0_1px_5px_rgb(0,0,0,0.12)]",
-    danger: "bg-error shadow-[0_1px_5px_rgb(0,0,0,0.12)]",
-    success: "bg-success shadow-[0_1px_5px_rgb(0,0,0,0.12)]",
-  };
-
-  return `${baseStyle} ${variantStyles[variant]} ${customStyle || ""}`;
-};
-
-const getTextStyle = (variant: ActionButton["variant"] = "primary") => {
-  const baseStyle = "font-semibold text-base ml-2 ";
-
-  const variantStyles = {
-    primary: "text-white",
-    secondary: "text-white",
-    danger: "text-white",
-    success: "text-white",
-  };
-
-  return `${baseStyle} ${variantStyles[variant]}`;
-};
-
-const getIconColor = (variant: ActionButton["variant"] = "primary") => {
-  const colors = {
-    primary: "#FFFFFF",
-    secondary: "#FFFFFF",
-    danger: "#FFFFFF",
-    success: "#FFFFFF",
-  };
-  return colors[variant];
-};
-
+/**
+ * Sticky bottom action bar (safe-area aware) — Modern Minimalist.
+ *
+ * ```
+ * ─────────────────────────────────────────  soft upward shadow, no border
+ * ╭───────────────────────────────────────╮  Button lg (52) per action, pill
+ * │            ✓  Cập nhật                │
+ * ╰───────────────────────────────────────╯
+ * [  Huỷ  ]  [  Xác nhận  ]                  array row → side by side, gap 12
+ * ```
+ */
 const ActionButtonBottom: React.FC<ActionButtonBottomProps> = ({
   actions,
   containerStyle,
-  className,
   bottomInsetOffset = 0,
 }) => {
   const { bottom } = useSafeAreaInsets();
@@ -97,63 +69,57 @@ const ActionButtonBottom: React.FC<ActionButtonBottomProps> = ({
     .map((row) => row.filter((action) => !isActionHidden(action, flatActions)))
     .filter((row) => row.length > 0);
 
+  if (visibleRows.length === 0) return null;
+
   return (
     <View
-      className={`bg-white border-t border-gray-200 px-6 pt-3 ${className}`}
       style={[
-        { backgroundColor: "#fff" },
+        styles.bar,
         containerStyle,
-        { paddingBottom: bottom + bottomInsetOffset },
+        { paddingBottom: Math.max(bottom, uiSpace.gap) + bottomInsetOffset },
       ]}
     >
-      {visibleRows.map((row, rowIndex) => {
-        const isMultiButtonRow = row.length > 1;
-        return (
-          <View
-            key={`row-${rowIndex}`}
-            className={isMultiButtonRow ? "flex-row" : undefined}
-            style={[
-              rowIndex !== visibleRows.length - 1 && { marginBottom: 12 },
-            ]}
-          >
-            {row.map((action, actionIndex) => (
-              <TouchableOpacity
-                key={`${action.label}-${actionIndex}`}
-                className={getButtonStyle(action.variant, action.customStyle)}
-                onPress={action.onPress}
-                disabled={action.disabled || action.isLoading}
-                style={[
-                  isMultiButtonRow && { flex: 1 },
-                  isMultiButtonRow &&
-                    actionIndex !== row.length - 1 && { marginRight: 12 },
-                ]}
-              >
-                {action.isLoading ? (
-                  <ActivityIndicator
-                    color={getIconColor(action.variant)}
-                    size="small"
-                  />
-                ) : action.iconElement ? (
-                  action.iconElement
-                ) : (
-                  action.icon && (
-                    <Ionicons
-                      name={action.icon}
-                      size={18}
-                      color={getIconColor(action.variant)}
-                    />
-                  )
-                )}
-                <Text className={getTextStyle(action.variant)}>
-                  {action.isLoading ? "Đang xử lý..." : action.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        );
-      })}
+      {visibleRows.map((row, rowIndex) => (
+        <View key={`row-${rowIndex}`} style={styles.row}>
+          {row.map((action, actionIndex) => (
+            <Button
+              key={`${action.label}-${actionIndex}`}
+              label={action.label}
+              icon={action.icon}
+              iconElement={action.iconElement}
+              variant={VARIANT[action.variant ?? "primary"]}
+              size="lg"
+              block
+              isLoading={action.isLoading}
+              disabled={action.disabled}
+              onPress={() => {
+                void action.onPress();
+              }}
+              style={action.customStyle}
+            />
+          ))}
+        </View>
+      ))}
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  bar: {
+    backgroundColor: uiColors.card,
+    paddingHorizontal: uiSpace.screen,
+    paddingTop: uiSpace.gap,
+    gap: uiSpace.gap,
+    shadowColor: uiColors.ink,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  row: {
+    flexDirection: "row",
+    gap: uiSpace.gap,
+  },
+});
 
 export default ActionButtonBottom;

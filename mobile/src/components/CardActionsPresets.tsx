@@ -1,49 +1,25 @@
-import type { CardActionConfig } from "@/screens/common/CardComponent";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
+import { IconTone } from "./IconSquircle";
 
-export const ViewDetailAction = (onPress: () => void): CardActionConfig => ({
-  key: "view",
-  icon: <Ionicons name="eye-outline" size={16} color="#007AFF" />,
-  label: "Xem",
-  onPress,
-});
+type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
-export const RenewAction = (onPress: () => void): CardActionConfig => ({
-  key: "renew",
-  icon: <Ionicons name="refresh-outline" size={16} color="#34C759" />,
-  label: "Gia hạn",
-  onPress,
-});
-
-export const TerminateAction = (onPress: () => void): CardActionConfig => ({
-  key: "terminate",
-  icon: <Ionicons name="close-outline" size={16} color="#FF3B30" />,
-  label: "Chấm dứt",
-  onPress,
-});
-
-export const EditAction = (onPress: () => void): CardActionConfig => ({
-  key: "edit",
-  icon: <Ionicons name="create-outline" size={16} color="#FFA500" />,
-  label: "Sửa",
-  onPress,
-});
-
-export const DeleteAction = (onPress: () => void): CardActionConfig => ({
-  key: "delete",
-  icon: <Ionicons name="trash-outline" size={16} color="#FF3B30" />,
-  label: "Xoá",
-  onPress,
-});
-
-export const CARD_ACTION_PRESETS: Record<
-  string,
-  (onPress: () => void) => CardActionConfig
-> = {
-  view: ViewDetailAction,
-  renew: RenewAction,
-  terminate: TerminateAction,
-  edit: EditAction,
-  delete: DeleteAction,
+/** Visual + a11y definition of a standard card action. Styling is owned by `IconButton`. */
+export type CardActionPreset = {
+  icon: IoniconName;
+  tone: IconTone | "ink";
+  label: string;
 };
+
+export type CardActionPresetKey = "view" | "renew" | "terminate" | "edit" | "delete";
+
+export const CARD_ACTION_PRESETS: Record<CardActionPresetKey, CardActionPreset> = {
+  view: { icon: "eye-outline", tone: "primary", label: "Xem" },
+  renew: { icon: "refresh-outline", tone: "success", label: "Gia hạn" },
+  terminate: { icon: "close-outline", tone: "error", label: "Chấm dứt" },
+  edit: { icon: "create-outline", tone: "ink", label: "Sửa" },
+  delete: { icon: "trash-outline", tone: "error", label: "Xoá" },
+};
+
+export const isCardActionPresetKey = (key: string): key is CardActionPresetKey =>
+  key in CARD_ACTION_PRESETS;

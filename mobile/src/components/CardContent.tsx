@@ -1,38 +1,42 @@
+import { uiType } from "@/theme";
 import React, { ReactNode } from "react";
-import { Text, View } from "react-native";
+import { StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
+import Card from "./Card";
 
 type Props = {
   children: ReactNode;
   title?: string | ReactNode;
   description?: string | ReactNode;
+  style?: StyleProp<ViewStyle>;
 };
 
-const CardContent = (props: Props) => {
-  const descriptionElement =
-    typeof props.description === "string" ? (
-      <Text className="text-sm text-gray-600 mb-2 italic">
-        {props.description}
-      </Text>
-    ) : (
-      props.description
-    );
-
-  const titleElement =
-    typeof props.title === "string" ? (
-      <View className="mb-4">
-        <Text className="text-lg font-bold text-gray-900 ">{props.title}</Text>
-        {descriptionElement}
+/**
+ * Simple titled card (title + optional description + content).
+ * For form sections with an icon/action use `FormSection`.
+ */
+const CardContent = ({ children, title, description, style }: Props) => (
+  <Card style={[styles.card, style]}>
+    {(title || description) && (
+      <View style={styles.header}>
+        {typeof title === "string" ? <Text style={uiType.section}>{title}</Text> : title}
+        {typeof description === "string" ? (
+          <Text style={uiType.caption}>{description}</Text>
+        ) : (
+          description
+        )}
       </View>
-    ) : (
-      props.title
-    );
+    )}
+    {children}
+  </Card>
+);
 
-  return (
-    <View className="rounded-xl p-4 bg-white">
-      {titleElement}
-      {props.children}
-    </View>
-  );
-};
+const styles = StyleSheet.create({
+  card: {
+    gap: 14,
+  },
+  header: {
+    gap: 2,
+  },
+});
 
 export default CardContent;

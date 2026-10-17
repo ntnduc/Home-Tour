@@ -1,5 +1,5 @@
 import { logout } from "@/api/auth/api";
-import ButtonAction from "@/components/ButtomAction";
+import Button from "@/components/Button";
 import { User } from "@/types/user";
 import { getStoreUser } from "@/utils/appUtil";
 import { useNavigation } from "@react-navigation/native";
@@ -75,23 +75,13 @@ const ProfileScreen = () => {
         <View className="gap-2">
           <Text className="text-gray-500">Thông tin cá nhân</Text>
 
-          <ButtonAction
-            icon="person-outline"
-            onPress={() => {}}
-            text="Cài đặt"
-          />
-
-          <ButtonAction
-            icon={"help-circle-outline"}
-            onPress={() => {}}
-            text="Trợ giúp"
-          ></ButtonAction>
-
-          <ButtonAction
+          <Button icon="person-outline" onPress={() => {}} label="Cài đặt" />
+          <Button icon="help-circle-outline" onPress={() => {}} label="Trợ giúp" />
+          <Button
             icon="log-out-outline"
             onPress={handleLogout}
-            type="danger"
-            text="Đăng xuất"
+            variant="danger"
+            label="Đăng xuất"
           />
         </View>
 

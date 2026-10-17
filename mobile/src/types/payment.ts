@@ -1,4 +1,5 @@
-import { statusColor } from "@/theme";
+import { STATUS_TONE_COLOR, StatusBadgeSpec } from "@/theme";
+import { StatusColorValue } from "@/theme/status";
 
 export interface Payment {
   id: string;
@@ -94,14 +95,17 @@ export const PAYMENT_FOR_LABEL: Record<PaymentFor, string> = {
   [PaymentFor.OTHER]: "Khác",
 };
 
-export const PAYMENT_STATUS_COLOR: Record<
-  PaymentStatus,
-  { bg: string; color: string }
-> = {
-  [PaymentStatus.PENDING]: statusColor.pending,
-  [PaymentStatus.PAID]: statusColor.success,
-  [PaymentStatus.OVERDUE]: statusColor.error,
-  [PaymentStatus.CANCELLED]: statusColor.cancelled,
-  [PaymentStatus.PARTIALLY_PAID]: statusColor.info,
-  [PaymentStatus.DRAFT]: statusColor.draft,
+/** Single source of truth: payment status → badge label + tone. */
+export const PAYMENT_STATUS_BADGE: Record<PaymentStatus, StatusBadgeSpec> = {
+  [PaymentStatus.PENDING]: { label: PAYMENT_STATUS_LABEL[PaymentStatus.PENDING], tone: "warning" },
+  [PaymentStatus.PAID]: { label: PAYMENT_STATUS_LABEL[PaymentStatus.PAID], tone: "success" },
+  [PaymentStatus.OVERDUE]: { label: PAYMENT_STATUS_LABEL[PaymentStatus.OVERDUE], tone: "error" },
+  [PaymentStatus.CANCELLED]: { label: PAYMENT_STATUS_LABEL[PaymentStatus.CANCELLED], tone: "cancelled" },
+  [PaymentStatus.PARTIALLY_PAID]: { label: PAYMENT_STATUS_LABEL[PaymentStatus.PARTIALLY_PAID], tone: "info" },
+  [PaymentStatus.DRAFT]: { label: PAYMENT_STATUS_LABEL[PaymentStatus.DRAFT], tone: "neutral" },
 };
+
+/** Derived `{ bg, color }` for call sites that tint custom layouts. */
+export const PAYMENT_STATUS_COLOR: Record<PaymentStatus, StatusColorValue> = Object.fromEntries(
+  Object.entries(PAYMENT_STATUS_BADGE).map(([k, v]) => [k, STATUS_TONE_COLOR[v.tone]]),
+) as Record<PaymentStatus, StatusColorValue>;

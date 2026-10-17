@@ -4,6 +4,8 @@ import AppSheetBackdropComponent from '@/components/AppSheet/AppSheetBackdropCom
 import AppSheetHandleComponent from '@/components/AppSheet/AppSheetHandleComponent';
 import AppSheetHeader from '@/components/AppSheet/AppSheetHeader';
 import Input from '@/components/Input';
+import NoticeBanner from '@/components/NoticeBanner';
+import { uiSpace } from '@/theme';
 import { ClientCreateRequest } from '@/types/client';
 import BottomSheet, {
   BottomSheetFooter,
@@ -143,11 +145,12 @@ const CompanionClientComponent = forwardRef<
           />
         </View>
         <BottomSheetScrollView
-          className="p-4 mt-[60px] mb-[90px]"
+          style={sheetStyles.scroll}
+          contentContainerStyle={sheetStyles.body}
           nestedScrollEnabled={true}
           showsVerticalScrollIndicator={true}
         >
-          <View className="mb-3">
+          <View>
             <Controller
               control={control}
               name="name"
@@ -177,7 +180,7 @@ const CompanionClientComponent = forwardRef<
             />
           </View>
 
-          <View className="mb-3">
+          <View>
             <Controller
               control={control}
               name="phoneNumber"
@@ -213,7 +216,7 @@ const CompanionClientComponent = forwardRef<
             />
           </View>
 
-          <View className="mb-3">
+          <View>
             <Controller
               control={control}
               name="idCardNumber"
@@ -248,15 +251,12 @@ const CompanionClientComponent = forwardRef<
             )}
           />
 
-          <View className="mt-4 bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
-            <Text className="text-sm font-semibold text-emerald-700 mb-1">
-              Gợi ý nhập thông tin
-            </Text>
-            <Text className="text-xs text-emerald-700">
-              Họ tên và số điện thoại là bắt buộc. Các thông tin khác có thể bỏ
-              qua.
-            </Text>
-          </View>
+          <NoticeBanner
+            tone="success"
+            icon="bulb-outline"
+            title="Gợi ý nhập thông tin"
+            message="Họ tên và số điện thoại là bắt buộc. Các thông tin khác có thể bỏ qua."
+          />
         </BottomSheetScrollView>
       </BottomSheet>
     </View>
@@ -264,5 +264,16 @@ const CompanionClientComponent = forwardRef<
 });
 
 CompanionClientComponent.displayName = 'CompanionClientComponent';
+
+const sheetStyles = StyleSheet.create({
+  scroll: {
+    marginTop: 60,
+    marginBottom: 90,
+  },
+  body: {
+    padding: uiSpace.screen,
+    gap: uiSpace.gap,
+  },
+});
 
 export default CompanionClientComponent;

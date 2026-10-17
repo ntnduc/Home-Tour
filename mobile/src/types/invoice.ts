@@ -1,5 +1,6 @@
 import { StatusOption } from "@/components/Status";
-import { statusColor } from "@/theme";
+import { STATUS_TONE_COLOR, StatusBadgeSpec } from "@/theme";
+import { StatusColorValue } from "@/theme/status";
 import { ContractDetailResponse } from "./contract";
 import {
   InvoiceItemCreateRequest,
@@ -89,64 +90,21 @@ export enum InvoiceStatus {
   DRAFT = "DRAFT",
 }
 
-export const INVOICE_STATUS_COLOR: Record<
-  InvoiceStatus,
-  { bg: string; color: string }
-> = {
-  [InvoiceStatus.DRAFT]: statusColor.draft,
-  [InvoiceStatus.PENDING]: statusColor.pending,
-  [InvoiceStatus.PAID]: statusColor.success,
-  [InvoiceStatus.PARTIALLY_PAID]: statusColor.info,
-  [InvoiceStatus.OVERDUE]: statusColor.error,
-  [InvoiceStatus.CANCELLED]: statusColor.cancelled,
+/** Single source of truth: invoice status → badge label + tone. */
+export const INVOICE_STATUS_BADGE: Record<InvoiceStatus, StatusBadgeSpec> = {
+  [InvoiceStatus.DRAFT]: { label: "Nháp", tone: "neutral" },
+  [InvoiceStatus.PENDING]: { label: "Chờ thanh toán", tone: "warning" },
+  [InvoiceStatus.PAID]: { label: "Đã thanh toán", tone: "success" },
+  [InvoiceStatus.PARTIALLY_PAID]: { label: "Thanh toán một phần", tone: "info" },
+  [InvoiceStatus.OVERDUE]: { label: "Quá hạn", tone: "error" },
+  [InvoiceStatus.CANCELLED]: { label: "Đã hủy", tone: "cancelled" },
 };
 
-export const INVOICE_STATUS_OPTIONS: StatusOption[] = [
-  {
-    value: InvoiceStatus.DRAFT,
-    label: "Nháp",
-    textStyle: { color: INVOICE_STATUS_COLOR[InvoiceStatus.DRAFT].color },
-    style: { backgroundColor: INVOICE_STATUS_COLOR[InvoiceStatus.DRAFT].bg },
-  },
-  {
-    value: InvoiceStatus.PENDING,
-    label: "Pending",
-    type: "default",
-    textStyle: { color: INVOICE_STATUS_COLOR[InvoiceStatus.PENDING].color },
-    style: { backgroundColor: INVOICE_STATUS_COLOR[InvoiceStatus.PENDING].bg },
-  },
-  {
-    value: InvoiceStatus.PAID,
-    label: "Paid",
-    type: "default",
-    textStyle: { color: INVOICE_STATUS_COLOR[InvoiceStatus.PAID].color },
-    style: { backgroundColor: INVOICE_STATUS_COLOR[InvoiceStatus.PAID].bg },
-  },
-  {
-    value: InvoiceStatus.PARTIALLY_PAID,
-    label: "Partially Paid",
-    type: "default",
-    textStyle: {
-      color: INVOICE_STATUS_COLOR[InvoiceStatus.PARTIALLY_PAID].color,
-    },
-    style: {
-      backgroundColor: INVOICE_STATUS_COLOR[InvoiceStatus.PARTIALLY_PAID].bg,
-    },
-  },
-  {
-    value: InvoiceStatus.OVERDUE,
-    label: "Overdue",
-    type: "default",
-    textStyle: { color: INVOICE_STATUS_COLOR[InvoiceStatus.OVERDUE].color },
-    style: { backgroundColor: INVOICE_STATUS_COLOR[InvoiceStatus.OVERDUE].bg },
-  },
-  {
-    value: InvoiceStatus.CANCELLED,
-    label: "Cancelled",
-    type: "default",
-    textStyle: { color: INVOICE_STATUS_COLOR[InvoiceStatus.CANCELLED].color },
-    style: {
-      backgroundColor: INVOICE_STATUS_COLOR[InvoiceStatus.CANCELLED].bg,
-    },
-  },
-];
+/** Derived `{ bg, color }` for call sites that tint custom layouts. */
+export const INVOICE_STATUS_COLOR: Record<InvoiceStatus, StatusColorValue> = Object.fromEntries(
+  Object.entries(INVOICE_STATUS_BADGE).map(([k, v]) => [k, STATUS_TONE_COLOR[v.tone]]),
+) as Record<InvoiceStatus, StatusColorValue>;
+
+export const INVOICE_STATUS_OPTIONS: StatusOption[] = Object.entries(INVOICE_STATUS_BADGE).map(
+  ([value, badge]) => ({ value, label: badge.label, type: badge.tone }),
+);
