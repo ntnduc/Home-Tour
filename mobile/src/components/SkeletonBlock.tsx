@@ -7,9 +7,9 @@ import Animated, {
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
-import { homeColors } from "../homeStyles";
+import { tokens } from "@/theme";
 
-type Props = {
+type SkeletonBlockProps = {
   width?: DimensionValue;
   height: number;
   radius?: number;
@@ -17,14 +17,21 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
-/** Placeholder "thở" (pulse) giữ đúng hình khối của nội dung → không giật layout khi dữ liệu về. */
+/**
+ * Placeholder "thở" (pulse) giữ đúng hình khối của nội dung → không giật layout khi dữ liệu về.
+ *
+ * Mặc định màu xám nhạt từ tokens; các section có thể ghi đè với `color` custom.
+ * Thường dùng khi `isLoading` để hiển thị skeleton grid cùng kích thước card thực.
+ *
+ * @default `radius = 12`, `color = tokens.palette.gray[200]`
+ */
 const SkeletonBlock = ({
   width = "100%",
   height,
   radius = 12,
-  color = homeColors.skeleton,
+  color = tokens.palette.gray[200],
   style,
-}: Props) => {
+}: SkeletonBlockProps) => {
   const opacity = useSharedValue(0.55);
 
   useEffect(() => {
@@ -49,3 +56,4 @@ const SkeletonBlock = ({
 };
 
 export default SkeletonBlock;
+export type { SkeletonBlockProps };

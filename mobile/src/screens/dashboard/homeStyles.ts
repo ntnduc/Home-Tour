@@ -1,4 +1,4 @@
-import { tokens } from "@/theme";
+import { tokens, shadows } from "@/theme";
 import { StyleSheet, TextStyle } from "react-native";
 
 /**
@@ -60,29 +60,8 @@ export const homeColors = {
   skeleton: palette.gray[200],
 } as const;
 
-export const homeShadow = StyleSheet.create({
-  soft: {
-    shadowColor: palette.gray[900],
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
-  },
-  medium: {
-    shadowColor: palette.gray[900],
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 5,
-  },
-  hero: {
-    shadowColor: palette.brand[700],
-    shadowOffset: { width: 0, height: 18 },
-    shadowOpacity: 0.32,
-    shadowRadius: 28,
-    elevation: 12,
-  },
-});
+/** Alias of theme/shadows.ts — kept for backward compatibility. */
+export const homeShadow = shadows;
 
 /** Thang chữ: số liệu lớn (display) → tiêu đề → nhãn nhỏ viết hoa (eyebrow). */
 export const homeType = StyleSheet.create({

@@ -11,9 +11,9 @@ import {
   homeType,
   homeWeight,
 } from "../homeStyles";
-import PressableScale from "./PressableScale";
+import PressableScale from "@/components/PressableScale";
 import ProgressRing from "./ProgressRing";
-import SkeletonBlock from "./SkeletonBlock";
+import SkeletonBlock from "@/components/SkeletonBlock";
 
 type Props = {
   summary?: HomepageSummary;

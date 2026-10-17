@@ -3,7 +3,7 @@ import { HomepagePropertyOption } from "@/types/homepage";
 import React from "react";
 import { ScrollView, StyleSheet, Text } from "react-native";
 import { HOME_RADIUS, HOME_SPACE, homeColors, homeWeight } from "../homeStyles";
-import PressableScale from "./PressableScale";
+import PressableScale from "@/components/PressableScale";
 
 type Props = {
   properties: HomepagePropertyOption[];

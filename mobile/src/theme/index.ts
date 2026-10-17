@@ -23,6 +23,7 @@ import { colors, ColorType } from "./colors";
 import { palette } from "./primitives";
 import { radius } from "./radius";
 import { semanticColors } from "./semantic";
+import { shadows } from "./shadows";
 import { spacing, SpacingType } from "./spacing";
 import { typography, TypographyType } from "./typography";
 
@@ -33,6 +34,7 @@ export const tokens = {
   spacing,
   typography,
   radius,
+  shadows,
 } as const;
 
 export type Tokens = typeof tokens;
@@ -55,6 +57,7 @@ export { semanticColors } from "./semantic";
 export { radius } from "./radius";
 export { colors } from "./colors";
 export { statusColor } from "./status";
+export { shadows } from "./shadows";
 
 // Re-export types
 export type { Palette } from "./primitives";

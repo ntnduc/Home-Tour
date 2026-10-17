@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx tsc --noEmit -p tsconfig.json)",
+      "Bash(npm run check:colors)",
+      "Bash(npm run -s check:colors)",
+      "Bash(npx jest *)",
+      "Bash(npx prettier --write *)",
+      "Bash(npx expo export --platform ios *)",
+      "Bash(git --no-pager status *)",
+      "Bash(git --no-pager diff *)",
+      "Bash(git --no-pager log *)"
+    ],
+    "ask": [
+      "Bash(npm run migration*)",
+      "Bash(npm run typeorm *)",
+      "Bash(npm run check:colors:update)",
+      "Bash(npm run clean)",
+      "Bash(npm run build:android)",
+      "Bash(npm run build:ios)",
+      "Bash(npm run build:all)",
+      "Bash(npm run build:preview)",
+      "Bash(npm run build:production)",
+      "Bash(npm run build:testflight)",
+      "Bash(npm run submit*)",
+      "Bash(npm run build-and-submit*)",
+      "Bash(eas *)",
+      "Bash(npx eas *)",
+      "Bash(git push *)"
+    ],
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.local)",
+      "Read(**/.env.*.local)",
+      "Edit(**/.env)",
+      "Edit(**/.env.local)",
+      "Edit(**/.env.*.local)"
+    ]
+  }
+}

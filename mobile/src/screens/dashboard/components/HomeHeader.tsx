@@ -10,7 +10,7 @@ import {
   homeType,
   homeWeight,
 } from "../homeStyles";
-import PressableScale from "./PressableScale";
+import PressableScale from "@/components/PressableScale";
 
 type Props = {
   fullName?: string;

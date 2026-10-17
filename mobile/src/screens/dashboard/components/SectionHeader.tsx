@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { HOME_RADIUS, homeColors, homeType, homeWeight } from "../homeStyles";
-import PressableScale from "./PressableScale";
+import PressableScale from "@/components/PressableScale";
 
 type Props = {
   title: string;
