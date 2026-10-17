@@ -1,40 +1,54 @@
+import { uiType } from "@/theme";
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleProp, StyleSheet, Text, ViewStyle } from "react-native";
+import Card from "./Card";
+import IconSquircle, { IconTone } from "./IconSquircle";
+
+type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
 interface StatCardProps {
-  icon: React.ReactNode;
+  icon: IoniconName;
   label: string;
   value: string | number;
-  bgColor: string;
+  tone?: IconTone;
+  /** Optional caption under the value (trend, unit…). */
+  hint?: string;
+  style?: StyleProp<ViewStyle>;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ icon, label, value, bgColor }) => (
-  <View style={[styles.card, { backgroundColor: bgColor }]}>
-    {icon}
-    <Text style={styles.value}>{value}</Text>
-    <Text style={styles.label}>{label}</Text>
-  </View>
+/**
+ * KPI tile (raised card) — same language as the Dashboard bento.
+ *
+ * ```
+ * ┌───────────────────┐ Card medium · radius 24
+ * │ ▣                 │ IconSquircle sm (tone)
+ * │ 12,5 tr           │ title 24/36 bold
+ * │ Doanh thu tháng   │ caption
+ * └───────────────────┘
+ * ```
+ */
+const StatCard: React.FC<StatCardProps> = ({ icon, label, value, tone = "primary", hint, style }) => (
+  <Card elevation="medium" style={[styles.card, style]}>
+    <IconSquircle icon={icon} tone={tone} size="sm" />
+    <Text style={[uiType.title, styles.value]} numberOfLines={1} adjustsFontSizeToFit>
+      {value}
+    </Text>
+    <Text style={uiType.caption} numberOfLines={2}>
+      {label}
+    </Text>
+    {hint ? <Text style={uiType.caption}>{hint}</Text> : null}
+  </Card>
 );
 
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    borderRadius: 16,
-    padding: 16,
-    margin: 8,
-    alignItems: "flex-start",
     minWidth: 140,
-    minHeight: 100,
+    gap: 4,
   },
   value: {
-    fontSize: 24,
-    fontWeight: "bold",
     marginTop: 8,
-  },
-  label: {
-    fontSize: 14,
-    color: "#555",
-    marginTop: 4,
   },
 });
 

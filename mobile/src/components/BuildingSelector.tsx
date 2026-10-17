@@ -2,14 +2,11 @@ import { ComboOptionWithExtra } from "@/types/comboOption";
 import { PropertyDetail } from "@/types/property";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-
-export interface Building {
-  id: string;
-  name: string;
-  address: string;
-  roomCount: number;
-}
+import { StyleSheet, Text, View } from "react-native";
+import { fieldColors, fieldStyles } from "./FormField";
+import IconSquircle from "./IconSquircle";
+import PressableScale from "./PressableScale";
+import { uiType } from "@/theme";
 
 export interface BuildingSelectorProps {
   buildings: ComboOptionWithExtra<string, string, PropertyDetail>[];
@@ -17,141 +14,49 @@ export interface BuildingSelectorProps {
   onOpen?: () => void;
 }
 
-const BuildingSelector = ({
-  buildings,
-  selectedBuilding,
-  onOpen,
-}: BuildingSelectorProps) => {
-  const selectedBuildingData = selectedBuilding
+/**
+ * Property filter trigger (opens a picker sheet).
+ *
+ * ```
+ * ╭───────────────────────────────────────╮ field box (48)
+ * │ ▣  TÒA NHÀ                        ⌄  │ eyebrow + selected name
+ * │    Tất cả tòa nhà                     │
+ * ╰───────────────────────────────────────╯
+ * ```
+ */
+const BuildingSelector = ({ buildings, selectedBuilding, onOpen }: BuildingSelectorProps) => {
+  const selected = selectedBuilding
     ? buildings.find((b) => b.value && b.extra && b.value === selectedBuilding)
-    : null;
-
-  const buildingDto = selectedBuildingData?.extra;
+    : undefined;
 
   return (
-    <View className="w-full mt-2">
-      <TouchableOpacity
-        className="mb-2"
-        style={styles.selector}
-        onPress={() => onOpen && onOpen()}
-      >
-        <View style={styles.selectorContent}>
-          <Ionicons name="business-outline" size={16} color="#007AFF" />
-          <View style={styles.selectorText}>
-            <Text style={styles.selectorLabel}>Tòa nhà</Text>
-            <Text style={styles.selectorValue}>
-              {selectedBuildingData ? buildingDto?.name : "Tất cả tòa nhà"}
-            </Text>
-          </View>
-        </View>
-        <Ionicons name="chevron-down" size={16} color="#666" />
-      </TouchableOpacity>
-    </View>
+    <PressableScale
+      onPress={() => onOpen?.()}
+      scaleTo={0.98}
+      accessibilityRole="button"
+      accessibilityLabel="Chọn tòa nhà"
+      style={[fieldStyles.box, styles.box]}
+    >
+      <IconSquircle icon="business-outline" size="sm" />
+      <View style={styles.text}>
+        <Text style={uiType.eyebrow}>Tòa nhà</Text>
+        <Text style={fieldStyles.text} numberOfLines={1}>
+          {selected?.extra?.name ?? "Tất cả tòa nhà"}
+        </Text>
+      </View>
+      <Ionicons name="chevron-down" size={18} color={fieldColors.icon} />
+    </PressableScale>
   );
 };
 
 const styles = StyleSheet.create({
-  selector: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+  box: {
+    paddingVertical: 8,
+    paddingHorizontal: 10,
   },
-  selectorContent: {
-    flexDirection: "row",
-    alignItems: "center",
+  text: {
     flex: 1,
-  },
-  selectorText: {
-    marginLeft: 6,
-    flex: 1,
-  },
-  selectorLabel: {
-    fontSize: 10,
-    color: "#666",
-    marginBottom: 1,
-  },
-  selectorValue: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#222",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: "70%",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#222",
-  },
-  closeButton: {
-    padding: 4,
-  },
-  modalList: {
-    paddingBottom: 20,
-  },
-  buildingItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  selectedBuildingItem: {
-    backgroundColor: "#F0F4FF",
-  },
-  buildingInfo: {
-    flex: 1,
-  },
-  buildingName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#222",
-    marginBottom: 4,
-  },
-  selectedBuildingName: {
-    color: "#007AFF",
-  },
-  buildingAddress: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 2,
-  },
-  selectedBuildingAddress: {
-    color: "#007AFF",
-  },
-  roomCount: {
-    fontSize: 12,
-    color: "#888",
-  },
-  selectedRoomCount: {
-    color: "#007AFF",
+    gap: 2,
   },
 });
 

@@ -1,3 +1,4 @@
+import { tokens, uiColors } from '@/theme';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, LayoutChangeEvent, StyleSheet, View, ViewStyle } from 'react-native';
 import Svg, { Defs, Rect, Stop, LinearGradient as SvgLinearGradient } from 'react-native-svg';
@@ -39,12 +40,12 @@ export interface SliderLoadingProps {
   showShimmer?: boolean;
 }
 
-const DEFAULT_GRADIENT = ['#4f46e5', '#6366f1', '#8b5cf6'];
+const DEFAULT_GRADIENT = [tokens.palette.brand[700], tokens.palette.brand[500], tokens.palette.brand[400]];
 
 const SliderLoading: React.FC<SliderLoadingProps> = ({
   value,
   height = 3,
-  trackColor = '#e5e7eb',
+  trackColor = uiColors.track,
   gradientColors = DEFAULT_GRADIENT,
   animationDuration = 250,
   style,
@@ -236,7 +237,7 @@ const styles = StyleSheet.create({
     width: '100%',
     // borderRadius: 999,
     overflow: 'hidden',
-    backgroundColor: '#ffffff',
+    backgroundColor: uiColors.card,
     borderWidth: 1,
     borderRadius: 6,
   },

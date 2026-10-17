@@ -1,4 +1,5 @@
-import { StatusType } from "@/components/Status";
+import { STATUS_TONE_COLOR, StatusBadgeSpec } from "@/theme";
+import { StatusColorValue } from "@/theme/status";
 import { ClientCreateRequest } from "./client";
 import {
   ContractClientDetailResponse,
@@ -89,17 +90,6 @@ export const CONTRACT_STATUS_LABEL: Record<ContractStatus, string> = {
   [ContractStatus.EXPIRED]: "Hết hạn",
 };
 
-export const CONTRACT_STATUS_COLOR: Record<
-  ContractStatus,
-  { bg: string; color: string }
-> = {
-  [ContractStatus.DRAFT]: { bg: "#F3F4F6", color: "#6B7280" },
-  [ContractStatus.PENDING_START]: { bg: "#F3F4F6", color: "#6B7280" },
-  [ContractStatus.ACTIVE]: { bg: "#E9F9EF", color: "#34C759" },
-  [ContractStatus.ENDED]: { bg: "#FFECEC", color: "#FF3B30" },
-  [ContractStatus.TERMINATED_EARLY]: { bg: "#F3F4F6", color: "#6B7280" },
-  [ContractStatus.EXPIRED]: { bg: "#FFF6E5", color: "#FF9500" },
-};
 
 export const CONTRACT_STATUS_ICON: Record<ContractStatus, string> = {
   [ContractStatus.DRAFT]: "pencil-outline",
@@ -110,38 +100,17 @@ export const CONTRACT_STATUS_ICON: Record<ContractStatus, string> = {
   [ContractStatus.EXPIRED]: "ellipse-outline",
 };
 
-export const CONTRACT_STATUS_BADGE: Record<
-  ContractStatus,
-  { key: StatusType; label?: string; bg?: string; color?: string }
-> = {
-  [ContractStatus.DRAFT]: {
-    label: "Nháp",
-    key: "default",
-    ...CONTRACT_STATUS_COLOR[ContractStatus.DRAFT],
-  },
-  [ContractStatus.PENDING_START]: {
-    label: "Chờ bắt đầu",
-    key: "info",
-    ...CONTRACT_STATUS_COLOR[ContractStatus.PENDING_START],
-  },
-  [ContractStatus.ACTIVE]: {
-    label: "Đang hiệu lực",
-    key: "success",
-    ...CONTRACT_STATUS_COLOR[ContractStatus.ACTIVE],
-  },
-  [ContractStatus.ENDED]: {
-    label: "Đã kết thúc",
-    key: "error",
-    ...CONTRACT_STATUS_COLOR[ContractStatus.ENDED],
-  },
-  [ContractStatus.TERMINATED_EARLY]: {
-    label: "Đã kết thúc sớm",
-    key: "warning",
-    ...CONTRACT_STATUS_COLOR[ContractStatus.TERMINATED_EARLY],
-  },
-  [ContractStatus.EXPIRED]: {
-    label: "Hết hạn",
-    key: "info",
-    ...CONTRACT_STATUS_COLOR[ContractStatus.EXPIRED],
-  },
+/** Single source of truth: contract status → badge label + tone. */
+export const CONTRACT_STATUS_BADGE: Record<ContractStatus, StatusBadgeSpec> = {
+  [ContractStatus.DRAFT]: { label: CONTRACT_STATUS_LABEL[ContractStatus.DRAFT], tone: "neutral" },
+  [ContractStatus.PENDING_START]: { label: CONTRACT_STATUS_LABEL[ContractStatus.PENDING_START], tone: "info" },
+  [ContractStatus.ACTIVE]: { label: CONTRACT_STATUS_LABEL[ContractStatus.ACTIVE], tone: "success" },
+  [ContractStatus.ENDED]: { label: CONTRACT_STATUS_LABEL[ContractStatus.ENDED], tone: "cancelled" },
+  [ContractStatus.TERMINATED_EARLY]: { label: CONTRACT_STATUS_LABEL[ContractStatus.TERMINATED_EARLY], tone: "error" },
+  [ContractStatus.EXPIRED]: { label: CONTRACT_STATUS_LABEL[ContractStatus.EXPIRED], tone: "warning" },
 };
+
+/** Derived `{ bg, color }` for legacy call sites that tint custom layouts. */
+export const CONTRACT_STATUS_COLOR: Record<ContractStatus, StatusColorValue> = Object.fromEntries(
+  Object.entries(CONTRACT_STATUS_BADGE).map(([k, v]) => [k, STATUS_TONE_COLOR[v.tone]]),
+) as Record<ContractStatus, StatusColorValue>;

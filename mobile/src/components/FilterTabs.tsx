@@ -1,145 +1,126 @@
+import { shadows, tokens, uiColors, uiRadius, uiWeight } from "@/theme";
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Animated, Text, TouchableOpacity, View } from "react-native";
-import { colors } from "../theme/colors";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import Chip from "./Chip";
+import PressableScale from "./PressableScale";
 
-interface FilterTab {
+type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
+
+export interface FilterTab {
   key: string;
   title: string;
-  icon?: string;
+  icon?: IoniconName;
 }
 
 interface FilterTabsProps {
   tabs: FilterTab[];
   activeTab: string;
   onTabPress: (tabKey: string) => void;
-  variant?: "default" | "pill" | "underline";
+  /**
+   * `segmented` (default): equal-width segments in a muted track.
+   * `pill`: horizontally scrolling filter chips.
+   */
+  variant?: "segmented" | "pill";
 }
 
+/**
+ * Tab / filter switcher.
+ *
+ * ```
+ * segmented: ╭─────────────────────────────────╮  track canvas · radius pill
+ *            │ (  Tuần  ) Tháng     Năm         │  active = white pill + soft shadow
+ *            ╰─────────────────────────────────╯
+ * pill:      (Tất cả) (Đã thanh toán) (Chờ) →     Chip filter, selected = ink
+ * ```
+ */
 const FilterTabs: React.FC<FilterTabsProps> = ({
   tabs,
   activeTab,
   onTabPress,
-  variant = "default",
+  variant = "segmented",
 }) => {
-  const animatedValue = React.useRef(new Animated.Value(0)).current;
-
-  React.useEffect(() => {
-    const activeIndex = tabs.findIndex((tab) => tab.key === activeTab);
-    Animated.spring(animatedValue, {
-      toValue: activeIndex,
-      useNativeDriver: false,
-      tension: 100,
-      friction: 8,
-    }).start();
-  }, [activeTab]);
-
-  const renderDefaultTab = (tab: FilterTab, index: number) => {
-    const isActive = activeTab === tab.key;
-
+  if (variant === "pill") {
     return (
-      <TouchableOpacity
-        key={tab.key}
-        onPress={() => onTabPress(tab.key)}
-        className={`flex-1 py-3 px-4 rounded-lg mx-1 ${
-          isActive ? "bg-primary-main" : "bg-gray-100"
-        }`}
-        activeOpacity={0.7}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.pillRow}
       >
-        <View className="items-center">
-          {tab.icon && <Text className="text-lg mb-1">{tab.icon}</Text>}
-          <Text
-            className={`text-sm font-semibold ${
-              isActive ? "text-white" : "text-gray-600"
-            }`}
-          >
-            {tab.title}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
-  const renderPillTab = (tab: FilterTab, index: number) => {
-    const isActive = activeTab === tab.key;
-
-    return (
-      <TouchableOpacity
-        key={tab.key}
-        onPress={() => onTabPress(tab.key)}
-        className={`px-6 py-3 rounded-full mx-1 ${
-          isActive
-            ? "bg-primary-main shadow-lg"
-            : "bg-white border border-gray-200"
-        }`}
-        activeOpacity={0.7}
-        style={{
-          shadowColor: isActive ? colors.primary.main : "transparent",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: isActive ? 0.3 : 0,
-          shadowRadius: 4,
-          elevation: isActive ? 4 : 0,
-        }}
-      >
-        <View className="flex-row items-center">
-          {tab.icon && <Text className="text-base mr-2">{tab.icon}</Text>}
-          <Text
-            className={`text-sm font-semibold ${
-              isActive ? "text-white" : "text-gray-700"
-            }`}
-          >
-            {tab.title}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
-  const renderUnderlineTab = (tab: FilterTab, index: number) => {
-    const isActive = activeTab === tab.key;
-
-    return (
-      <TouchableOpacity
-        key={tab.key}
-        onPress={() => onTabPress(tab.key)}
-        className="flex-1 py-4 px-2"
-        activeOpacity={0.7}
-      >
-        <View className="items-center">
-          <Text
-            className={`text-sm font-semibold mb-2 ${
-              isActive ? "text-primary-main" : "text-gray-500"
-            }`}
-          >
-            {tab.title}
-          </Text>
-          <View
-            className={`h-1 w-8 rounded-full ${
-              isActive ? "bg-primary-main" : "bg-transparent"
-            }`}
+        {tabs.map((tab) => (
+          <Chip
+            key={tab.key}
+            label={tab.title}
+            icon={tab.icon}
+            variant="outline"
+            selected={tab.key === activeTab}
+            onPress={() => onTabPress(tab.key)}
           />
-        </View>
-      </TouchableOpacity>
+        ))}
+      </ScrollView>
     );
-  };
-
-  const renderTab = (tab: FilterTab, index: number) => {
-    switch (variant) {
-      case "pill":
-        return renderPillTab(tab, index);
-      case "underline":
-        return renderUnderlineTab(tab, index);
-      default:
-        return renderDefaultTab(tab, index);
-    }
-  };
+  }
 
   return (
-    <View className="bg-white rounded-xl p-2 shadow-sm">
-      <View className="flex-row">
-        {tabs.map((tab, index) => renderTab(tab, index))}
-      </View>
+    <View style={styles.track}>
+      {tabs.map((tab) => {
+        const active = tab.key === activeTab;
+        return (
+          <PressableScale
+            key={tab.key}
+            onPress={() => onTabPress(tab.key)}
+            scaleTo={0.96}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: active }}
+            style={[styles.segment, active && [styles.segmentActive, shadows.soft]]}
+          >
+            {tab.icon && (
+              <Ionicons
+                name={tab.icon}
+                size={14}
+                color={active ? uiColors.ink : uiColors.textMuted}
+              />
+            )}
+            <Text style={[styles.label, active && styles.labelActive]} numberOfLines={1}>
+              {tab.title}
+            </Text>
+          </PressableScale>
+        );
+      })}
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  pillRow: {
+    gap: 8,
+  },
+  track: {
+    flexDirection: "row",
+    padding: 4,
+    borderRadius: uiRadius.pill,
+    backgroundColor: tokens.palette.gray[100],
+  },
+  segment: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    height: 36,
+    borderRadius: uiRadius.pill,
+  },
+  segmentActive: {
+    backgroundColor: uiColors.card,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: uiWeight.semibold,
+    color: uiColors.textMuted,
+  },
+  labelActive: {
+    color: uiColors.ink,
+  },
+});
 
 export default FilterTabs;

@@ -1,16 +1,19 @@
 import { getListService } from "@/api/service/service.api";
-import AutocompleteInput from "@/components/AutocompleteInput";
+import AutocompleteInput from "./AutocompleteInput";
+import ListRow from "./ListRow";
 import { ServiceCalculateMethod } from "@/constant/service.constant";
-import { createStyles } from "@/styles/component/StyleComboBox";
-import { useTheme } from "@/theme/ThemeProvider";
 import { ServiceCreateOrUpdateRequest } from "@/types/service";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import React, { useEffect, useState } from "react";
-import { tokens } from "@/theme";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { shadows, tokens, uiColors, uiRadius } from "@/theme";
+import { ScrollView, StyleSheet, View } from "react-native";
 
-const ServiceSelectedSearchComponent = ({
+/**
+ * Service name field with search-as-you-type suggestions (top 5 matches).
+ * Picking a suggestion fills the whole service (id, icon, method, price).
+ */
+const ServiceSearchInput = ({
   value,
   service,
   error,
@@ -22,9 +25,6 @@ const ServiceSelectedSearchComponent = ({
   onChange: (services: ServiceCreateOrUpdateRequest | string) => void;
 }) => {
   const ICON_DEFAULT = "apps-outline";
-
-  const theme = useTheme();
-  const styles = createStyles(theme);
 
   const [search, setSearch] = useState("");
   const [serviceSelected, setServiceSelected] = useState<
@@ -96,33 +96,36 @@ const ServiceSelectedSearchComponent = ({
       iconProps={{
         color: tokens.colors.primary,
       }}
-      renderResultList={(list: any) => {
-        const flatData = list?.data;
-        return (
-          <View style={styles.dropdownContainer}>
-            <ScrollView style={{ maxHeight: 250 }}>
-              {flatData.map((option: any) => (
-                <TouchableOpacity
-                  className="flex flex-row items-center"
-                  key={String(option.id)}
-                  style={[styles.item]}
-                  onPress={() => onSelectedService(option)}
-                >
-                  <Ionicons
-                    className="mr-3"
-                    name={option?.icon ? option?.icon : ICON_DEFAULT}
-                    size={20}
-                    color={tokens.colors.primary}
-                  />
-                  <Text style={[styles.itemText]}>{option.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        );
-      }}
+      renderResultList={(list: any) => (
+        <View style={styles.dropdown}>
+          <ScrollView style={styles.dropdownScroll} keyboardShouldPersistTaps="handled">
+            {(list?.data ?? []).map((option: any, index: number) => (
+              <ListRow
+                key={String(option.id)}
+                divider={index > 0}
+                icon={option?.icon ? option.icon : ICON_DEFAULT}
+                title={option.name}
+                onPress={() => onSelectedService(option)}
+              />
+            ))}
+          </ScrollView>
+        </View>
+      )}
     />
   );
 };
 
-export default ServiceSelectedSearchComponent;
+const styles = StyleSheet.create({
+  dropdown: {
+    marginTop: 6,
+    borderRadius: uiRadius.field,
+    backgroundColor: uiColors.card,
+    overflow: "hidden",
+    ...shadows.medium,
+  },
+  dropdownScroll: {
+    maxHeight: 250,
+  },
+});
+
+export default ServiceSearchInput;

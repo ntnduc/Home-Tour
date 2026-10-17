@@ -1,16 +1,13 @@
-import { createStyles } from '@/styles/component/StyleUploadFile';
-import { useTheme } from '@/theme/ThemeProvider';
+import { FieldError, fieldStyles } from '@/components/FormField';
+import IconButton from '@/components/IconButton';
+import IconSquircle from '@/components/IconSquircle';
+import PressableScale from '@/components/PressableScale';
+import { tokens, uiWeight } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import React, { useCallback, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Text,
-  TouchableOpacity,
-  View
-} from 'react-native';
+import React, { useState } from 'react';
+import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 import ImageView from 'react-native-image-viewing';
 import LabelForm from '../LabelForm';
 import SliderLoading from './SliderLoading';
@@ -60,8 +57,6 @@ const UploadFile: React.FC<UploadFileProps> = ({
   iconProps,
   showPreview = true,
 }) => {
-  const theme = useTheme();
-  const styles = createStyles(theme);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
@@ -276,100 +271,77 @@ const UploadFile: React.FC<UploadFileProps> = ({
       });
   };
 
-  const renderFileItem = (file: UploadedFile) => {
-
-    return (
-      <View className='flex flex-row items-center h-full w-full '>
-        <Text className='flex-1 text-lg '>
-          {file.name}
-        </Text>
-        {!disabled && (
-          <TouchableOpacity
-            onPress={handleRemove}
-            style={styles.removeButton}
-          >
-            <Ionicons name="close-circle" size={24} color="#ef4444" />
-          </TouchableOpacity>
-        )}
-      </View>
-    );
-  };
-
-  const _renderLoading = useCallback(() => {
-    if (!isLoading) return;
-    return (
-      <View className="flex-row items-center justify-center flex-1 w-full h-full">
-        <ActivityIndicator size="small" color="#6b7280" />
-      </View>
-    );
-  }, [isLoading]);
-
-  const renderSliderLoading = useCallback(() => {
-    return (
-      <View className={`${processStatus === 'loading' ? 'block' : 'hidden'}`}>
-        <SliderLoading value={progress} height={12} animateFromCenter={false} showShimmer />
-      </View>
-    );
-  }, [progress, processStatus]);
+  const renderFileItem = (file: UploadedFile) => (
+    <View style={ui.fileRow}>
+      <IconSquircle icon={typeFile === 'file' ? 'document-outline' : 'image-outline'} size="sm" />
+      <Text style={[fieldStyles.text, ui.flex]} numberOfLines={1}>
+        {file.name}
+      </Text>
+      {!disabled && (
+        <IconButton
+          icon="close"
+          tone="error"
+          size="sm"
+          onPress={handleRemove}
+          accessibilityLabel="Xoá tệp"
+        />
+      )}
+    </View>
+  );
 
   return (
     <>
       <View>
-        {label && (
-          <LabelForm {...(typeof label === 'object' ? label : { label, required })} />
-        )}
+        {label && <LabelForm {...(typeof label === 'object' ? label : { label, required })} />}
         <View
-          className={`flex flex-row items-center content-center justify-center rounded-lg px-3 pb-2 border ${error ? 'border-red-300 bg-red-50' : 'border-gray-200'
-            } ${disabled ? 'bg-gray-100' : 'bg-white'}`}
+          style={[
+            fieldStyles.box,
+            ui.box,
+            !!error && fieldStyles.boxError,
+            disabled && fieldStyles.boxDisabled,
+          ]}
         >
-          <View className="flex flex-col flex-1 h-[60px] items-center content-center justify-center ">
-
-            <View className={`w-full mb-1 h-1 `}>
-              {renderSliderLoading()}
+          {processStatus === 'loading' && (
+            <View style={ui.progress}>
+              <SliderLoading value={progress} height={12} animateFromCenter={false} showShimmer />
             </View>
-            {files ? (
-              <TouchableOpacity style={styles.previewContainer} onPress={() => {
-                {
-                  setIsVisible(true);
-                }
-              }}>
-                {renderFileItem(files)}
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                className="flex-1"
-                onPress={handlePick}
-                disabled={disabled || isLoading}
-                style={styles.uploadButton}
-              >
-                {isLoading
-                  ? _renderLoading()
-                  : <View className="flex-row items-center justify-center flex-1 w-full h-full">
-                    <Ionicons
-                      name={icon}
-                      size={24}
-                      color="#6b7280"
-                      {...iconProps}
-                    />
-                    <Text style={styles.uploadButtonText}>
-                      {placeholder ||
-                        (typeFile === 'image'
-                          ? 'Chọn hình ảnh'
-                          : typeFile === 'file'
-                            ? 'Chọn file'
-                            : 'Chọn hình ảnh hoặc file')}
-                    </Text>
-                  </View>}
-              </TouchableOpacity>
-            )}
-
-          </View>
+          )}
+          {files ? (
+            <PressableScale
+              style={ui.flex}
+              scaleTo={0.98}
+              onPress={() => setIsVisible(true)}
+              accessibilityLabel="Xem tệp"
+            >
+              {renderFileItem(files)}
+            </PressableScale>
+          ) : (
+            <PressableScale
+              style={ui.pick}
+              onPress={handlePick}
+              disabled={disabled || isLoading}
+              scaleTo={0.98}
+              accessibilityRole="button"
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" color={tokens.colors.primary} />
+              ) : (
+                <>
+                  <Ionicons name={icon} size={22} color={tokens.colors.primary} {...iconProps} />
+                  <Text style={ui.pickText}>
+                    {placeholder ||
+                      (typeFile === 'image'
+                        ? 'Chọn hình ảnh'
+                        : typeFile === 'file'
+                          ? 'Chọn file'
+                          : 'Chọn hình ảnh hoặc file')}
+                  </Text>
+                </>
+              )}
+            </PressableScale>
+          )}
         </View>
-        {error && (
-          <Text style={styles.errorText} className="mt-1">
-            {error}
-          </Text>
-        )}
+        <FieldError message={error} />
       </View>
       <ImageView
         images={[{ uri: getFileUrl(files?.id || '') }]}
@@ -382,3 +354,37 @@ const UploadFile: React.FC<UploadFileProps> = ({
 };
 
 export default UploadFile;
+
+const ui = StyleSheet.create({
+  box: {
+    minHeight: 60,
+    paddingVertical: 6,
+  },
+  flex: {
+    flex: 1,
+  },
+  progress: {
+    position: 'absolute',
+    left: 14,
+    right: 14,
+    top: 4,
+  },
+  fileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  pick: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 48,
+  },
+  pickText: {
+    fontSize: 15,
+    fontWeight: uiWeight.semibold,
+    color: tokens.colors.primary,
+  },
+});

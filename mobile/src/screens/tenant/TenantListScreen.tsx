@@ -1,19 +1,35 @@
 import { getListTenant, TenantListResponse } from '@/api/tenant/tenant.api';
-import FabButton from '@/components/FabButton';
-import Loading from '@/components/Loading';
+import AddButton from '@/components/AddButton';
+import { CardSkeletonList } from '@/components/CardSkeleton';
+import EmptyState from '@/components/EmptyState';
+import ScreenHeader from '@/components/ScreenHeader';
+import StatCard from '@/components/StatCard';
+import { RootStackParamList } from '@/navigation/types';
+import { tokens, uiColors, uiSpace } from '@/theme';
 import { ApiResponse } from '@/types/api';
 import { BasePagingResponse } from '@/types/base.response';
+import { formatCurrency } from '@/utils/appUtil';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import React, { useCallback, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, StyleSheet, View } from 'react-native';
+import Animated, {
+  useAnimatedScrollHandler,
+  useSharedValue,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { RootStackParamList } from '../../navigation/types';
-import { colors } from '../../theme/colors';
-import HeaderComponents from '../common/HeaderComponents';
 import TenantCardComponent from './components/TenantCardComponent';
 
+/**
+ * TENANT LIST SCREEN — Modern Minimalist.
+ *
+ * ```
+ * ScreenHeader "Khách thuê" · count · [+ Thêm] · search
+ * ┌──────────┬──────────┬──────────┐  StatCard × 3 (khách · hợp đồng · doanh thu)
+ * TenantCard × n (gap 12, infinite scroll, pull-to-refresh)
+ * ```
+ */
 type TenantListScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'TenantList'>;
 };
@@ -75,138 +91,106 @@ const TenantListScreen = ({ navigation }: TenantListScreenProps) => {
     navigation.navigate('UpdateTenant', { tenantId });
   };
 
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
+
   return (
-    <SafeAreaView className="flex-1">
-      {/* <StatusBar barStyle="dark-content" backgroundColor={"#fff"} /> */}
-      <HeaderComponents
-        title="Quản lý khách thuê"
-        isSearch
-        searchConfig={{
-          placeholder: 'Tìm kiếm khách thuê...',
-          onSearch: handleSearch,
-          className: 'mx-2',
-        }}
+    <SafeAreaView style={styles.container} edges={[]}>
+      <ScreenHeader
+        title="Khách thuê"
+        subtitle={isLoading ? '—' : `${totalTenants} khách thuê`}
+        scrollY={scrollY}
+        search={{ placeholder: 'Tìm kiếm khách thuê…', onSearch: handleSearch }}
+        action={
+          <AddButton onPress={handleCreateTenant} accessibilityLabel="Thêm khách thuê" />
+        }
       />
-      {isLoading && (
-        <View className="flex-1 justify-center items-center">
-          <Loading />
+      {isLoading ? (
+        <View style={styles.loading}>
+          <CardSkeletonList count={3} />
         </View>
-      )}
-      {!isLoading && (
-        <FlatList
+      ) : (
+        <Animated.FlatList
           data={flatData as TenantListResponse[]}
-          renderItem={({ item }) => {
-            return (
-              <TenantCardComponent
-                tenant={item}
-                onPress={() => handleTenantPress(item.id)}
-                onUpdate={() => handleUpdateTenant(item.id)}
-              />
-            );
-          }}
+          renderItem={({ item }) => (
+            <TenantCardComponent
+              tenant={item}
+              onPress={() => handleTenantPress(item.id)}
+              onUpdate={() => handleUpdateTenant(item.id)}
+            />
+          )}
           keyExtractor={(item) => item.id}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
           refreshControl={
             <RefreshControl
               refreshing={isLoading}
               onRefresh={() => {
                 refetch();
               }}
+              tintColor={tokens.colors.primary}
+              colors={[tokens.colors.primary]}
             />
           }
+          onEndReached={() => {
+            if (hasNextPage) fetchNextPage();
+          }}
+          onEndReachedThreshold={0.3}
           ListHeaderComponent={
             <View style={styles.statsRow}>
-              <View
-                style={[
-                  styles.statsBox,
-                  { backgroundColor: colors.primary.light },
-                ]}
-              >
-                <Text style={styles.statsIcon}>👤</Text>
-                <Text style={styles.statsValue}>{totalTenants}</Text>
-                <Text style={styles.statsLabel}>Khách thuê</Text>
-              </View>
-              <View
-                style={[
-                  styles.statsBox,
-                  { backgroundColor: colors.status.success + '20' },
-                ]}
-              >
-                <Text style={styles.statsIcon}>📋</Text>
-                <Text style={styles.statsValue}>{activeContracts}</Text>
-                <Text style={styles.statsLabel}>Hợp đồng</Text>
-              </View>
-              <View
-                style={[
-                  styles.statsBox,
-                  { backgroundColor: colors.status.warning + '20' },
-                ]}
-              >
-                <Text style={styles.statsIcon}>💰</Text>
-                <Text style={styles.statsValue}>
-                  {totalRevenue.toLocaleString()}
-                </Text>
-                <Text style={styles.statsLabel}>Doanh thu</Text>
-              </View>
+              <StatCard icon="people-outline" label="Khách thuê" value={totalTenants} />
+              <StatCard
+                icon="document-text-outline"
+                tone="success"
+                label="Hợp đồng"
+                value={activeContracts}
+              />
+              <StatCard
+                icon="cash-outline"
+                tone="warning"
+                label="Doanh thu"
+                value={formatCurrency(totalRevenue)}
+              />
             </View>
           }
-          contentContainerStyle={{ padding: 10 }}
+          contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <View className="items-center mt-10">
-              <Text style={{ color: colors.text.secondary }}>
-                Không tìm thấy khách thuê phù hợp.
-              </Text>
-            </View>
+            <EmptyState
+              icon="people-outline"
+              title="Không tìm thấy khách thuê"
+              description="Thử tìm với tên hoặc số điện thoại khác."
+            />
           }
         />
       )}
-      <FabButton
-        icon="add"
-        iconSize={32}
-        iconStyle={{ marginTop: -2 }}
-        onPress={handleCreateTenant}
-      />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: uiColors.canvas,
+  },
+  loading: {
+    padding: uiSpace.screen,
+  },
+  listContent: {
+    padding: uiSpace.screen,
+    paddingBottom: 40,
+    flexGrow: 1,
+  },
+  separator: {
+    height: uiSpace.gap,
+  },
   statsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-    paddingHorizontal: 0,
-  },
-  statsBox: {
-    flex: 1,
-    marginHorizontal: 6,
-    borderRadius: 14,
-    alignItems: 'center',
-    paddingVertical: 14,
-    backgroundColor: colors.background.paper,
-    shadowColor: colors.neutral.black,
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  statsIcon: {
-    fontSize: 22,
-    marginBottom: 2,
-  },
-  statsValue: {
-    fontWeight: 'bold',
-    fontSize: 18,
-    color: colors.primary.main,
-  },
-  statsLabel: {
-    fontSize: 13,
-    color: colors.text.secondary,
-    marginTop: 2,
-  },
-
-  statusRow: {
-    marginTop: 8,
-    marginBottom: 8,
+    gap: 8,
+    marginBottom: uiSpace.gap,
   },
 });
 

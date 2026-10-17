@@ -1,39 +1,38 @@
 <!--
-  TEMPLATE file history — KHÔNG được tính là một bản ghi history thật (tiền tố "_").
-  Agent: hãy copy cấu trúc bên dưới, điền thông tin, rồi lưu thành file mới theo quy ước
-  tên: YYYYMMDDHHmmss-<slug-title>.md (xem README.md).
-  Người dùng: có thể tự chỉnh sửa template này; agent phải bám theo cấu trúc mới nhất.
-  Phần nào không áp dụng thì ghi "Không có" thay vì bỏ trống.
+  History TEMPLATE — not a real entry ("_" prefix).
+  Agent: copy the structure below, fill it in, save as YYYYMMDDHHmmss-<slug-title>.md (see README.md).
+  The user may edit this template; always follow the latest structure.
+  Write in English, concise. Sections that don't apply say "None" instead of being left empty.
 -->
 
-# <Tiêu đề change request>
+# <Change request title>
 
-- **Thời gian:** YYYY-MM-DD HH:mm:ss
-- **Mã file:** `YYYYMMDDHHmmss-<slug-title>`
-- **Phạm vi:** Backend / Frontend / Cả hai (Backend + Frontend)
-- **Trạng thái:** Hoàn thành & đã được người dùng chấp nhận
+- **Time:** YYYY-MM-DD HH:mm:ss
+- **File ID:** `YYYYMMDDHHmmss-<slug-title>`
+- **Scope:** Backend / Frontend / Both (Backend + Frontend)
+- **Status:** Done & accepted by user
 
-## Yêu cầu gốc
-> Tóm tắt lại yêu cầu của người dùng (điều họ muốn đạt được).
+## Original request
+> Short summary of what the user wanted to achieve.
 
-## Thay đổi Backend
-<!-- Bỏ qua / ghi "Không có" nếu yêu cầu không đụng tới Backend. -->
+## Backend changes
+<!-- "None" if Backend was not touched. -->
 - ...
 
-## Thay đổi Frontend
-<!-- Bỏ qua / ghi "Không có" nếu yêu cầu không đụng tới Frontend. -->
+## Frontend changes
+<!-- "None" if Frontend was not touched. -->
 - ...
 
-## Danh sách file bị ảnh hưởng
-- `đường/dẫn/file` — mô tả ngắn thay đổi
+## Affected files
+- `path/to/file` — short description of the change
 
-## Ghi chú / việc cần làm tiếp
-<!-- Ví dụ: cần chạy migration, cập nhật biến môi trường, test thủ công, cập nhật tài liệu... -->
+## Notes / follow-ups
+<!-- e.g. run migration, update env vars, manual testing, update docs... -->
 - ...
 
-## Nhật ký cập nhật
+## Update log
 <!--
-  Chỉ dùng khi trong CÙNG session người dùng yêu cầu chỉnh sửa tiếp cho change request này.
-  Mỗi lần cập nhật thêm một dòng; KHÔNG tạo file mới.
+  Only for follow-up changes to this request in the SAME session.
+  One line per update; do NOT create a new file.
 -->
-- YYYY-MM-DD HH:mm:ss — Tạo bản ghi ban đầu.
+- YYYY-MM-DD HH:mm:ss — Initial entry.

@@ -1,10 +1,18 @@
 import { getComboProperty } from '@/api/property/property.api';
 import { getListRoom } from '@/api/room/room.api';
+import BuildingSelector from '@/components/BuildingSelector';
+import { CardSkeletonList } from '@/components/CardSkeleton';
+import Chip from '@/components/Chip';
+import EmptyState from '@/components/EmptyState';
 import { useGlobalAppSheet } from '@/components/GlobalAppSheet';
-import Loading from '@/components/Loading';
+import PaymentSummary from '@/components/PaymentSummary';
+import ScreenHeader from '@/components/ScreenHeader';
+import { RootStackParamList } from '@/navigation/types';
+import { tokens, uiColors, uiSpace } from '@/theme';
 import { ApiResponse } from '@/types/api';
 import { BasePagingResponse } from '@/types/base.response';
 import { ComboOptionWithExtra } from '@/types/comboOption';
+import { PaymentStatus } from '@/types/payment';
 import { PropertyDetail } from '@/types/property';
 import { RoomListResponse } from '@/types/room';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,25 +20,41 @@ import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  FlatList,
-  RefreshControl,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, {
+  useAnimatedScrollHandler,
+  useSharedValue,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import BuildingSelector from '../../components/BuildingSelector';
-import PaymentSummary from '../../components/PaymentSummary';
-import { RootStackParamList } from '../../navigation/types';
-import { colors } from '../../theme/colors';
-import { PaymentStatus } from '../../types/payment';
-import HeaderComponents from '../common/HeaderComponents';
 import BuildingFilterComponent from './components/BuildingFilterComponent';
 import RoomCardItemComponent from './components/RoomCardItemComponents';
-import styles from './styles/StyleRoomList';
 
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+
+/** Payment filter chips (UI state; list filtering is not wired to the API yet). */
+const PAYMENT_FILTERS: { value: PaymentStatus | null; label: string; icon?: IoniconName }[] = [
+  { value: null, label: 'Tất cả' },
+  { value: PaymentStatus.PENDING, label: 'Chờ', icon: 'time-outline' },
+  { value: PaymentStatus.OVERDUE, label: 'Quá hạn', icon: 'warning-outline' },
+  { value: PaymentStatus.PAID, label: 'Đã thanh toán', icon: 'checkmark-circle-outline' },
+];
+
+/**
+ * ROOM LIST SCREEN — Modern Minimalist.
+ *
+ * ```
+ * SafeAreaView edges={[]} · canvas surfaceMuted
+ * ┌──────────────────────────────────────────────┐
+ * │ ScreenHeader: "Phòng" · search               │
+ * │   BuildingSelector (opens picker sheet)      │
+ * │   (Tất cả)(Chờ)(Quá hạn)(Đã TT) → chips      │
+ * ├──────────────────────────────────────────────┤
+ * │ PaymentSummary card                          │
+ * │ RoomCard × n (gap 12, infinite scroll)       │
+ * └──────────────────────────────────────────────┘
+ * ```
+ * States: first load → CardSkeletonList · empty → EmptyState · pull-to-refresh.
+ */
 type RoomListScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'RoomList'>;
 };
@@ -91,112 +115,10 @@ const RoomListScreen = ({ navigation }: RoomListScreenProps) => {
     }, [refetch]),
   );
 
-  const renderFilterButtons = () => (
-    <View style={styles.filterContainer}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterScrollContent}
-      >
-        <TouchableOpacity
-          style={[
-            styles.filterButton,
-            filterPayment === null && styles.filterButtonActive,
-          ]}
-          onPress={() => setFilterPayment(null)}
-        >
-          <Text
-            style={[
-              styles.filterButtonText,
-              filterPayment === null && styles.filterButtonTextActive,
-            ]}
-          >
-            Tất cả
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.filterButton,
-            filterPayment === PaymentStatus.PENDING &&
-              styles.filterButtonActive,
-          ]}
-          onPress={() => setFilterPayment(PaymentStatus.PENDING)}
-        >
-          <Ionicons
-            name="time-outline"
-            size={14}
-            color={
-              filterPayment === PaymentStatus.PENDING
-                ? colors.neutral.white
-                : colors.text.secondary
-            }
-          />
-          <Text
-            style={[
-              styles.filterButtonText,
-              filterPayment === PaymentStatus.PENDING &&
-                styles.filterButtonTextActive,
-            ]}
-          >
-            Chờ
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.filterButton,
-            filterPayment === PaymentStatus.OVERDUE &&
-              styles.filterButtonActive,
-          ]}
-          onPress={() => setFilterPayment(PaymentStatus.OVERDUE)}
-        >
-          <Ionicons
-            name="warning-outline"
-            size={14}
-            color={
-              filterPayment === PaymentStatus.OVERDUE
-                ? colors.neutral.white
-                : colors.text.secondary
-            }
-          />
-          <Text
-            style={[
-              styles.filterButtonText,
-              filterPayment === PaymentStatus.OVERDUE &&
-                styles.filterButtonTextActive,
-            ]}
-          >
-            Quá hạn
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.filterButton,
-            filterPayment === PaymentStatus.PAID && styles.filterButtonActive,
-          ]}
-          onPress={() => setFilterPayment(PaymentStatus.PAID)}
-        >
-          <Ionicons
-            name="checkmark-circle-outline"
-            size={14}
-            color={
-              filterPayment === PaymentStatus.PAID
-                ? colors.neutral.white
-                : colors.text.secondary
-            }
-          />
-          <Text
-            style={[
-              styles.filterButtonText,
-              filterPayment === PaymentStatus.PAID &&
-                styles.filterButtonTextActive,
-            ]}
-          >
-            Đã thanh toán
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </View>
-  );
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
 
   const flatData =
     data?.pages
@@ -205,20 +127,18 @@ const RoomListScreen = ({ navigation }: RoomListScreenProps) => {
     [];
 
   return (
-    <SafeAreaView style={[styles.container]} edges={['top']}>
-      <HeaderComponents
-        title="Danh Sách Phòng"
-        isSearch
-        searchConfig={{
-          placeholder: 'Tìm kiếm phòng hoặc tòa nhà...',
+    <SafeAreaView style={styles.container} edges={[]}>
+      <ScreenHeader
+        title="Phòng"
+        scrollY={scrollY}
+        search={{
+          placeholder: 'Tìm kiếm phòng hoặc tòa nhà…',
           onSearch: (text) => setSearch(text),
         }}
       >
         <BuildingSelector
           buildings={comboProperty ?? []}
-          selectedBuilding={
-            selectedBuilding === 'Tất cả' ? null : selectedBuilding
-          }
+          selectedBuilding={selectedBuilding}
           onOpen={() => {
             openAppSheet(
               <BuildingFilterComponent
@@ -238,28 +158,43 @@ const RoomListScreen = ({ navigation }: RoomListScreenProps) => {
             );
           }}
         />
-        {renderFilterButtons()}
-      </HeaderComponents>
-      {isLoading && (
-        <View
-          style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.chipsBleed}
+          contentContainerStyle={styles.chips}
         >
-          <Loading />
+          {PAYMENT_FILTERS.map((filter) => (
+            <Chip
+              key={filter.label}
+              label={filter.label}
+              icon={filter.icon}
+              variant="outline"
+              selected={filterPayment === filter.value}
+              onPress={() => setFilterPayment(filter.value)}
+            />
+          ))}
+        </ScrollView>
+      </ScreenHeader>
+
+      {isLoading ? (
+        <View style={styles.loading}>
+          <CardSkeletonList count={3} lines={3} withIcon={false} />
         </View>
-      )}
-      {!isLoading && (
-        <View style={styles.scrollContainer}>
-          <FlatList
-            data={flatData}
-            renderItem={({ item }) =>
-              item ? (
-                <RoomCardItemComponent item={item} navigation={navigation} />
-              ) : null
-            }
-            keyExtractor={(item, index) => item?.id ?? index.toString()}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            ListHeaderComponent={
+      ) : (
+        <Animated.FlatList
+          data={flatData}
+          renderItem={({ item }) =>
+            item ? <RoomCardItemComponent item={item} navigation={navigation} /> : null
+          }
+          keyExtractor={(item, index) => item?.id ?? index.toString()}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          contentContainerStyle={styles.listContent}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <View style={styles.summary}>
               <PaymentSummary
                 totalRooms={0}
                 pendingPayments={0}
@@ -267,31 +202,61 @@ const RoomListScreen = ({ navigation }: RoomListScreenProps) => {
                 paidPayments={0}
                 totalAmount={0}
               />
-            }
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>
-                  Không tìm thấy phòng phù hợp.
-                </Text>
-              </View>
-            }
-            refreshControl={
-              <RefreshControl
-                refreshing={isLoading}
-                onRefresh={() => {
-                  refetch();
-                }}
-              />
-            }
-            onEndReached={() => {
-              fetchNextPage();
-            }}
-            onEndReachedThreshold={0.2}
-          />
-        </View>
+            </View>
+          }
+          ListEmptyComponent={
+            <EmptyState
+              icon="bed-outline"
+              title="Không tìm thấy phòng"
+              description="Thử tìm với tên phòng hoặc tòa nhà khác."
+            />
+          }
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading}
+              onRefresh={() => {
+                refetch();
+              }}
+              tintColor={tokens.colors.primary}
+              colors={[tokens.colors.primary]}
+            />
+          }
+          onEndReached={() => {
+            if (hasNextPage) fetchNextPage();
+          }}
+          onEndReachedThreshold={0.2}
+        />
       )}
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: uiColors.canvas,
+  },
+  chipsBleed: {
+    marginHorizontal: -uiSpace.screen,
+  },
+  chips: {
+    paddingHorizontal: uiSpace.screen,
+    gap: 8,
+  },
+  loading: {
+    padding: uiSpace.screen,
+  },
+  listContent: {
+    padding: uiSpace.screen,
+    paddingBottom: 40,
+    flexGrow: 1,
+  },
+  summary: {
+    marginBottom: uiSpace.gap,
+  },
+  separator: {
+    height: uiSpace.gap,
+  },
+});
 
 export default RoomListScreen;

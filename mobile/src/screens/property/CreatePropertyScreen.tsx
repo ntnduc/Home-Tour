@@ -1,69 +1,77 @@
-// @ts-nocheck
-import {
-  getComboDistricts,
-  getComboProvinces,
-  getComboWards,
-} from '@/api/location/location.api';
-import { ComboBox } from '@/components/ComboBox';
-import InputBase from '@/components/Input';
-import Loading from '@/components/Loading';
-import { ServiceCalculateMethod } from '@/constant/service.constant';
-import { createStyles } from '@/styles/StyleCreateTenantScreen';
-import { tokens } from "@/theme";
-import { ComboOption } from '@/types/comboOption';
-import { PropertyCreateRequest } from '@/types/property';
-import { formatCurrency, generateId } from '@/utils/appUtil';
-import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useState } from 'react';
-import {
-  Controller,
-  FieldErrors,
-  useFieldArray,
-  useForm,
-} from 'react-hook-form';
+/**
+ * CREATE PROPERTY SCREEN — Modern Minimalist redesign (mirrors UpdatePropertyScreen).
+ *
+ * Layout (stack header + keyboard-aware form on muted canvas):
+ * ```
+ * FormScreen (canvas · gutter 20 · gap 12 · keyboard-safe)
+ * ┌──────────────────────────────────────────────┐
+ * │ Summary card: ▣ name · 📍 address · chips     │  live preview (soft · radius 24)
+ * ├──────────────────────────────────────────────┤
+ * │ ▣ Thông tin chung       — tên gợi nhớ         │
+ * │ ▣ Địa chỉ               — tỉnh/quận/phường/…  │
+ * │ ▣ Thiết lập cho thuê    — giá · ngày · phòng · tầng
+ * │ ▣ Dịch vụ thu phí [+]   — service tiles       │  pre-filled with default services
+ * └──────────────────────────────────────────────┘
+ * ActionButtonBottom "Tạo tài sản" (sticky, safe-area aware)
+ * ```
+ *
+ * States:
+ * - **Loading (first)**: PropertyFormSkeleton
+ * - **Init error**: Toast; form stays usable (empty combos / services)
+ * - **Submitting**: form stays visible, submit button shows spinner + disabled
+ * - **No services**: friendly inline empty line inside the services section
+ */
 
-import { createProperty } from '@/api/property/property.api';
-import { getServiceDefault } from '@/api/service/service.api';
-import ActionButtonBottom from '@/components/ActionButtonBottom';
-import CardContent from '@/components/CardContent';
-import { useTheme } from '@/theme/ThemeProvider';
-import { ServiceCreateOrUpdateRequest } from '@/types/service';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Alert, Text, TouchableOpacity, View } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import Toast from 'react-native-toast-message';
-import { RootStackParamList } from '../../navigation/types';
-import CardComponent from '../common/CardComponent';
-import CalculatorMethodComponent from '../tenant/components/CalculatorMethodComponent';
-import ServiceSelectedSearchComponent from '../tenant/components/ServiceSelectedSearchComponent';
+import ActionButtonBottom from "@/components/ActionButtonBottom";
+import AddButton from "@/components/AddButton";
+import CalculationMethodPicker from "@/components/CalculationMethodPicker";
+import { ComboBox } from "@/components/ComboBox";
+import InputBase from "@/components/Input";
+import ServiceSearchInput from "@/components/ServiceSearchInput";
+import { ServiceCalculateMethod } from "@/constant/service.constant";
+import { RootStackParamList } from "@/navigation/types";
+import { tokens } from "@/theme";
+import { PropertyCreateRequest } from "@/types/property";
+import { formatCurrency, generateId } from "@/utils/appUtil";
+import { Ionicons } from "@expo/vector-icons";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import React, { useState } from "react";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
+import { Alert, StyleSheet, Text, View } from "react-native";
+import PropertyEditSummary from "./components/PropertyEditSummary";
+import FormScreen from "@/components/FormScreen";
+import FormSection from "@/components/FormSection";
+import PropertyFormSkeleton from "./components/PropertyFormSkeleton";
+import PropertyServiceItem from "./components/PropertyServiceItem";
+import { useCreatePropertyData } from "./hooks/useCreatePropertyData";
+import { PROP_SPACE, propColors, propType } from "./propertyListStyles";
 
 type CreatePropertyScreenProps = {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'CreateProperty'>;
+  navigation: NativeStackNavigationProp<RootStackParamList, "CreateProperty">;
+};
+
+type LocationField = "provinceCode" | "districtCode" | "wardCode";
+
+/** Keep digits only; empty → null so `required` rules still trigger. */
+const toPositiveInt = (text: string): number | null => {
+  const num = parseInt(text.replace(/[^0-9]/g, ""), 10);
+  return num ? num : null;
 };
 
 const CreatePropertyScreen = ({ navigation }: CreatePropertyScreenProps) => {
-  const theme = useTheme();
-  const styles = createStyles(theme);
-
-  const [location, setLocation] = useState<ComboOption<string, string>[]>([]);
-  const [cities, setCities] = useState<ComboOption<string, string>[]>([]);
-  const [wards, setWards] = useState<ComboOption<string, string>[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingDistricts, setIsLoadingDistricts] = useState(false);
-  const [isLoadingWard, setIsLoadingWard] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState<
-    'provinceCode' | 'districtCode' | 'wardCode' | null
-  >(null);
+  const [activeDropdown, setActiveDropdown] = useState<LocationField | null>(
+    null,
+  );
 
   const {
     control,
     handleSubmit,
-    formState: { errors },
     setValue,
     watch,
+    formState: { errors },
   } = useForm<PropertyCreateRequest>({
     defaultValues: {
-      name: '',
+      name: "",
       defaultRoomRent: 5000000,
       paymentDate: 5,
       services: [],
@@ -72,496 +80,395 @@ const CreatePropertyScreen = ({ navigation }: CreatePropertyScreenProps) => {
 
   const {
     fields: services,
-    append,
-    remove,
     prepend,
+    remove,
   } = useFieldArray({
     control,
-    name: 'services',
-    keyName: 'fieldId',
+    name: "services",
+    keyName: "fieldId",
   });
 
-  //#region Fetch data
-  useEffect(() => {
-    featchData().finally(() => {
-      setIsLoading(false);
-    });
-  }, []);
-
-  const featchData = async (): Promise<void> => {
-    const responseProvince = await getComboProvinces();
-    const responseServiceDefalt = await getServiceDefault();
-    if (responseProvince.success && responseServiceDefalt.success) {
-      setCities(responseProvince.data ?? []);
-      const servicesDefault = responseServiceDefalt.data?.map((service) => ({
-        serviceId: service.id,
-        isNew: false,
-        name: service.name,
-        price: service.price,
-        calculationMethod: service.calculationMethod,
-        icon: service.icon,
-        id: '',
-      })) as ServiceCreateOrUpdateRequest[];
-
-      setValue('services', servicesDefault);
-    }
-  };
-
-  const getDistricts = async (provinceId: string) => {
-    setIsLoadingDistricts(true);
-    setIsLoadingWard(true);
-    const response = await getComboDistricts(provinceId);
-    if (response.success) {
-      setLocation(response.data ?? []);
-    } else {
-      setLocation([]);
-    }
-    setWards([]);
-    setIsLoadingDistricts(false);
-    setIsLoadingWard(false);
-  };
-
-  const getWards = async (districtId: string) => {
-    setIsLoadingWard(true);
-    const response = await getComboWards(districtId);
-    if (response.success) {
-      setWards(response.data ?? []);
-    }
-    setIsLoadingWard(false);
-  };
+  const {
+    isLoading,
+    isSubmitting,
+    cities,
+    districts,
+    wards,
+    isLoadingDistricts,
+    isLoadingWards,
+    loadDistricts,
+    loadWards,
+    submit,
+  } = useCreatePropertyData(
+    (defaultServices) => setValue("services", defaultServices),
+    () => navigation.goBack(),
+  );
 
   const handleAddService = () => {
     prepend({
-      serviceId: '',
+      serviceId: "",
       fieldId: generateId(),
       isNew: true,
-      name: '',
+      name: "",
       price: 0,
       calculationMethod: ServiceCalculateMethod.FIXED_PER_ROOM,
-      icon: 'apps-outline',
+      icon: "apps-outline",
     });
   };
 
-  const handleRemoveService = (index: number) => {
-    remove(index);
+  const onError = () => {
+    Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin");
   };
 
-  const beforeSubmit = (data: PropertyCreateRequest) => {
-    data.defaultRoomRent = Number(data.defaultRoomRent) ?? 0;
-    data.paymentDate = Number(data.paymentDate) ?? 0;
-    data?.services?.forEach((service) => {
-      service.price = Number(service.price) ?? 0;
-      if (service.calculationMethod === ServiceCalculateMethod.FREE) {
-        service.price = 0;
-      }
-    });
-    return data;
-  };
+  if (isLoading) return <PropertyFormSkeleton />;
 
-  const onSubmit = (data: PropertyCreateRequest) => {
-    setIsLoading(true);
-    beforeSubmit(data);
+  const [name, address, numberFloor, totalRoom] = watch([
+    "name",
+    "address",
+    "numberFloor",
+    "totalRoom",
+  ]);
 
-    createProperty(data)
-      .then(() => {
-        Toast.show({
-          type: 'success',
-          text1: 'Thành công',
-          text2: 'Tạo tài sản thành công',
-        });
-        navigation.goBack();
-      })
-      .catch((errors) => {
-        Toast.show({
-          type: 'error',
-          text1: 'Lỗi',
-          text2: 'Tạo tài sản thất bại',
-        });
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  };
-
-  //#endregion
-
-  const onError = (errors: FieldErrors<PropertyCreateRequest>) => {
-    Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin');
-  };
-
-  if (isLoading) {
-    return <Loading />;
-  }
+  const footer = (
+    <ActionButtonBottom
+      actions={[
+        {
+          label: "Tạo tài sản",
+          onPress: handleSubmit(submit, onError),
+          variant: "primary",
+          isLoading: isSubmitting,
+          disabled: isSubmitting,
+          icon: "checkmark-circle",
+        },
+      ]}
+    />
+  );
 
   return (
-    <>
-      <KeyboardAwareScrollView
-        style={styles.container}
-        enableOnAndroid={true}
-        extraScrollHeight={30}
-        keyboardOpeningTime={0}
-        enableAutomaticScroll={true}
-        enableResetScrollToCoords={false}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <CardContent>
-          <View className="mb-3">
-            <Controller
-              control={control}
-              name="name"
-              render={({ field: { onChange, value } }) => (
-                <InputBase
-                  placeholder="Nhập tên gợi nhớ (không bắt buộc)"
-                  value={value}
-                  onChangeText={onChange}
-                  label="Tên gợi nhớ"
-                  error={errors.name?.message}
-                />
-              )}
-            />
-          </View>
+    <FormScreen footer={footer}>
+        <PropertyEditSummary
+          name={name}
+          address={address}
+          numberFloor={numberFloor ? Number(numberFloor) : undefined}
+          totalRoom={totalRoom ? Number(totalRoom) : 0}
+          serviceCount={services.length}
+          placeholderName="Tài sản mới"
+        />
 
-          <View className="mb-3">
-            <Controller
-              control={control}
-              name="provinceCode"
-              rules={{ required: 'Vui lòng chọn thành phố/tỉnh' }}
-              render={({ field: { onChange, value } }) => {
-                return (
-                  <ComboBox
-                    value={value}
-                    options={cities}
+        <FormSection
+          title="Thông tin chung"
+          icon="information-circle-outline"
+          caption="Tên giúp bạn nhận ra tài sản nhanh hơn"
+        >
+          <Controller
+            control={control}
+            name="name"
+            render={({ field: { onChange, value } }) => (
+              <InputBase
+                placeholder="Nhập tên gợi nhớ (không bắt buộc)"
+                value={value}
+                onChangeText={onChange}
+                label="Tên gợi nhớ"
+                error={errors.name?.message}
+              />
+            )}
+          />
+        </FormSection>
+
+        <FormSection
+          title="Địa chỉ"
+          icon="location-outline"
+          caption="Vị trí hiển thị trên hợp đồng và hóa đơn"
+        >
+          <Controller
+            control={control}
+            name="provinceCode"
+            rules={{ required: "Vui lòng chọn thành phố/tỉnh" }}
+            render={({ field: { onChange, value } }) => (
+              <ComboBox
+                value={value}
+                options={cities}
+                required={true}
+                onChange={(option) => {
+                  onChange(option?.value ?? "");
+                  loadDistricts(option?.value ?? "");
+                }}
+                placeholder="Chọn thành phố/tỉnh"
+                error={errors.provinceCode?.message}
+                onFocus={() => setActiveDropdown("provinceCode")}
+                isActive={activeDropdown === "provinceCode"}
+                label="Thành phố / Tỉnh"
+              />
+            )}
+          />
+          <Controller
+            control={control}
+            name="districtCode"
+            rules={{ required: "Vui lòng chọn quận/huyện" }}
+            render={({ field: { onChange, value } }) => (
+              <ComboBox
+                value={value}
+                options={districts}
+                required={true}
+                onChange={(option) => {
+                  onChange(option?.value ?? "");
+                  loadWards(option?.value ?? "");
+                }}
+                isLoading={isLoadingDistricts}
+                placeholder="Chọn quận/huyện"
+                error={errors.districtCode?.message}
+                onFocus={() => setActiveDropdown("districtCode")}
+                isActive={activeDropdown === "districtCode"}
+                label="Quận / Huyện"
+              />
+            )}
+          />
+          <Controller
+            control={control}
+            name="wardCode"
+            rules={{ required: "Vui lòng chọn phường/xã" }}
+            render={({ field: { onChange, value } }) => (
+              <ComboBox
+                value={value}
+                options={wards}
+                required={true}
+                onChange={(option) => onChange(option?.value ?? "")}
+                isLoading={isLoadingWards}
+                placeholder="Chọn phường/xã"
+                error={errors.wardCode?.message}
+                onFocus={() => setActiveDropdown("wardCode")}
+                isActive={activeDropdown === "wardCode"}
+                label="Phường / Xã"
+              />
+            )}
+          />
+          <Controller
+            control={control}
+            name="address"
+            rules={{ required: "Vui lòng nhập địa chỉ chi tiết" }}
+            render={({ field: { onChange, value } }) => (
+              <InputBase
+                placeholder="Số nhà, tên đường…"
+                value={value}
+                onChangeText={onChange}
+                required={true}
+                type="area"
+                numberOfLines={3}
+                label="Địa chỉ chi tiết"
+                error={errors.address?.message}
+              />
+            )}
+          />
+        </FormSection>
+
+        <FormSection
+          title="Thiết lập cho thuê"
+          icon="cash-outline"
+          caption="Giá trị mặc định áp dụng khi tạo phòng mới"
+        >
+          <Controller
+            control={control}
+            name="defaultRoomRent"
+            rules={{ required: "Vui lòng nhập giá thuê mặc định" }}
+            render={({ field: { onChange, value } }) => (
+              <InputBase
+                label="Giá thuê mặc định"
+                required={true}
+                placeholder="Nhập giá thuê mặc định"
+                value={value ? formatCurrency(value.toString()) : ""}
+                onChangeText={(text) => onChange(text.replace(/[^0-9]/g, ""))}
+                keyboardType="numeric"
+                error={errors.defaultRoomRent?.message}
+              />
+            )}
+          />
+          <Controller
+            control={control}
+            name="paymentDate"
+            rules={{ required: "Vui lòng nhập ngày thanh toán" }}
+            render={({ field: { onChange, value } }) => (
+              <InputBase
+                label="Ngày thanh toán (1–31)"
+                required={true}
+                placeholder="VD: 5"
+                value={value ? value.toString() : ""}
+                onChangeText={(text) => {
+                  const num = toPositiveInt(text);
+                  if (num === null || num <= 31) onChange(num);
+                }}
+                keyboardType="numeric"
+                error={errors.paymentDate?.message}
+              />
+            )}
+          />
+          <View style={styles.fieldRow}>
+            <View style={styles.fieldCol}>
+              <Controller
+                control={control}
+                name="totalRoom"
+                rules={{ required: "Vui lòng nhập số phòng" }}
+                render={({ field: { onChange, value } }) => (
+                  <InputBase
+                    label="Số phòng"
                     required={true}
-                    onChange={(item) => {
-                      onChange(item?.value ?? '');
-                      getDistricts(item?.value ?? '');
-                    }}
-                    placeholder="Chọn thành phố/tỉnh"
-                    error={errors.provinceCode?.message}
-                    onFocus={() => setActiveDropdown('provinceCode')}
-                    isActive={activeDropdown === 'provinceCode'}
-                    label="Thành phố / Tỉnh"
+                    placeholder="VD: 10"
+                    value={value ? value.toString() : ""}
+                    onChangeText={(text) => onChange(toPositiveInt(text))}
+                    keyboardType="numeric"
+                    error={errors.totalRoom?.message}
                   />
-                );
-              }}
-            />
-          </View>
-
-          <View className="mb-3">
-            <Controller
-              control={control}
-              name="districtCode"
-              rules={{ required: 'Vui lòng chọn quận/huyện' }}
-              render={({ field: { onChange, value } }) => (
-                <ComboBox
-                  value={value as any}
-                  required={true}
-                  options={location}
-                  onChange={(item) => {
-                    onChange(item?.value ?? '');
-                    getWards(item?.value ?? '');
-                  }}
-                  placeholder="Chọn quận/huyện"
-                  error={errors.districtCode?.message}
-                  isLoading={isLoadingDistricts}
-                  onFocus={() => setActiveDropdown('districtCode')}
-                  isActive={activeDropdown === 'districtCode'}
-                  label="Quận / Huyện"
-                />
-              )}
-            />
-          </View>
-
-          <View className="mb-3">
-            <Controller
-              control={control}
-              name="wardCode"
-              rules={{ required: 'Vui lòng chọn phường/xã' }}
-              render={({ field: { onChange, value } }) => (
-                <ComboBox
-                  value={value}
-                  options={wards}
-                  required={true}
-                  onChange={(item) => {
-                    onChange(item?.value ?? '');
-                  }}
-                  placeholder="Chọn phường/xã"
-                  error={errors.wardCode?.message}
-                  isLoading={isLoadingWard}
-                  onFocus={() => setActiveDropdown('wardCode')}
-                  isActive={activeDropdown === 'wardCode'}
-                  label="Phường / Xã"
-                />
-              )}
-            />
-          </View>
-
-          <View className="mb-3">
-            <Controller
-              control={control}
-              name="address"
-              rules={{ required: 'Vui lòng nhập địa chỉ chi tiết' }}
-              render={({ field: { onChange, value } }) => (
-                <InputBase
-                  placeholder="Nhập địa chỉ chi tiết"
-                  value={value}
-                  onChangeText={onChange}
-                  required={true}
-                  type="area"
-                  numberOfLines={3}
-                  label="Địa chỉ chi tiết"
-                  error={errors.address?.message}
-                />
-              )}
-            />
-          </View>
-
-          <View className="mb-3">
-            <Text style={styles.label}>Vị trí trên bản đồ</Text>
-            <TouchableOpacity style={styles.mapButton}>
-              <Ionicons name="map-outline" size={24} color={tokens.colors.primary} />
-              <Text style={styles.mapButtonText}>Chọn vị trí trên bản đồ</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View className="mb-3">
-            <Controller
-              control={control}
-              name="defaultRoomRent"
-              rules={{ required: 'Vui lòng nhập giá thuê mặc định' }}
-              render={({ field: { onChange, value } }) => (
-                <InputBase
-                  label="Giá thuê mặc định"
-                  required={true}
-                  placeholder="Nhập giá thuê mặc định"
-                  value={value ? formatCurrency(value.toString()) : ''}
-                  onChangeText={(text) => {
-                    const numericValue = text.replace(/[^0-9]/g, '');
-                    onChange(numericValue);
-                  }}
-                  keyboardType="numeric"
-                  error={errors.defaultRoomRent?.message}
-                />
-              )}
-            />
-          </View>
-
-          <View className="mb-3">
-            <Controller
-              control={control}
-              name="paymentDate"
-              rules={{ required: 'Vui lòng nhập ngày thanh toán' }}
-              render={({ field: { onChange, value } }) => (
-                <InputBase
-                  label="Ngày thanh toán"
-                  required={true}
-                  placeholder="Nhập ngày thanh toán"
-                  value={value?.toString()}
-                  onChangeText={(text) => {
-                    const numericValue = text.replace(/[^0-9]/g, '');
-                    const num = parseInt(numericValue);
-                    if (!num) {
-                      onChange(null);
-                      return;
-                    }
-                    if (num >= 1 && num <= 31) {
-                      onChange(num);
-                    }
-                  }}
-                  keyboardType="numeric"
-                  error={errors.paymentDate?.message}
-                />
-              )}
-            />
-          </View>
-
-          <View className="mb-3">
-            <Controller
-              control={control}
-              name="totalRoom"
-              rules={{ required: 'Vui lòng nhập số phòng' }}
-              render={({ field: { onChange, value } }) => (
-                <InputBase
-                  label="Số phòng"
-                  required={true}
-                  placeholder="Nhập số phòng"
-                  value={value?.toString()}
-                  onChangeText={(text) => {
-                    const numericValue = text.replace(/[^0-9]/g, '');
-                    const num = parseInt(numericValue);
-                    if (!num) {
-                      onChange(null);
-                      return;
-                    }
-                    onChange(num);
-                  }}
-                  keyboardType="numeric"
-                  error={errors.totalRoom?.message}
-                />
-              )}
-            />
-          </View>
-
-          <View className="mb-3">
-            <Controller
-              control={control}
-              name="numberFloor"
-              render={({ field: { onChange, value } }) => (
-                <InputBase
-                  label="Số tầng"
-                  placeholder="Nhập số tầng"
-                  value={value ? value.toString() : ''}
-                  onChangeText={(text) => {
-                    const numericValue = text.replace(/[^0-9]/g, '');
-                    const num = parseInt(numericValue);
-                    if (!num) {
-                      onChange(null);
-                      return;
-                    }
-                    onChange(num);
-                  }}
-                  keyboardType="numeric"
-                  error={errors.numberFloor?.message}
-                />
-              )}
-            />
-          </View>
-
-          <CardComponent>
-            <View className="gap-2">
-              <View className="flex-row items-center justify-between mb-2">
-                <Text style={styles.label}>Dịch vụ thu phí</Text>
-                <TouchableOpacity
-                  style={styles.addServiceButton}
-                  onPress={handleAddService}
-                >
-                  <Ionicons name="add-circle-outline" size={20} color="#fff" />
-                  <Text style={styles.addServiceButtonText}>Thêm dịch vụ</Text>
-                </TouchableOpacity>
-              </View>
-
-              <View className="gap-3 rounded-lg">
-                {services &&
-                  services.map((service, index) => (
-                    <View
-                      key={service.fieldId || String(index)}
-                      className="gap-2 bg-white p-3 rounded-lg border border-border-strong mb-2"
-                      style={{ position: 'relative' }}
-                    >
-                      <TouchableOpacity
-                        style={styles.removeServiceItemButton}
-                        onPress={() => handleRemoveService(index)}
-                      >
-                        <Ionicons name="close" size={16} color="#fff" />
-                      </TouchableOpacity>
-                      <View className="flex-row gap-2 items-center">
-                        <View className="gap-2 flex-1">
-                          <Controller
-                            control={control}
-                            name={`services.${index}.name`}
-                            render={({ field: { onChange, value } }) => {
-                              return (
-                                <ServiceSelectedSearchComponent
-                                  value={value}
-                                  service={service as any}
-                                  onChange={(newService) => {
-                                    setValue(
-                                      `services.${index}`,
-                                      newService as any,
-                                    );
-                                  }}
-                                  error={
-                                    errors.services?.[index]?.name?.message
-                                  }
-                                />
-                              );
-                            }}
-                          />
-                          <Controller
-                            control={control}
-                            name={`services.${index}.price`}
-                            rules={{ required: 'Vui lòng nhập giá dịch vụ' }}
-                            render={({ field: { value } }) => {
-                              const currentService = watch(`services.${index}`);
-                              const currentMethod =
-                                currentService?.calculationMethod;
-                              return (
-                                <InputBase
-                                  placeholder="Giá"
-                                  disabled={
-                                    currentMethod ===
-                                    ServiceCalculateMethod.FREE
-                                  }
-                                  icon="cash-outline"
-                                  iconProps={{
-                                    color: tokens.colors.primary,
-                                  }}
-                                  value={
-                                    currentMethod ===
-                                    ServiceCalculateMethod.FREE
-                                      ? '0'
-                                      : value
-                                        ? formatCurrency(value.toString())
-                                        : ''
-                                  }
-                                  onChangeText={(text) => {
-                                    const numericValue = text.replace(
-                                      /[^0-9]/g,
-                                      '',
-                                    );
-                                    setValue(
-                                      `services.${index}.price`,
-                                      Number(numericValue),
-                                    );
-                                  }}
-                                  keyboardType="numeric"
-                                  error={
-                                    errors.services?.[index]?.price?.message
-                                  }
-                                />
-                              );
-                            }}
-                          />
-                          <Controller
-                            control={control}
-                            name={`services.${index}.calculationMethod`}
-                            render={({ field: { onChange, value } }) => (
-                              <CalculatorMethodComponent
-                                value={value}
-                                onChange={(newMethod) => {
-                                  onChange(newMethod);
-                                  if (
-                                    newMethod === ServiceCalculateMethod.FREE
-                                  ) {
-                                    setValue(`services.${index}.price`, 0);
-                                  }
-                                }}
-                              />
-                            )}
-                          />
-                        </View>
-                      </View>
-                    </View>
-                  ))}
-              </View>
+                )}
+              />
             </View>
-          </CardComponent>
-        </CardContent>
-      </KeyboardAwareScrollView>
-      <ActionButtonBottom
-        actions={[
-          {
-            label: 'Tạo tài sản',
-            onPress: handleSubmit(onSubmit, onError),
-            variant: 'primary',
-            isLoading: isLoading,
-            icon: 'checkmark-circle',
-          },
-        ]}
-      />
-    </>
+            <View style={styles.fieldCol}>
+              <Controller
+                control={control}
+                name="numberFloor"
+                render={({ field: { onChange, value } }) => (
+                  <InputBase
+                    label="Số tầng"
+                    placeholder="VD: 3"
+                    value={value ? value.toString() : ""}
+                    onChangeText={(text) => onChange(toPositiveInt(text))}
+                    keyboardType="numeric"
+                    error={errors.numberFloor?.message}
+                  />
+                )}
+              />
+            </View>
+          </View>
+        </FormSection>
+
+        <FormSection
+          title="Dịch vụ thu phí"
+          icon="flash-outline"
+          caption={
+            services.length > 0
+              ? `${services.length} dịch vụ`
+              : "Điện, nước, internet, rác…"
+          }
+          action={
+            <AddButton
+              label="Thêm"
+              variant="soft"
+              onPress={handleAddService}
+              accessibilityLabel="Thêm dịch vụ"
+            />
+          }
+        >
+          {services.length === 0 ? (
+            <View style={styles.emptyRow}>
+              <Ionicons
+                name="receipt-outline"
+                size={18}
+                color={propColors.textSubtle}
+              />
+              <Text style={[propType.caption, styles.emptyText]}>
+                Chưa có dịch vụ nào. Nhấn “Thêm” để thiết lập phí.
+              </Text>
+            </View>
+          ) : (
+            services.map((service, index) => (
+              <PropertyServiceItem
+                key={service.fieldId || String(index)}
+                index={index}
+                onRemove={() => remove(index)}
+              >
+                <Controller
+                  control={control}
+                  name={`services.${index}.name`}
+                  render={({ field: { value } }) => (
+                    <ServiceSearchInput
+                      value={value}
+                      service={service}
+                      onChange={(newService) => {
+                        if (typeof newService === "string") {
+                          setValue(`services.${index}.name`, newService);
+                        } else {
+                          setValue(`services.${index}`, newService);
+                        }
+                      }}
+                      error={errors.services?.[index]?.name?.message}
+                    />
+                  )}
+                />
+                <Controller
+                  control={control}
+                  name={`services.${index}.price`}
+                  rules={{ required: "Vui lòng nhập giá dịch vụ" }}
+                  render={({ field: { value } }) => {
+                    const isFree =
+                      watch(`services.${index}.calculationMethod`) ===
+                      ServiceCalculateMethod.FREE;
+                    return (
+                      <InputBase
+                        placeholder="Giá"
+                        disabled={isFree}
+                        icon="cash-outline"
+                        iconProps={{ color: tokens.colors.primary }}
+                        value={
+                          isFree
+                            ? "0"
+                            : value
+                              ? formatCurrency(value.toString())
+                              : ""
+                        }
+                        onChangeText={(text) => {
+                          const numericValue = text.replace(/[^0-9]/g, "");
+                          setValue(
+                            `services.${index}.price`,
+                            Number(numericValue),
+                          );
+                        }}
+                        keyboardType="numeric"
+                        error={errors.services?.[index]?.price?.message}
+                      />
+                    );
+                  }}
+                />
+                <Controller
+                  control={control}
+                  name={`services.${index}.calculationMethod`}
+                  render={({ field: { value, onChange } }) => (
+                    <CalculationMethodPicker
+                      value={value}
+                      onChange={(newMethod) => {
+                        onChange(newMethod);
+                        if (newMethod === ServiceCalculateMethod.FREE) {
+                          setValue(`services.${index}.price`, 0);
+                        }
+                      }}
+                    />
+                  )}
+                />
+              </PropertyServiceItem>
+            ))
+          )}
+        </FormSection>
+    </FormScreen>
   );
 };
+
+const styles = StyleSheet.create({
+  fieldRow: {
+    flexDirection: "row",
+    gap: PROP_SPACE.gap,
+  },
+  fieldCol: {
+    flex: 1,
+  },
+  emptyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: propColors.canvas,
+  },
+  emptyText: {
+    flex: 1,
+  },
+});
 
 export default CreatePropertyScreen;

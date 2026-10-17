@@ -1,12 +1,18 @@
 import { getContract } from '@/api/contract/contract.api';
-import { tokens } from "@/theme";
 import ActionButtonBottom from '@/components/ActionButtonBottom';
+import Button from '@/components/Button';
+import Card from '@/components/Card';
 import DisplayField from '@/components/DisplayField';
+import FormScreen from '@/components/FormScreen';
+import FormSection from '@/components/FormSection';
+import IconSquircle from '@/components/IconSquircle';
+import ListRow from '@/components/ListRow';
 import Loading from '@/components/Loading';
+import NoticeBanner from '@/components/NoticeBanner';
 import Status from '@/components/Status';
 import { CONTRACT_STATUS_OPTIONS } from '@/constant/contract.constant';
 import { RootStackParamList } from '@/navigation/types';
-import CardComponent from '@/screens/common/CardComponent';
+import { uiColors, uiType } from '@/theme';
 import { ContractDetailResponse, ContractStatus } from '@/types/contract';
 import { formatCurrency } from '@/utils/appUtil';
 import { formatDate } from '@/utils/dateUtil';
@@ -15,8 +21,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Alert, Text, TouchableOpacity, View } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
 type ContractDetailScreenProps = {
@@ -158,309 +163,204 @@ const ContractDetailScreen = ({
     daysRemaining !== null &&
     daysRemaining <= 30;
 
-  return (
-    <>
-      <KeyboardAwareScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          flexGrow: 1,
-          padding: 16,
-          paddingBottom: 16,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 16,
-        }}
-        enableOnAndroid={true}
-        extraScrollHeight={30}
-        keyboardOpeningTime={0}
-        enableAutomaticScroll={true}
-        enableResetScrollToCoords={false}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Cảnh báo nếu không có ngày kết thúc */}
-        {!contract.endDate && (
-          <View className="flex-row items-center w-full bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
-            <Ionicons name="alert-circle-outline" size={18} color={tokens.palette.amber[600]} />
-            <Text className="text-sm text-yellow-700 ml-2 flex-1">
-              Hợp đồng chưa xác định ngày kết thúc. Vui lòng đảm bảo hai bên đã
-              thống nhất.
-            </Text>
-          </View>
-        )}
-
-        {/* Header tổng quan */}
-        <CardComponent>
-          <View className="flex-row justify-between items-start">
-            <View className="flex-1">
-              <Text className="text-xl font-bold text-gray-900 mb-1">
-                Mã: {contract.code}
-              </Text>
-              <Text className="text-sm text-gray-600">
-                {contract?.room?.name} - {contract?.property?.name}
-              </Text>
-            </View>
-            <Status value={contract.status} options={CONTRACT_STATUS_OPTIONS} />
-          </View>
-        </CardComponent>
-
-        {/* Phòng & Tòa nhà */}
-        <CardComponent title="Thông tin phòng">
-          <View className="flex-row items-start justify-between">
-            <View className="flex-1">
-              {renderRow('Phòng', contract?.room?.name)}
-              {renderRow('Tòa nhà', contract?.property?.name)}
-              {renderRow('Địa chỉ', contract.property?.address)}
-              {renderRow(
-                'Giá thuê',
-                `${formatCurrency(contract.rentAmountAgreed)} đ/tháng`,
-              )}
-            </View>
-            <View className="items-end"></View>
-          </View>
-        </CardComponent>
-
-        {/* Người thuê chính */}
-        <CardComponent title="Người thuê">
-          <View>
-            {landlordClient && (
-              <>
-                {renderRow('Họ và tên', landlordClient.name)}
-                {renderRow(
-                  'Số điện thoại',
-                  landlordClient?.phoneNumber ?? '-',
-                  false,
-                  'phone',
-                )}
-                {/* {landlordClient?.client?.email &&
-                  renderRow('Email', landlordClient?.client?.email)} */}
-                {landlordClient.moveInDate &&
-                  renderRow(
-                    'Ngày vào ở',
-                    formatDate(landlordClient.moveInDate?.toISOString()),
-                  )}
-                {landlordClient.moveOutDate &&
-                  renderRow(
-                    'Ngày ra',
-                    formatDate(landlordClient.moveOutDate?.toISOString()),
-                  )}
-              </>
-            )}
-            {(contract.contractClient?.length ?? 0) > 1 && (
-              <View className="mt-2 pt-2 border-t border-gray-200">
-                <Text className="text-sm text-gray-600 mb-1">
-                  Số người ở cùng: {(contract.contractClient?.length ?? 1) - 1}
-                </Text>
-              </View>
-            )}
-          </View>
-        </CardComponent>
-
-        {/* Thời hạn hợp đồng */}
-        <CardComponent title="Thời hạn hợp đồng">
-          <View className="flex-row justify-between items-center mb-2">
-            <View className="flex-1">
-              <DisplayField
-                label="Ngày bắt đầu"
-                containerClassName="items-start mb-0"
-                value={formatDate(contract.startDate)}
-                direction="vertical"
-                strong
-              />
-            </View>
-            <Ionicons name="arrow-forward" size={20} color={tokens.colors.muted} />
-            <View className="flex-1 items-end">
-              <DisplayField
-                label="Ngày kết thúc"
-                containerClassName="justify-end items-end mb-0"
-                value={
-                  contract.endDate
-                    ? formatDate(contract.endDate)
-                    : 'Không xác định'
-                }
-                direction="vertical"
-                strong
-              />
-            </View>
-          </View>
-
-          {contract.status === ContractStatus.ACTIVE &&
-            daysRemaining !== null && (
-              <View
-                className={`rounded-lg p-3 border ${daysRemaining <= 7
-                  ? 'bg-yellow-50 border-yellow-200'
-                  : 'bg-info-surface border-info'
-                  }`}
-              >
-                <Text
-                  className={`text-sm font-semibold mb-1 ${daysRemaining <= 7 ? 'text-yellow-800' : 'text-info'
-                    }`}
-                >
-                  Thời gian còn lại:
-                </Text>
-                <Text
-                  className={`text-base font-bold ${daysRemaining <= 7 ? 'text-yellow-600' : 'text-info'
-                    }`}
-                >
-                  {daysRemaining > 0
-                    ? `${daysRemaining} ngày`
-                    : 'Hết hạn hôm nay'}
-                </Text>
-              </View>
-            )}
-        </CardComponent>
-
-        {/* Thanh toán */}
-        <CardComponent title="Thông tin thanh toán">
-          <View>
-            {renderRow(
-              'Tiền thuê hàng tháng',
-              `${formatCurrency(contract.rentAmountAgreed)}đ`,
-              true,
-            )}
-            {renderRow(
-              'Tiền cọc (đã thanh toán)',
-              `${formatCurrency(contract.depositAmountPaid)}đ`,
-            )}
-            <View className="h-[1px] bg-gray-200 my-2" />
-            {renderRow(
-              'Ngày thu tiền hàng tháng',
-              contract.paymentDueDay ? `Ngày ${contract.paymentDueDay}` : '-',
-            )}
-          </View>
-        </CardComponent>
-
-        {/* Dịch vụ */}
-        <CardComponent
-          title="Dịch vụ áp dụng"
-          description="Các dịch vụ được tính cùng tiền phòng"
-        >
-          {(contract.contractServices || []).length === 0 ? (
-            <View className="flex-1 items-center justify-center py-8">
-              <View className="w-14 h-14 bg-gray-100 rounded-full items-center justify-center mb-2">
-                <Ionicons name="construct-outline" size={22} color={tokens.colors.subtle} />
-              </View>
-              <Text className="text-gray-500">Chưa có dịch vụ nào</Text>
-            </View>
-          ) : (
-            <View className="flex flex-col">
-              {(contract.contractServices || []).map((service, idx) => {
-                return (
-                  <View
-                    key={service.id || idx}
-                    className="flex-row items-center justify-between py-3 border-b border-gray-100"
-                  >
-                    <View className="flex-row items-center flex-1">
-                      <Ionicons
-                        name={
-                          service.isEnabled
-                            ? 'checkmark-circle'
-                            : 'close-circle'
-                        }
-                        size={18}
-                        color={service.isEnabled ? tokens.colors.success : tokens.colors.error}
-                      />
-                      <View className="ml-2 flex-1">
-                        <Text className="text-base font-medium text-gray-900">
-                          {service.name}
-                        </Text>
-                        <View className="flex-row items-center mt-1">
-                          {/* <Ionicons
-                              name={service.service.icon as any}
-                              size={14}
-                              color={tokens.colors.subtle}
-                            /> */}
-                          {/* <Text className="text-xs text-gray-500 ml-1">
-                            {formatCurrency(service.price)}đ/tháng
-                          </Text> */}
-                        </View>
-                      </View>
-                    </View>
-                    <View className="items-end">
-                      <Text className="text-sm font-semibold text-gray-900">
-                        {formatCurrency(service.price)} đ/tháng
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          )}
-        </CardComponent>
-
-        {/* Thông tin bổ sung */}
-        <CardComponent title="Thông tin bổ sung">
-          <View>
-            {renderRow('Ngày tạo', formatDate(contract.createdAt ?? ""))}
-            {renderRow('Ngày cập nhật', formatDate(contract.updatedAt ?? ""), true)}
-            {renderRow('Số người ở cùng', contract.partnerClientCount ?? 0)}
-            {contract.notes && (
-              <View className="mt-2 pt-2 border-t border-gray-200">
-                <Text className="text-sm text-gray-600 mb-1">Ghi chú</Text>
-                <Text className="text-sm font-medium text-gray-900">
-                  {contract.notes}
-                </Text>
-              </View>
-            )}
-            {contract.contractScanURL && (
-              <View className="mt-2 pt-2 border-t border-gray-200">
-                <Text className="text-sm text-gray-600 mb-1">
-                  Hợp đồng đã quét
-                </Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    // TODO: Mở xem hợp đồng đã quét
-                    Alert.alert(
-                      'Thông báo',
-                      'Tính năng xem hợp đồng đã quét sẽ được phát triển',
-                    );
-                  }}
-                  className="flex-row items-center mt-1"
-                >
-                  <Ionicons
-                    name="document-text-outline"
-                    size={16}
-                    color={tokens.colors.info}
-                  />
-                  <Text className="text-sm text-info ml-1">
-                    Xem hợp đồng
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        </CardComponent>
-      </KeyboardAwareScrollView>
-
-      {/* Action Buttons */}
-      {(canTerminate || canRenew) && (
-        <ActionButtonBottom
-          actions={[
+  const footer =
+    canTerminate || canRenew ? (
+      <ActionButtonBottom
+        actions={[
+          [
             ...(canRenew
               ? [
-                {
-                  label: 'Gia hạn',
-                  icon: 'refresh' as keyof typeof Ionicons.glyphMap,
-                  variant: 'success' as const,
-                  onPress: handleRenewContract,
-                },
-              ]
+                  {
+                    label: 'Gia hạn',
+                    icon: 'refresh' as keyof typeof Ionicons.glyphMap,
+                    variant: 'success' as const,
+                    onPress: handleRenewContract,
+                  },
+                ]
               : []),
             ...(canTerminate
               ? [
-                {
-                  label: 'Kết thúc hợp đồng',
-                  icon: 'close-circle' as keyof typeof Ionicons.glyphMap,
-                  variant: 'danger' as const,
-                  onPress: handleTerminateContract,
-                },
-              ]
+                  {
+                    label: 'Kết thúc hợp đồng',
+                    icon: 'close-circle' as keyof typeof Ionicons.glyphMap,
+                    variant: 'danger' as const,
+                    onPress: handleTerminateContract,
+                  },
+                ]
               : []),
-          ]}
+          ],
+        ]}
+      />
+    ) : undefined;
+
+  const services = contract.contractServices || [];
+
+  return (
+    <FormScreen footer={footer}>
+      {!contract.endDate && (
+        <NoticeBanner
+          tone="warning"
+          message="Hợp đồng chưa xác định ngày kết thúc. Vui lòng đảm bảo hai bên đã thống nhất."
         />
       )}
-    </>
+
+      {/* Tổng quan */}
+      <Card style={styles.summary}>
+        <IconSquircle icon="document-text" />
+        <View style={styles.flex}>
+          <Text style={styles.summaryTitle} numberOfLines={1}>
+            {contract.code}
+          </Text>
+          <Text style={uiType.caption} numberOfLines={1}>
+            {contract?.room?.name} - {contract?.property?.name}
+          </Text>
+        </View>
+        <Status value={contract.status} options={CONTRACT_STATUS_OPTIONS} />
+      </Card>
+
+      <FormSection title="Thông tin phòng" icon="bed-outline">
+        <View>
+          {renderRow('Phòng', contract?.room?.name)}
+          {renderRow('Tòa nhà', contract?.property?.name)}
+          {renderRow('Địa chỉ', contract.property?.address)}
+          {renderRow('Giá thuê', `${formatCurrency(contract.rentAmountAgreed)}đ/tháng`, true)}
+        </View>
+      </FormSection>
+
+      <FormSection title="Người thuê" icon="person-outline">
+        <View>
+          {landlordClient && (
+            <>
+              {renderRow('Họ và tên', landlordClient.name, true)}
+              {renderRow('Số điện thoại', landlordClient?.phoneNumber ?? '-', false, 'phone')}
+              {landlordClient.moveInDate &&
+                renderRow('Ngày vào ở', formatDate(landlordClient.moveInDate?.toISOString()))}
+              {landlordClient.moveOutDate &&
+                renderRow('Ngày ra', formatDate(landlordClient.moveOutDate?.toISOString()))}
+            </>
+          )}
+          {(contract.contractClient?.length ?? 0) > 1 &&
+            renderRow('Số người ở cùng', (contract.contractClient?.length ?? 1) - 1)}
+        </View>
+      </FormSection>
+
+      <FormSection title="Thời hạn hợp đồng" icon="calendar-outline">
+        <View style={styles.periodRow}>
+          <DisplayField
+            compact
+            direction="vertical"
+            label="Ngày bắt đầu"
+            value={formatDate(contract.startDate)}
+            strong
+          />
+          <Ionicons name="arrow-forward" size={18} color={uiColors.textSubtle} />
+          <DisplayField
+            compact
+            direction="vertical"
+            align="end"
+            label="Ngày kết thúc"
+            value={contract.endDate ? formatDate(contract.endDate) : 'Không xác định'}
+            strong
+          />
+        </View>
+        {contract.status === ContractStatus.ACTIVE && daysRemaining !== null && (
+          <NoticeBanner
+            tone={daysRemaining <= 7 ? 'warning' : 'info'}
+            icon="time-outline"
+            title="Thời gian còn lại"
+            message={daysRemaining > 0 ? `${daysRemaining} ngày` : 'Hết hạn hôm nay'}
+          />
+        )}
+      </FormSection>
+
+      <FormSection title="Thông tin thanh toán" icon="cash-outline">
+        <View>
+          {renderRow('Tiền thuê hàng tháng', `${formatCurrency(contract.rentAmountAgreed)}đ`, true)}
+          {renderRow('Tiền cọc (đã thanh toán)', `${formatCurrency(contract.depositAmountPaid)}đ`)}
+          {renderRow(
+            'Ngày thu tiền hàng tháng',
+            contract.paymentDueDay ? `Ngày ${contract.paymentDueDay}` : '-',
+          )}
+        </View>
+      </FormSection>
+
+      <FormSection
+        title="Dịch vụ áp dụng"
+        icon="flash-outline"
+        caption="Các dịch vụ được tính cùng tiền phòng"
+      >
+        {services.length === 0 ? (
+          <Text style={uiType.caption}>Chưa có dịch vụ nào</Text>
+        ) : (
+          <View style={styles.bleed}>
+            {services.map((service, idx) => (
+              <ListRow
+                key={service.id || idx}
+                divider={idx > 0}
+                icon={service.isEnabled ? 'checkmark-circle' : 'close-circle'}
+                iconTone={service.isEnabled ? 'success' : 'error'}
+                title={service.name}
+                trailing={
+                  <Text style={uiType.bodyStrong}>{formatCurrency(service.price)}đ/tháng</Text>
+                }
+              />
+            ))}
+          </View>
+        )}
+      </FormSection>
+
+      <FormSection title="Thông tin bổ sung" icon="information-circle-outline">
+        <View>
+          {renderRow('Ngày tạo', formatDate(contract.createdAt ?? ''))}
+          {renderRow('Ngày cập nhật', formatDate(contract.updatedAt ?? ''))}
+          {renderRow('Số người ở cùng', contract.partnerClientCount ?? 0)}
+          {contract.notes && (
+            <DisplayField direction="vertical" label="Ghi chú" value={contract.notes} />
+          )}
+        </View>
+        {contract.contractScanURL && (
+          <Button
+            label="Xem hợp đồng đã quét"
+            icon="document-text-outline"
+            variant="soft"
+            size="sm"
+            style={styles.selfStart}
+            onPress={() => {
+              // TODO: Mở xem hợp đồng đã quét
+              Alert.alert('Thông báo', 'Tính năng xem hợp đồng đã quét sẽ được phát triển');
+            }}
+          />
+        )}
+      </FormSection>
+    </FormScreen>
   );
 };
+
+const styles = StyleSheet.create({
+  summary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  summaryTitle: {
+    ...uiType.section,
+    lineHeight: 24,
+  },
+  flex: {
+    flex: 1,
+  },
+  periodRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  bleed: {
+    marginHorizontal: -16,
+  },
+  selfStart: {
+    alignSelf: 'flex-start',
+  },
+});
 
 export default ContractDetailScreen;

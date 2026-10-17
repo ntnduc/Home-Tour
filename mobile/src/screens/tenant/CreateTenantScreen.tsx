@@ -1,4 +1,6 @@
 import ActionButtonBottom from "@/components/ActionButtonBottom";
+import FormScreen from "@/components/FormScreen";
+import FormSection from "@/components/FormSection";
 import InputBase from "@/components/Input";
 import Loading from "@/components/Loading";
 import { RouteProp } from "@react-navigation/native";
@@ -6,8 +8,6 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useState } from "react";
 import { Controller, FieldErrors, useForm } from "react-hook-form";
 import { Alert } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { RootStackParamList } from "../../navigation/types";
 
@@ -69,15 +69,22 @@ const CreateTenantScreen = ({ navigation, route }: CreateTenantScreenProps) => {
   }
 
   return (
-    <>
-      <KeyboardAwareScrollView
-        enableOnAndroid
-        extraScrollHeight={100}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        enableAutomaticScroll={true}
-      >
-        <SafeAreaView style={{ flex: 1 }}>
+    <FormScreen
+      footer={
+        <ActionButtonBottom
+          actions={[
+            {
+              label: "Tạo khách thuê",
+              onPress: handleSubmit(onSubmit, onError),
+              variant: "primary",
+              isLoading: isLoading,
+              icon: "checkmark-circle",
+            },
+          ]}
+        />
+      }
+    >
+      <FormSection title="Thông tin cá nhân" icon="person-outline">
           <Controller
             control={control}
             name="name"
@@ -180,20 +187,8 @@ const CreateTenantScreen = ({ navigation, route }: CreateTenantScreenProps) => {
               />
             )}
           />
-        </SafeAreaView>
-      </KeyboardAwareScrollView>
-      <ActionButtonBottom
-        actions={[
-          {
-            label: "Tạo khách thuê",
-            onPress: handleSubmit(onSubmit, onError),
-            variant: "primary",
-            isLoading: isLoading,
-            icon: "checkmark-circle",
-          },
-        ]}
-      />
-    </>
+      </FormSection>
+    </FormScreen>
   );
 };
 

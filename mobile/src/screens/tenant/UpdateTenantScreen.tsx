@@ -1,12 +1,13 @@
 import ActionButtonBottom from "@/components/ActionButtonBottom";
+import FormScreen from "@/components/FormScreen";
+import FormSection from "@/components/FormSection";
 import InputBase from "@/components/Input";
 import Loading from "@/components/Loading";
 import { RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useEffect, useState } from "react";
 import { Controller, FieldErrors, useForm } from "react-hook-form";
-import { Alert, ScrollView, View } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { Alert } from "react-native";
 import Toast from "react-native-toast-message";
 import { RootStackParamList } from "../../navigation/types";
 
@@ -80,20 +81,22 @@ const UpdateTenantScreen = ({ navigation, route }: UpdateTenantScreenProps) => {
   }
 
   return (
-    <>
-      <KeyboardAwareScrollView
-        enableOnAndroid
-        extraScrollHeight={100}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        enableAutomaticScroll={true}
-      >
-        <ScrollView
-          contentContainerStyle={{
-            flexGrow: 1,
-          }}
-        >
-          <View className="flex-row gap-4">
+    <FormScreen
+      footer={
+        <ActionButtonBottom
+          actions={[
+            {
+              label: "Cập nhật khách thuê",
+              onPress: handleSubmit(onSubmit, onError),
+              variant: "primary",
+              isLoading: isLoading,
+              icon: "checkmark-circle",
+            },
+          ]}
+        />
+      }
+    >
+      <FormSection title="Thông tin cá nhân" icon="person-outline">
             <Controller
               control={control}
               name="name"
@@ -196,21 +199,8 @@ const UpdateTenantScreen = ({ navigation, route }: UpdateTenantScreenProps) => {
                 />
               )}
             />
-          </View>
-        </ScrollView>
-      </KeyboardAwareScrollView>
-      <ActionButtonBottom
-        actions={[
-          {
-            label: "Cập nhật khách thuê",
-            onPress: handleSubmit(onSubmit, onError),
-            variant: "primary",
-            isLoading: isLoading,
-            icon: "checkmark-circle",
-          },
-        ]}
-      />
-    </>
+      </FormSection>
+    </FormScreen>
   );
 };
 

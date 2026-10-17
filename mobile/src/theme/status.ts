@@ -22,3 +22,31 @@ export const statusColor = {
 
 export type StatusColorKey = keyof typeof statusColor;
 export type StatusColorValue = { bg: string; color: string };
+
+/**
+ * Semantic tone of a status badge. Domain statuses (contract, invoice, room…)
+ * map to a tone ONCE in their types/constants; `StatusBadge` owns the visuals.
+ * `default` is an alias of `neutral` kept for older call sites.
+ */
+export type StatusTone =
+  | "success"
+  | "warning"
+  | "error"
+  | "info"
+  | "neutral"
+  | "cancelled"
+  | "default";
+
+/** Tone → `{ bg, color }`. */
+export const STATUS_TONE_COLOR: Record<StatusTone, StatusColorValue> = {
+  success: statusColor.success,
+  warning: statusColor.pending,
+  error: statusColor.error,
+  info: statusColor.info,
+  neutral: statusColor.draft,
+  default: statusColor.draft,
+  cancelled: statusColor.cancelled,
+};
+
+/** Label + tone pair used to render a domain status. */
+export type StatusBadgeSpec = { label: string; tone: StatusTone };

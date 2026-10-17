@@ -3,6 +3,8 @@ import { StatusColorValue } from "@/theme/status";
 import { HomepageRoomFeedItem } from "@/types/homepage";
 import { RoomActionSeverity, RoomStatus } from "@/types/room";
 import { Ionicons } from "@expo/vector-icons";
+import StatusBadge from "@/components/StatusBadge";
+import { ROOM_STATUS_BADGE } from "@/constant/room.constant";
 import React from "react";
 import { FlatList, StyleSheet, Text, View } from "react-native";
 import { formatCompactMoney } from "../homeFormat";
@@ -20,22 +22,6 @@ import SkeletonBlock from "@/components/SkeletonBlock";
 const CARD_WIDTH = 232;
 const CARD_GAP = 12;
 
-const ROOM_STATUS_UI: Record<
-  RoomStatus,
-  { label: string; tone: StatusColorValue }
-> = {
-  [RoomStatus.OCCUPIED]: { label: "Đang thuê", tone: statusColor.success },
-  [RoomStatus.AVAILABLE]: { label: "Trống", tone: statusColor.info },
-  [RoomStatus.MAINTENANCE]: { label: "Đang sửa", tone: statusColor.pending },
-  [RoomStatus.PENDING_DEPOSIT]: {
-    label: "Chờ đặt cọc",
-    tone: statusColor.pending,
-  },
-  [RoomStatus.UNAVAILABLE]: {
-    label: "Không hoạt động",
-    tone: statusColor.cancelled,
-  },
-};
 
 const ACTION_TONE: Record<RoomActionSeverity, StatusColorValue> = {
   overdue: statusColor.error,
@@ -115,7 +101,7 @@ type RoomCardProps = {
 };
 
 const RoomCard = ({ room, onPress, onPressAction }: RoomCardProps) => {
-  const status = ROOM_STATUS_UI[room.status] ?? ROOM_STATUS_UI.UNAVAILABLE;
+  const status = ROOM_STATUS_BADGE[room.status] ?? ROOM_STATUS_BADGE.UNAVAILABLE;
   const actionTone = room.topAction
     ? ACTION_TONE[room.topAction.severity]
     : { bg: tokens.colors.surfaceMuted, color: homeColors.ink };
@@ -130,14 +116,7 @@ const RoomCard = ({ room, onPress, onPressAction }: RoomCardProps) => {
       ]}
     >
       <View style={styles.topRow}>
-        <View style={[styles.badge, { backgroundColor: status.tone.bg }]}>
-          <View
-            style={[styles.badgeDot, { backgroundColor: status.tone.color }]}
-          />
-          <Text style={[styles.badgeText, { color: status.tone.color }]}>
-            {status.label}
-          </Text>
-        </View>
+        <StatusBadge label={status.label} tone={status.tone} size="sm" />
         {room.pendingTaskCount > 0 && (
           <View style={styles.taskCount}>
             <Ionicons
@@ -213,16 +192,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 14,
   },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: HOME_RADIUS.pill,
-  },
-  badgeDot: { width: 6, height: 6, borderRadius: 3 },
-  badgeText: { fontSize: 11, fontWeight: homeWeight.bold },
   taskCount: {
     flexDirection: "row",
     alignItems: "center",

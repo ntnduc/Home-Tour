@@ -1,5 +1,6 @@
+import { uiColors } from "@/theme";
 import React, { useState } from "react";
-import { ScrollView, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { ProgressStep } from "react-native-progress-steps";
 import { ProgressStepProps } from "react-native-progress-steps/dist/types";
 import ActionButtonBottom from "../ActionButtonBottom";
@@ -23,9 +24,8 @@ export interface ChildStepProps extends ProgressStepProps {
 /**
  * Một bước trong `ParrentStep`.
  *
- * Bọc `ProgressStep` nhưng thay thế hàng nút mặc định bằng bộ nút tái sử dụng
- * (`StepButton`) với:
- * - Preset variant giống `ActionButtonBottom`.
+ * Bọc `ProgressStep` nhưng thay thế hàng nút mặc định bằng `ActionButtonBottom`:
+ * - "Quay lại" (outline) + "Tiếp tục"/"Hoàn tất" nằm cùng một hàng.
  * - Loading async: chỉ chuyển bước khi `onPress` resolve thành công.
  *
  * Các prop `setActiveStep`, `activeStep`, `stepCount` được `ParrentStep`
@@ -94,27 +94,23 @@ export const ChildStep: React.FC<ChildStepProps> = ({
         removeBtnRow
         scrollable={false}
       >
-        <View className="flex-1">
+        <View style={styles.flex}>
           <Content
-            style={{ marginHorizontal: -20 }}
-            className="flex-1"
-            {...(contentScrollable
-              ? { showsVerticalScrollIndicator: false }
-              : {})}
+            style={styles.content}
+            {...(contentScrollable ? { showsVerticalScrollIndicator: false } : {})}
           >
-            <View className="flex-1">{children}</View>
+            <View style={styles.flex}>{children}</View>
           </Content>
         </View>
       </ProgressStep>
       {!hideButtonRow && (
         <ActionButtonBottom
-          className="bg-black"
           bottomInsetOffset={offsetBottomActionButtom}
-          actions={[
+          actions={[[
             {
               label: previousAction?.label ?? "Quay lại",
               icon: previousAction?.icon ?? "chevron-back",
-              variant: "secondary",
+              variant: "outline",
               isLoading: loadingKey === "previous",
               onPress: handlePrevious,
               hidden: isFirstStep || previousAction?.hidden,
@@ -135,9 +131,20 @@ export const ChildStep: React.FC<ChildStepProps> = ({
               onPress: handleFinish,
               hidden: !isLastStep || finishAction?.hidden,
             },
-          ]}
+          ]]}
         />
       )}
     </>
   );
 };
+
+const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    marginHorizontal: -20,
+    backgroundColor: uiColors.canvas,
+  },
+});

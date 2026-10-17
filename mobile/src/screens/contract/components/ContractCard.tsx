@@ -1,6 +1,8 @@
+import DisplayField from "@/components/DisplayField";
+import IconSquircle from "@/components/IconSquircle";
+import StatusBadge from "@/components/StatusBadge";
 import CardComponent from "@/screens/common/CardComponent";
-import { tokens } from "@/theme";
-import { colors } from "@/theme/colors";
+import { uiColors, uiType } from "@/theme";
 import { formatCurrency, formatPhoneNumber } from "@/utils/appUtil";
 import { formatDate } from "@/utils/dateUtil";
 import { Ionicons } from "@expo/vector-icons";
@@ -38,112 +40,83 @@ const ContractCard = ({
     return diffDays;
   };
 
-  // const getStatusColor = (status: ContractStatus) => {
-  //   return CONTRACT_STATUS_COLOR[status] || { bg: tokens.colors.surfaceMuted, color: tokens.colors.muted };
-  // };
-
   const daysRemaining = getDaysRemaining();
-  // const statusColor = getStatusColor(contract.status);
   const canRenew =
     contract.status === ContractStatus.ACTIVE && daysRemaining <= 30;
   const canTerminate = contract.status === ContractStatus.ACTIVE;
 
   const tenantContract = contract.client?.findLast(item => item.isLandlordClient && item.isActiveInContract);
 
+  const remainingLabel =
+    daysRemaining > 0
+      ? `Còn lại ${daysRemaining} ngày`
+      : daysRemaining === 0
+        ? "Hết hạn hôm nay"
+        : `Quá hạn ${Math.abs(daysRemaining)} ngày`;
+
   return (
-    <CardComponent style={styles.card}
-      actions={['view', {
-        key: 'renew',
-        disabled: !canRenew
-      }, {
-          key: 'terminate',
-          disabled: !canTerminate
-        }]}
+    <CardComponent
+      onPress={onPress}
+      actions={showActions ? ["view", { key: "renew", disabled: !canRenew }, { key: "terminate", disabled: !canTerminate }] : undefined}
       title={contract.code}
       description={`${contract.roomName} - ${contract.propertyName}`}
       onActionPress={(key) => {
-        if (key === 'view') {
+        if (key === "view") {
           onViewDetails?.();
-        } else if (key === 'renew' && canRenew) {
+        } else if (key === "renew" && canRenew) {
           onRenew?.();
-        } else if (key === 'terminate' && canTerminate) {
+        } else if (key === "terminate" && canTerminate) {
           onTerminate?.();
         }
       }}
-      statusBadge={CONTRACT_STATUS_BADGE[contract.status]}>
-
-      {/* Tenant Info */}
-      <View style={styles.tenantSection}>
-        <View style={styles.tenantHeader}>
-          <Ionicons name="person" size={16} color={tokens.colors.muted} />
-          <Text style={styles.tenantName}>{tenantContract?.name}</Text>
-        </View>
-        <Text style={styles.tenantPhone}>📞 {formatPhoneNumber(tenantContract?.phoneNumber ?? "")}</Text>
-      </View>
-
-      {/* Contract Period */}
-      <View style={styles.periodSection}>
-        <View style={styles.periodHeader}>
-          <Ionicons name="calendar" size={16} color={tokens.colors.muted} />
-          <Text style={styles.periodHeaderText}>Thời hạn hợp đồng</Text>
-        </View>
-        <View style={styles.periodRow}>
-          <View style={styles.periodItem}>
-            <Text style={styles.periodLabel}>Bắt đầu</Text>
-            <Text style={styles.periodDate}>
-              {formatDate(contract.startDate)}
+      statusBadge={CONTRACT_STATUS_BADGE[contract.status]}
+    >
+      <View style={styles.body}>
+        {/* Tenant */}
+        <View style={styles.tenantRow}>
+          <IconSquircle icon="person-outline" tone="neutral" size="sm" />
+          <View style={styles.flex}>
+            <Text style={uiType.bodyStrong} numberOfLines={1}>
+              {tenantContract?.name ?? "—"}
+            </Text>
+            <Text style={uiType.caption}>
+              {formatPhoneNumber(tenantContract?.phoneNumber ?? "")}
             </Text>
           </View>
-          {contract.endDate &&
-            <Ionicons name="arrow-forward" size={16} color={tokens.colors.muted} />}
-          {contract.endDate && <View style={[styles.periodItem, { alignItems: 'flex-end' }]}>
-            <Text style={styles.periodLabel}>Kết thúc</Text>
-            <Text style={styles.periodDate}>
-              {formatDate(contract.endDate ?? "")}
-            </Text>
-          </View>}
         </View>
 
-        {contract.status === ContractStatus.ACTIVE && (
-          <View
-            style={[
-              styles.remainingDays,
-              daysRemaining <= 7 ? styles.urgentDays : null,
-            ]}
-          >
-            <Text
-              style={[
-                styles.remainingDaysText,
-                daysRemaining <= 7 ? styles.urgentDaysText : null,
-              ]}
-            >
-              {daysRemaining > 0
-                ? `Còn lại: ${daysRemaining} ngày`
-                : daysRemaining === 0
-                  ? "Hết hạn hôm nay"
-                  : `Quá hạn: ${Math.abs(daysRemaining)} ngày`}
-            </Text>
+        {/* Period */}
+        <View style={styles.section}>
+          <View style={styles.periodRow}>
+            <DisplayField compact direction="vertical" label="Bắt đầu" value={formatDate(contract.startDate)} strong />
+            {contract.endDate && (
+              <>
+                <Ionicons name="arrow-forward" size={16} color={uiColors.textSubtle} />
+                <DisplayField
+                  compact
+                  direction="vertical"
+                  align="end"
+                  label="Kết thúc"
+                  value={formatDate(contract.endDate)}
+                  strong
+                />
+              </>
+            )}
           </View>
-        )}
-      </View>
+          {contract.status === ContractStatus.ACTIVE && (
+            <StatusBadge
+              size="sm"
+              showDot={false}
+              label={remainingLabel}
+              tone={daysRemaining <= 0 ? "error" : daysRemaining <= 7 ? "warning" : "info"}
+            />
+          )}
+        </View>
 
-      {/* Financial Info */}
-      <View style={styles.financialSection}>
-        <View style={styles.financialHeader}>
-          <Ionicons name="cash" size={16} color={tokens.colors.muted} />
-          <Text style={styles.financialHeaderText}>Thông tin tài chính</Text>
-        </View>
-        <View style={styles.financialRow}>
-          <Text style={styles.financialLabel}>Tiền thuê:</Text>
-          <Text style={styles.financialValue}>
-            {formatCurrency(contract.rentAmountAgreed)}đ/tháng
-          </Text>
-        </View>
-        <View style={styles.financialRow}>
-          <Text style={styles.financialLabel}>Tiền cọc:</Text>
-          <Text style={styles.financialValue}>
-            {formatCurrency(contract.depositAmountPaid)}đ
-          </Text>
+        {/* Money */}
+        <View style={styles.section}>
+          <DisplayField compact label="Tiền thuê" value={`${formatCurrency(contract.rentAmountAgreed)}đ/tháng`} strong />
+          <DisplayField compact label="Tiền cọc" value={`${formatCurrency(contract.depositAmountPaid)}đ`} strong />
         </View>
       </View>
     </CardComponent>
@@ -151,189 +124,28 @@ const ContractCard = ({
 };
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.background.default,
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: colors.neutral.black,
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: colors.border.light,
+  body: {
+    gap: 12,
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 12,
-  },
-  headerLeft: {
+  flex: {
     flex: 1,
   },
-  headerRight: {
-    alignItems: "flex-end",
+  tenantRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  section: {
     gap: 8,
-  },
-  contractId: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: tokens.colors.foreground,
-    marginBottom: 2,
-  },
-  roomInfo: {
-    fontSize: 14,
-    color: tokens.colors.muted,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  actionMenu: {
-    flexDirection: "row",
-    gap: 4,
-  },
-  actionButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: tokens.colors.surfaceMuted,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: tokens.palette.gray[300],
-  },
-  renewButton: {
-    backgroundColor: tokens.colors.successSurface,
-    borderColor: tokens.palette.green[200],
-  },
-  terminateButton: {
-    backgroundColor: tokens.colors.errorSurface,
-    borderColor: tokens.palette.red[200],
-  },
-  tenantSection: {
-    marginBottom: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: tokens.colors.surfaceMuted,
-  },
-  tenantHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  tenantHeaderText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: tokens.colors.foreground,
-    marginLeft: 6,
-  },
-  tenantName: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: tokens.colors.foreground,
-    marginBottom: 2,
-    marginLeft: 6,
-  },
-  tenantPhone: {
-    fontSize: 13,
-    color: tokens.colors.muted,
-    marginBottom: 1,
-  },
-  tenantEmail: {
-    fontSize: 13,
-    color: tokens.colors.muted,
-  },
-  periodSection: {
-    marginBottom: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: tokens.colors.surfaceMuted,
-  },
-  periodHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  periodHeaderText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: tokens.colors.foreground,
-    marginLeft: 6,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: uiColors.hairline,
   },
   periodRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 6,
-  },
-  periodItem: {
-    flex: 1,
-    justifyContent: 'space-between',
-    alignContent: 'space-between'
-  },
-  periodLabel: {
-    fontSize: 12,
-    color: tokens.colors.muted,
-    marginBottom: 2,
-  },
-  periodDate: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: tokens.colors.foreground,
-  },
-  remainingDays: {
-    backgroundColor: tokens.colors.infoSurface,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    alignSelf: "flex-start",
-  },
-  urgentDays: {
-    backgroundColor: tokens.colors.warningSurface,
-  },
-  remainingDaysText: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: tokens.colors.info,
-  },
-  urgentDaysText: {
-    color: tokens.palette.amber[600],
-  },
-  financialSection: {
-    marginBottom: 12,
-  },
-  financialHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  financialHeaderText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: tokens.colors.foreground,
-    marginLeft: 6,
-  },
-  financialRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  financialLabel: {
-    fontSize: 13,
-    color: tokens.colors.muted,
-  },
-  financialValue: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: tokens.colors.foreground,
+    gap: 8,
   },
 });
 

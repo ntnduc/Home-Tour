@@ -1,16 +1,19 @@
 import { formatPhoneNumber } from "@/utils/appUtil";
 import React from "react";
-import { Text } from "react-native";
+import { StyleProp, Text, TextStyle } from "react-native";
+
 type Props = {
-  children?: React.ReactNode | string | any;
+  children?: React.ReactNode;
+  style?: StyleProp<TextStyle>;
+  /** @deprecated use `style`. */
   className?: string;
 };
-const DisplayPhoneNumber = ({ children, className }: Props) => {
-  if (typeof children === "string") {
-    const phoneNumber = formatPhoneNumber(children);
-    return <Text className={className}>{phoneNumber}</Text>;
-  }
-  return <Text className={className}>{children}</Text>;
-};
+
+/** Text that formats a raw phone string (e.g. 0901234567 → 0901 234 567). */
+const DisplayPhoneNumber = ({ children, style, className }: Props) => (
+  <Text style={style} className={className}>
+    {typeof children === "string" ? formatPhoneNumber(children) : children}
+  </Text>
+);
 
 export default DisplayPhoneNumber;

@@ -1,6 +1,8 @@
 import { tokens } from "@/theme";
 import { HomepageAlert, HomepageAlertSeverity } from "@/types/homepage";
 import { Ionicons } from "@expo/vector-icons";
+import IconSquircle from "@/components/IconSquircle";
+import StatusBadge from "@/components/StatusBadge";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { formatCompactMoney } from "../homeFormat";
@@ -16,16 +18,15 @@ import SkeletonBlock from "@/components/SkeletonBlock";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
-const { palette, colors } = tokens;
 
 /** Mỗi mức độ = 1 cặp (nền nhạt, màu đậm) + icon riêng → quét mắt là nhận ra độ gấp. */
 const SEVERITY_TONE: Record<
   HomepageAlertSeverity,
-  { bg: string; fg: string; icon: IoniconName }
+  { tone: "error" | "warning" | "info"; icon: IoniconName }
 > = {
-  critical: { bg: colors.errorSurface, fg: colors.error, icon: "alert-circle" },
-  warning: { bg: colors.warningSurface, fg: palette.amber[500], icon: "time" },
-  info: { bg: colors.infoSurface, fg: colors.info, icon: "information-circle" },
+  critical: { tone: "error", icon: "alert-circle" },
+  warning: { tone: "warning", icon: "time" },
+  info: { tone: "info", icon: "information-circle" },
 };
 
 type Props = {
@@ -61,9 +62,7 @@ const AlertFeed = ({ alerts, isLoading, isFetching, onPressAlert }: Props) => {
   if (alerts.length === 0) {
     return (
       <View style={[styles.card, styles.empty, homeShadow.soft]}>
-        <View style={[styles.icon, { backgroundColor: colors.successSurface }]}>
-          <Ionicons name="checkmark-done" size={20} color={colors.success} />
-        </View>
+        <IconSquircle icon="checkmark-done" tone="success" />
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Mọi thứ đều ổn</Text>
           <Text style={homeType.caption}>Không có việc gấp cần xử lý.</Text>
@@ -83,9 +82,7 @@ const AlertFeed = ({ alerts, isLoading, isFetching, onPressAlert }: Props) => {
             scaleTo={0.98}
             style={[styles.row, index > 0 && styles.divider]}
           >
-            <View style={[styles.icon, { backgroundColor: tone.bg }]}>
-              <Ionicons name={tone.icon} size={20} color={tone.fg} />
-            </View>
+            <IconSquircle icon={tone.icon} tone={tone.tone} />
             <View style={styles.body}>
               <Text style={styles.title} numberOfLines={1}>
                 {alert.title}
@@ -96,14 +93,13 @@ const AlertFeed = ({ alerts, isLoading, isFetching, onPressAlert }: Props) => {
               </Text>
             </View>
             <View style={styles.meta}>
-              <View style={[styles.pill, { backgroundColor: tone.bg }]}>
-                <Text
-                  style={[styles.pillText, { color: tone.fg }]}
-                  numberOfLines={1}
-                >
-                  {alert.message}
-                </Text>
-              </View>
+              <StatusBadge
+                label={alert.message}
+                tone={tone.tone}
+                size="sm"
+                showDot={false}
+                style={styles.pill}
+              />
               {!!alert.amount && (
                 <Text style={styles.amount}>
                   {formatCompactMoney(alert.amount)}
@@ -141,13 +137,6 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: tokens.colors.borderStrong,
   },
-  icon: {
-    width: 40,
-    height: 40,
-    borderRadius: HOME_RADIUS.icon,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   body: { flex: 1, gap: 2 },
   title: {
     fontSize: tokens.typography.fontSize.sm,
@@ -155,12 +144,7 @@ const styles = StyleSheet.create({
     color: homeColors.ink,
   },
   meta: { alignItems: "flex-end", gap: 4, maxWidth: "38%" },
-  pill: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: HOME_RADIUS.pill,
-  },
-  pillText: { fontSize: 11, fontWeight: homeWeight.bold },
+  pill: { alignSelf: "flex-end", maxWidth: "100%" },
   amount: {
     fontSize: tokens.typography.fontSize.xs,
     fontWeight: homeWeight.semibold,
