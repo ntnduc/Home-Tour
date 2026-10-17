@@ -1,0 +1,51 @@
+{
+  "projectId": "e7a1f6f6-f1fb-4bf3-a630-d13f1dbb33ad",
+  "shape": "package",
+  "pkg": "home-tour-mobile",
+  "globalName": "HomeTour",
+  "buildCmd": "node .design-sync/web/build.mjs",
+  "entry": ".design-sync/web-dist/index.js",
+  "srcDir": "../../src",
+  "componentSrcMap": {
+    "View": null,
+    "Text": null,
+    "ScrollView": null,
+    "FlatList": null,
+    "StyleSheet": null,
+    "Image": null,
+    "SafeAreaView": null,
+    "Ionicons": null,
+    "SafeAreaProvider": null
+  },
+  "dtsPropsFor": {
+    "RevenueHeroCard": "/** Payload of GET /homepage/summary. Omit while loading. */ summary?: { properties: { id: string; name: string }[]; period: { month: number; year: number }; rooms: { total: number; occupied: number; available: number; maintenance: number; pendingDeposit: number; unavailable: number; /** 0–100 */ occupancyRate: number }; tenantsCount: number; revenue: { expected: number; collected: number; outstanding: number; /** 0–100 */ collectionRate: number }; overdueInvoiceCount: number; expiringContractCount: number }; /** Shows skeleton blocks. */ isLoading: boolean; /** Background refetch indicator (dims, keeps content). */ isFetching: boolean; onPress: () => void;",
+    "StatBento": "/** Payload of GET /homepage/summary. Omit while loading. */ summary?: { properties: { id: string; name: string }[]; period: { month: number; year: number }; rooms: { total: number; occupied: number; available: number; maintenance: number; pendingDeposit: number; unavailable: number; /** 0–100 */ occupancyRate: number }; tenantsCount: number; revenue: { expected: number; collected: number; outstanding: number; /** 0–100 */ collectionRate: number }; overdueInvoiceCount: number; expiringContractCount: number }; isLoading: boolean; onPressOccupancy: () => void; onPressTenants: () => void; onPressContracts: () => void;",
+    "RoomStatusCarousel": "/** Horizontal room cards (GET /homepage/room-feed). */ rooms?: { roomId: string; roomName: string; propertyId: string; propertyName: string; status: \"AVAILABLE\" | \"OCCUPIED\" | \"MAINTENANCE\" | \"PENDING_DEPOSIT\" | \"UNAVAILABLE\"; rentAmount: number; tenantName?: string; topAction?: { type: \"INVOICE_PAYMENT\" | \"CREATE_INVOICE\" | \"CONFIRM_CONTRACT\" | \"CONFIRM_DEPOSIT\" | \"RENEW_CONTRACT\" | \"CREATE_CONTRACT\" | \"VIEW_CONTRACT\" | \"TERMINATE_CONTRACT\"; label: string; severity: \"normal\" | \"warning\" | \"overdue\"; payload: { contractId?: string; invoiceId?: string; roomId?: string; invoiceStatus?: string } }; pendingTaskCount: number; hasOverdueAlert: boolean }[]; isLoading: boolean; onPressRoom: (room: { roomId: string; roomName: string; propertyId: string; propertyName: string; status: \"AVAILABLE\" | \"OCCUPIED\" | \"MAINTENANCE\" | \"PENDING_DEPOSIT\" | \"UNAVAILABLE\"; rentAmount: number; tenantName?: string; topAction?: { type: \"INVOICE_PAYMENT\" | \"CREATE_INVOICE\" | \"CONFIRM_CONTRACT\" | \"CONFIRM_DEPOSIT\" | \"RENEW_CONTRACT\" | \"CREATE_CONTRACT\" | \"VIEW_CONTRACT\" | \"TERMINATE_CONTRACT\"; label: string; severity: \"normal\" | \"warning\" | \"overdue\"; payload: { contractId?: string; invoiceId?: string; roomId?: string; invoiceStatus?: string } }; pendingTaskCount: number; hasOverdueAlert: boolean }) => void; onPressAction: (room: { roomId: string; roomName: string; propertyId: string; propertyName: string; status: \"AVAILABLE\" | \"OCCUPIED\" | \"MAINTENANCE\" | \"PENDING_DEPOSIT\" | \"UNAVAILABLE\"; rentAmount: number; tenantName?: string; topAction?: { type: \"INVOICE_PAYMENT\" | \"CREATE_INVOICE\" | \"CONFIRM_CONTRACT\" | \"CONFIRM_DEPOSIT\" | \"RENEW_CONTRACT\" | \"CREATE_CONTRACT\" | \"VIEW_CONTRACT\" | \"TERMINATE_CONTRACT\"; label: string; severity: \"normal\" | \"warning\" | \"overdue\"; payload: { contractId?: string; invoiceId?: string; roomId?: string; invoiceStatus?: string } }; pendingTaskCount: number; hasOverdueAlert: boolean }) => void;",
+    "AlertFeed": "/** GET /homepage/alerts items. */ alerts?: { id: string; type: \"INVOICE_OVERDUE\" | \"INVOICE_DUE_SOON\" | \"CONTRACT_EXPIRING\" | \"CONTRACT_PENDING\"; severity: \"critical\" | \"warning\" | \"info\"; title: string; message: string; roomId: string; roomName: string; propertyName: string; amount?: number; /** YYYY-MM-DD */ date: string; target: { invoiceId?: string; contractId?: string } }[]; isLoading: boolean; isFetching: boolean; onPressAlert: (alert: { id: string; type: \"INVOICE_OVERDUE\" | \"INVOICE_DUE_SOON\" | \"CONTRACT_EXPIRING\" | \"CONTRACT_PENDING\"; severity: \"critical\" | \"warning\" | \"info\"; title: string; message: string; roomId: string; roomName: string; propertyName: string; amount?: number; /** YYYY-MM-DD */ date: string; target: { invoiceId?: string; contractId?: string } }) => void;",
+    "PropertyFilterChips": "/** \"Tất cả\" chip is rendered first automatically. */ properties: { id: string; name: string }[]; /** undefined = \"Tất cả\" selected. */ selectedId?: string; onSelect: (id?: string) => void;",
+    "QuickActionGrid": "/** Tiles in a 4-column grid. icon = Ionicons name; color = solid icon-tile background (white icon on top), e.g. tokens.colors.primary. */ actions: { key: string; label: string; icon: string; color: string; onPress: () => void }[];",
+    "PropertyCardComponent": "/** One row of GET /property (paged list). */ property: { id: string; name: string; address: string; defaultRoomRent: number; /** Day of month rent is due. */ paymentDate: number; provinceCode: string; districtCode: string; wardCode: string; numberFloor?: number; totalRoom: number; images: string[]; services: { id: string; name: string; price: number }[]; statusRooms?: \"FULL\" | \"EMPTY\" | \"PARTIAL\"; totalRoomOccupied?: number }; onPress: () => void; onEdit: () => void; onViewRooms: () => void; onAddRoom: () => void;",
+    "PropertyListHeader": "total?: number; isLoading: boolean; onPressCreate: () => void; /** Debounced search callback. */ onSearch: (value: string) => void; /** Reanimated SharedValue<number> of the list's scroll offset — drives the bottom separator shadow. Create with HomeTour.useSharedValue(0). */ scrollY: { value: number };",
+    "PressableScale": "/** Press-in spring scale (1 = none). @default 0.97 */ scaleTo?: number; onPress?: () => void; onPressIn?: () => void; onPressOut?: () => void; onLongPress?: () => void; disabled?: boolean; /** @default 0.6 */ activeOpacity?: number; hitSlop?: number | { top?: number; bottom?: number; left?: number; right?: number }; accessibilityLabel?: string; accessibilityRole?: string; style?: object | object[]; children?: React.ReactNode;"
+  },
+  "provider": {
+    "component": "SafeAreaProvider",
+    "props": {
+      "initialMetrics": {
+        "frame": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844
+        },
+        "insets": {
+          "top": 0,
+          "left": 0,
+          "right": 0,
+          "bottom": 0
+        }
+      }
+    }
+  },
+  "readmeHeader": ".design-sync/conventions.md"
+}

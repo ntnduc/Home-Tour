@@ -31,7 +31,10 @@
  * - **Scroll end**: `onEndReached` → `loadMore` (if `hasNextPage`)
  */
 
+import EmptyState from "@/components/EmptyState";
+import SectionError from "@/components/SectionError";
 import { tokens } from "@/theme";
+import { PropertyListResponse } from "@/types/property";
 import { useNavigation } from "@react-navigation/native";
 import React from "react";
 import { RefreshControl, StyleSheet, View } from "react-native";
@@ -40,15 +43,12 @@ import Animated, {
   useSharedValue,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import EmptyState from "@/components/EmptyState";
-import SectionError from "@/components/SectionError";
-import { PropertyListResponse } from "@/types/property";
-import { PropertyListNavigation } from "./propertyNavigation";
-import { usePropertyListData } from "./hooks/usePropertyListData";
-import PropertyListHeader from "./components/PropertyListHeader";
 import PropertyCardComponent from "./components/PropertyCardComponent";
 import PropertyCardSkeleton from "./components/PropertyCardSkeleton";
+import PropertyListHeader from "./components/PropertyListHeader";
+import { usePropertyListData } from "./hooks/usePropertyListData";
 import { PROP_SPACE, propColors } from "./propertyListStyles";
+import { PropertyListNavigation } from "./propertyNavigation";
 
 const PropertyListScreen = () => {
   const navigation = useNavigation<PropertyListNavigation>();

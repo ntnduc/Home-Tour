@@ -22,6 +22,8 @@
  * Always visible above the FlatList; does not scroll with content.
  */
 
+import AddButton from "@/components/AddButton";
+import SearchField from "@/components/SearchField";
 import { tokens } from "@/theme";
 import { BlurView } from "expo-blur";
 import React from "react";
@@ -33,8 +35,6 @@ import Animated, {
   type SharedValue,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import AddButton from "@/components/AddButton";
-import SearchField from "@/components/SearchField";
 import { PROP_SPACE, propColors, propType } from "../propertyListStyles";
 
 export interface PropertyListHeaderProps {
