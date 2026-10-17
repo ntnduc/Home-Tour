@@ -7,16 +7,16 @@ Home Tour is a rental/boarding-house management platform. This is a two-project 
 
 There is no root-level tooling; run all commands from inside the relevant project directory. The primary docs ([README.md](../README.md), most of the `*.md` files under `mobile/`) are written in Vietnamese.
 
-## History Logging (bắt buộc với mọi agent)
+## History Logging (mandatory for every agent)
 
-Sau khi hoàn thành một yêu cầu, agent phải ghi lại thay đổi vào folder [history/](../history) (dùng chung cho cả Backend và Frontend).
+After completing a request, record the change in [history/](../history) (shared by Backend and Frontend).
 
-- **Khi nào tạo:** chỉ tạo file history khi **đã code xong** VÀ **người dùng đã xác nhận/chấp nhận** kết quả. Không tạo khi mới lên kế hoạch hoặc code chưa được chấp nhận.
-- **Tên file:** `YYYYMMDDHHmmss-<slug-title>.md` — `YYYYMMDDHHmmss` là ngày giờ local lúc tạo, `<slug-title>` là tiêu đề change request đã bỏ dấu tiếng Việt, viết thường, thay khoảng trắng/ký tự đặc biệt bằng `-` (vd: `20261003112738-cap-nhat-config-history.md`).
-- **Nội dung:** bám theo mẫu [history/_TEMPLATE.md](../history/_TEMPLATE.md) (tiếng Việt). Phần nào không áp dụng thì ghi "Không có".
-- **Phạm vi BE + FE:** nếu một yêu cầu đụng cả Backend và Frontend thì **mô tả chung trong MỘT file**, đánh dấu "Phạm vi: Cả hai" và liệt kê thay đổi từng bên.
-- **Cập nhật trong cùng session:** nếu người dùng yêu cầu chỉnh sửa tiếp cho cùng change request trong cùng session, **cập nhật lại chính file history đã tạo** (thêm vào mục "Nhật ký cập nhật"), **không tạo file mới**.
-- File `history/_TEMPLATE.md` và `history/README.md` không phải bản ghi thật; đừng ghi đè chúng. Quy ước đầy đủ xem [history/README.md](../history/README.md).
+- **When:** only after the code is **done** AND the user has **accepted** it. Never while planning or before acceptance.
+- **File name:** `YYYYMMDDHHmmss-<slug-title>.md` — local date-time at creation; slug = change-request title, ASCII only (strip diacritics), lowercase, spaces/special chars → `-` (e.g. `20261003112738-update-history-config.md`).
+- **Content:** follow [history/_TEMPLATE.md](../history/_TEMPLATE.md), written in English. Sections that don't apply say "None".
+- **BE + FE:** a request touching both sides → **ONE file**, "Scope: Both", changes listed per side.
+- **Same session:** follow-ups to the same request in the same session → **update that file** (append to "Update log"), **no new file**.
+- `history/_TEMPLATE.md` and `history/README.md` are not entries; never overwrite them. Full rules: [history/README.md](../history/README.md).
 
 ## backend_v2
 

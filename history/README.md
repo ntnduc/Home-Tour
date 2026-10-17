@@ -1,49 +1,39 @@
-# History — Nhật ký thay đổi từ agent
+# History — agent change log
 
-Folder này lưu lại lịch sử các thay đổi mà agent thực hiện theo yêu cầu của người dùng.
-Mục đích là để **dễ theo dõi đã có những update nào**, ai yêu cầu gì, đụng tới phần nào
-(Backend / Frontend), và kết quả ra sao.
+Records changes the agent made at the user's request: what was asked, which side was touched
+(Backend / Frontend), and the result. Backend (`backend_v2/`) and Frontend (`mobile/`) **share** this folder.
 
-Backend (`backend_v2/`) và Frontend (`mobile/`) **dùng chung** folder history này.
+## When to create an entry
 
-## Khi nào tạo file history?
+Only when **both** hold:
 
-Chỉ tạo file history khi **cả hai điều kiện** sau được thỏa:
+1. The agent has **finished the code** for the request.
+2. The user has **confirmed / accepted** the result.
 
-1. Agent đã **hoàn thành phần code** cho yêu cầu.
-2. Người dùng đã **xác nhận / chấp nhận** kết quả.
+> Never create an entry while planning or before acceptance.
 
-> Không tạo file khi mới chỉ lên kế hoạch hoặc code chưa được chấp nhận.
-
-## Quy ước đặt tên file
+## File naming
 
 ```
 YYYYMMDDHHmmss-<slug-title>.md
 ```
 
-- `YYYYMMDDHHmmss`: ngày giờ (giờ local của máy) tại thời điểm tạo file.
-  Ví dụ `20261003112738` = 2026-10-03 11:27:38.
-- `<slug-title>`: tiêu đề của change request, đã **bỏ dấu tiếng Việt**, **viết thường**,
-  thay khoảng trắng và ký tự đặc biệt bằng dấu gạch ngang `-`.
+- `YYYYMMDDHHmmss`: local date-time at creation, e.g. `20261003112738` = 2026-10-03 11:27:38.
+- `<slug-title>`: change-request title, ASCII only (strip diacritics), lowercase, spaces/special chars → `-`.
 
-**Ví dụ:** yêu cầu "Cập nhật config history" lúc 2026-10-03 11:27:38
-→ `20261003112738-cap-nhat-config-history.md`
+**Example:** "Update history config" at 2026-10-03 11:27:38 → `20261003112738-update-history-config.md`
 
-## Cập nhật trong cùng một session
+## Updates in the same session
 
-Nếu trong **cùng một session**, người dùng yêu cầu chỉnh sửa / bổ sung tiếp cho cùng
-change request đó, thì **cập nhật lại chính file history đã tạo** (ghi thêm vào mục
-"Nhật ký cập nhật") — **không tạo file mới**.
+Follow-up changes to the same request in the **same session** → update that same file (append to "Update log"),
+**don't create a new file**. A new session or a different request → new file.
 
-Yêu cầu mới ở session khác, hoặc là một change request khác → tạo file mới.
+## Requests touching Backend and Frontend
 
-## Một yêu cầu đụng cả Backend và Frontend
-
-Nếu một yêu cầu cần thay đổi cả BE và FE, **mô tả chung trong một file** duy nhất,
-và đánh dấu "Phạm vi: Cả hai (Backend + Frontend)" rồi liệt kê thay đổi ở từng bên.
+One file only, marked "Scope: Both (Backend + Frontend)", listing changes per side.
 
 ## Template
 
-Dùng [`_TEMPLATE.md`](./_TEMPLATE.md) làm mẫu. File có tiền tố `_` nên **không** được
-tính là một bản ghi history thật. Người dùng có thể chỉnh sửa template này bất cứ lúc nào;
-agent phải đọc template hiện tại và viết file history theo đúng cấu trúc đó.
+Use [`_TEMPLATE.md`](./_TEMPLATE.md). The `_` prefix means it is **not** a real entry. The user may edit it anytime;
+the agent must read the current template and follow its structure. Entries are written in English.
+Older entries may be in Vietnamese — leave them as-is.
