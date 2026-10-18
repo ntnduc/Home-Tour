@@ -1,5 +1,6 @@
 import { ChildStep, ParrentStep } from "@/components/StepByStep";
 import { RootStackParamList } from "@/navigation/types";
+import { useTabBarInset } from "@/navigation/useTabBarInset";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React from "react";
 import { Text, View } from "react-native";
@@ -13,8 +14,10 @@ const fakeApiCall = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 1200));
 
 const TestScreen = ({}: TestScreenProps) => {
+  // Step actions sit at the bottom → keep them above the floating iOS tab bar.
+  const tabBarInset = useTabBarInset();
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-white" style={{ paddingBottom: tabBarInset }}>
       <ParrentStep activeStep={0}>
         <ChildStep
           label="Thông tin"

@@ -10,6 +10,7 @@ import ProgressBar from '../../components/ProgressBar';
 import StatCard from '../../components/StatCard';
 import { colors } from '../../theme/colors';
 import HeaderComponents from '../common/HeaderComponents';
+import { useTabBarInset } from '@/navigation/useTabBarInset';
 
 // Mock data cho báo cáo
 const mockRevenueData = {
@@ -152,6 +153,7 @@ const routes = [
 
 // Component cho tab Tổng quan
 const OverviewTab = () => {
+  const tabBarInset = useTabBarInset();
   const [selectedPeriod, setSelectedPeriod] = useState('month');
 
   const periodTabs = [
@@ -162,7 +164,10 @@ const OverviewTab = () => {
   ];
 
   return (
-    <ScrollView className="flex-1 bg-gray-50">
+    <ScrollView
+      className="flex-1 bg-gray-50"
+      contentContainerStyle={{ paddingBottom: tabBarInset }}
+    >
       <View className="p-4">
         {/* Filter tabs */}
         <View className="mb-4">
@@ -311,6 +316,7 @@ const OverviewTab = () => {
 
 // Component cho tab Tòa nhà
 const BuildingsTab = () => {
+  const tabBarInset = useTabBarInset();
   const [selectedFilter, setSelectedFilter] = useState('all');
 
   const filterTabs = [
@@ -348,7 +354,7 @@ const BuildingsTab = () => {
       <FlatList
         data={filteredBuildings}
         className="flex-1"
-        contentContainerStyle={{ padding: 12, paddingTop: 0 }}
+        contentContainerStyle={{ padding: 12, paddingTop: 0, paddingBottom: 12 + tabBarInset }}
         renderItem={({ item }) => (
           <BuildingDetailCard
             building={item}
@@ -413,6 +419,7 @@ const BuildingsTab = () => {
 
 // Component cho tab Người thuê
 const TenantsTab = () => {
+  const tabBarInset = useTabBarInset();
   const [selectedStatus, setSelectedStatus] = useState('all');
 
   const statusTabs = [
@@ -443,7 +450,7 @@ const TenantsTab = () => {
       <FlatList
         data={filteredTenants}
         className="flex-1"
-        contentContainerStyle={{ padding: 12, paddingTop: 0 }}
+        contentContainerStyle={{ padding: 12, paddingTop: 0, paddingBottom: 12 + tabBarInset }}
         renderItem={({ item }) => (
           <View className="bg-white rounded-lg p-3 mb-3 shadow-sm">
             <View className="flex-row justify-between items-start mb-2">
@@ -494,6 +501,7 @@ const TenantsTab = () => {
 
 // Component cho tab Phân tích
 const AnalyticsTab = () => {
+  const tabBarInset = useTabBarInset();
   const [selectedChartType, setSelectedChartType] = useState('bar');
 
   const chartTypeTabs = [
@@ -503,7 +511,10 @@ const AnalyticsTab = () => {
   ];
 
   return (
-    <ScrollView className="flex-1 bg-gray-50">
+    <ScrollView
+      className="flex-1 bg-gray-50"
+      contentContainerStyle={{ paddingBottom: tabBarInset }}
+    >
       <View className="p-4">
         {/* Chọn loại biểu đồ */}
         <View className="mb-4">
@@ -636,6 +647,7 @@ const ReportScreen = () => {
 
   return (
     <SafeAreaView
+      edges={['top', 'left', 'right']}
       style={{ flex: 1, backgroundColor: colors.background.default }}
     >
       {/* <StatusBar

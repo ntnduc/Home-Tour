@@ -16,6 +16,10 @@ Docs (`README.md`, most `mobile/*.md`) and all user-facing text / error messages
 - Validate with the narrowest command that proves the change (a single Jest spec, `tsc` filtered to touched files), not full builds.
 - Keep replies short: what changed, validation results, open issues. Don't paste whole files back.
 
+## Comment into source code
+
+- Use english only to comment and save cost.
+
 ## Cross-project changes (backend ↔ mobile)
 
 When a task touches the API contract, read both sides before editing:

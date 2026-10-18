@@ -9,6 +9,7 @@ import IconSquircle from '@/components/IconSquircle';
 import ListRow from '@/components/ListRow';
 import Loading from '@/components/Loading';
 import NoticeBanner from '@/components/NoticeBanner';
+import ScreenHeader from '@/components/ScreenHeader';
 import Status from '@/components/Status';
 import { CONTRACT_STATUS_OPTIONS } from '@/constant/contract.constant';
 import { RootStackParamList } from '@/navigation/types';
@@ -22,16 +23,20 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Alert, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 
 type ContractDetailScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'ContractDetail'>;
   route: { params: RootStackParamList['ContractDetail'] };
+  /** Rendered inside another screen (CreateContract step) — hides the header. */
+  embedded?: boolean;
 };
 
 const ContractDetailScreen = ({
   navigation,
   route,
+  embedded,
 }: ContractDetailScreenProps) => {
   const { contractId } = route.params;
   const [isLoading, setIsLoading] = useState(true);
@@ -145,12 +150,22 @@ const ContractDetailScreen = ({
     type: 'text' | 'phone' = 'text',
   ) => <DisplayField label={label} value={value} strong={strong} type={type} />;
 
-  if (isLoading && !defaultValues) {
-    return <Loading />;
-  }
+  const withHeader = (content: React.ReactNode) =>
+    embedded ? (
+      content
+    ) : (
+      <SafeAreaView edges={[]} style={styles.screen}>
+        <ScreenHeader
+          title="Chi tiết hợp đồng"
+          onBack={() => navigation.goBack()}
+          insetTop
+        />
+        {content}
+      </SafeAreaView>
+    );
 
-  if (!contract || !contract.id) {
-    return <Loading />;
+  if ((isLoading && !defaultValues) || !contract || !contract.id) {
+    return withHeader(<Loading />);
   }
 
   const landlordClient = contract.contractClient?.find(
@@ -195,7 +210,7 @@ const ContractDetailScreen = ({
 
   const services = contract.contractServices || [];
 
-  return (
+  return withHeader(
     <FormScreen footer={footer}>
       {!contract.endDate && (
         <NoticeBanner
@@ -337,6 +352,10 @@ const ContractDetailScreen = ({
 };
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: uiColors.canvas,
+  },
   summary: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -1,8 +1,8 @@
 import { FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import React, { useEffect, useState } from "react";
-import { Platform, TouchableOpacity, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import React from "react";
+import { Platform } from "react-native";
+import PlatformTabBar from "@/components/PlatformTabBar";
 import ContractListScreen from "../screens/contract/ContractListScreen";
 import DashboardScreen from "../screens/dashboard/DashboardScreen";
 import ProfileScreen from "../screens/profile/ProfileScreen";
@@ -14,34 +14,20 @@ import { TabParamList } from "./types";
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
-const DEFAULT_BOTTOM_INSET = Platform.OS === "android" ? 16 : 0;
-
 const TabNavigator = () => {
-  const insets = useSafeAreaInsets();
-
-  const [bottomInset, setBottomInset] = useState(DEFAULT_BOTTOM_INSET);
-
-  useEffect(() => {
-    const actualBottomInset =
-      insets.bottom > 0 ? insets.bottom : DEFAULT_BOTTOM_INSET;
-    setBottomInset(actualBottomInset);
-  }, [insets.bottom]);
-
   return (
     <Tab.Navigator
+      tabBar={(props) => <PlatformTabBar {...props} />}
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: "#6a5af9",
-        tabBarInactiveTintColor: "#888",
-        tabBarStyle: {
-          paddingBottom: 2 + bottomInset,
-          height: 40 + bottomInset,
-        },
         tabBarHideOnKeyboard: true,
-        tabBarIcon: ({ color, size }) => {
+        // iOS: quick cross-fade between tab scenes; Android keeps its instant switch.
+        animation: Platform.OS === "ios" ? "fade" : "none",
+        // Selected tab uses the filled glyph (outline when idle), as on native iOS / Material 3.
+        tabBarIcon: ({ color, size, focused }) => {
           switch (route.name) {
             case "Dashboard":
-              return <Ionicons name="home-outline" size={size} color={color} />;
+              return <Ionicons name={focused ? "home" : "home-outline"} size={size} color={color} />;
             case "Properties":
               return (
                 <MaterialIcons name="apartment" size={size} color={color} />
@@ -53,19 +39,23 @@ const TabNavigator = () => {
             case "Contracts":
               return (
                 <Ionicons
-                  name="document-text-outline"
+                  name={focused ? "document-text" : "document-text-outline"}
                   size={size}
                   color={color}
                 />
               );
             case "Reports":
               return (
-                <Ionicons name="bar-chart-outline" size={size} color={color} />
+                <Ionicons
+                  name={focused ? "bar-chart" : "bar-chart-outline"}
+                  size={size}
+                  color={color}
+                />
               );
             case "Profile":
               return (
                 <Ionicons
-                  name="person-circle-outline"
+                  name={focused ? "person-circle" : "person-circle-outline"}
                   size={size}
                   color={color}
                 />
@@ -75,16 +65,6 @@ const TabNavigator = () => {
             default:
               return null;
           }
-        },
-        tabBarButton: (props) => {
-          if (Platform.OS === "ios") {
-            return <TouchableOpacity {...(props as any)} />;
-          }
-          return (
-            <TouchableOpacity {...(props as any)}>
-              <View className="flex items-center">{props.children}</View>
-            </TouchableOpacity>
-          );
         },
       })}
     >

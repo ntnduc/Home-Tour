@@ -43,6 +43,7 @@ import Animated, {
   useSharedValue,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTabBarInset } from "@/navigation/useTabBarInset";
 import PropertyCardComponent from "./components/PropertyCardComponent";
 import PropertyCardSkeleton from "./components/PropertyCardSkeleton";
 import PropertyListHeader from "./components/PropertyListHeader";
@@ -52,6 +53,7 @@ import { PropertyListNavigation } from "./propertyNavigation";
 
 const PropertyListScreen = () => {
   const navigation = useNavigation<PropertyListNavigation>();
+  const tabBarInset = useTabBarInset();
   const {
     search,
     setSearch,
@@ -177,7 +179,7 @@ const PropertyListScreen = () => {
           ItemSeparatorComponent={() => (
             <View style={{ height: PROP_SPACE.gap }} />
           )}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: 40 + tabBarInset }]}
           showsVerticalScrollIndicator={false}
           onEndReachedThreshold={0.4}
           onEndReached={loadMore}

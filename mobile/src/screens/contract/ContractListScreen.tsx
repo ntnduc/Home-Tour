@@ -3,6 +3,7 @@ import AddButton from "@/components/AddButton";
 import { CardSkeletonList } from "@/components/CardSkeleton";
 import EmptyState from "@/components/EmptyState";
 import ScreenHeader from "@/components/ScreenHeader";
+import { useTabBarInset } from "@/navigation/useTabBarInset";
 import { tokens, uiColors, uiSpace } from "@/theme";
 import { ApiResponse } from "@/types/api";
 import { BasePagingResponse } from "@/types/base.response";
@@ -31,6 +32,7 @@ type ContractListScreenProps = {
  * ```
  */
 const ContractListScreen = ({ navigation }: ContractListScreenProps) => {
+  const tabBarInset = useTabBarInset();
   const [search, setSearch] = useState("");
 
   const { data, isLoading, fetchNextPage, hasNextPage, refetch } =
@@ -106,7 +108,7 @@ const ContractListScreen = ({ navigation }: ContractListScreenProps) => {
           onScroll={onScroll}
           scrollEventThrottle={16}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: 40 + tabBarInset }]}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <EmptyState
