@@ -18,10 +18,7 @@ import Input from '@/components/Input';
 
 // Types & Constants
 import ActionButtonBottom from '@/components/ActionButtonBottom';
-import { stylesHeader } from '@/components/AppSheet/AppSheet';
-import AppSheetBackdropComponent from '@/components/AppSheet/AppSheetBackdropComponent';
-import AppSheetHandleComponent from '@/components/AppSheet/AppSheetHandleComponent';
-import AppSheetHeader from '@/components/AppSheet/AppSheetHeader';
+import AppSheet, { AppSheetRef } from '@/components/AppSheet/AppSheet';
 import { ComboBox } from '@/components/ComboBox';
 import { Switch } from '@/components/Switch';
 import {
@@ -30,7 +27,7 @@ import {
 } from '@/constant/service.constant';
 import { ContractServiceDetailResponse } from '@/types/contract-service';
 import { formatCurrency } from '@/utils/appUtil';
-import BottomSheet, {
+import {
   BottomSheetFooter,
   BottomSheetFooterProps,
   BottomSheetScrollView,
@@ -62,10 +59,8 @@ const ContractServiceComponent = forwardRef<
   ContractServiceComponentRef,
   ContractServiceComponentProps
 >(({ onSuccess }, ref) => {
-  const styleHeader = stylesHeader;
-  const bottomSheetRef = useRef<BottomSheet>(null);
+  const bottomSheetRef = useRef<AppSheetRef>(null);
   const [index, setIndex] = useState<number>(0);
-  const [isOpen, setIsOpen] = useState(false);
 
   const {
     control,
@@ -93,10 +88,8 @@ const ContractServiceComponent = forwardRef<
     },
     close: () => {
       bottomSheetRef.current?.close();
-      setIsOpen(false);
     },
     expand: (service: ContractServiceDetailResponse, index: number) => {
-      setIsOpen(true);
       reset();
       setIndex(index);
       service?.name && setValueForm('name', service.name);
@@ -112,9 +105,7 @@ const ContractServiceComponent = forwardRef<
       setValueForm('isEnabled', service.isEnabled);
       setValueForm('helperValue', service.helperValue);
 
-      setTimeout(() => {
-        bottomSheetRef.current?.expand();
-      }, 100);
+      bottomSheetRef.current?.open();
     },
     collapse: () => {
       bottomSheetRef.current?.collapse();
@@ -150,7 +141,11 @@ const ContractServiceComponent = forwardRef<
           }}
         >
           <View style={sheetStyles.itemRow}>
-            <Ionicons name={item.icon as any} size={17} color={uiColors.textMuted} />
+            <Ionicons
+              name={item.icon as any}
+              size={17}
+              color={uiColors.textMuted}
+            />
             <Text style={fieldStyles.text}>{item.label}</Text>
           </View>
           <IconButton
@@ -158,7 +153,10 @@ const ContractServiceComponent = forwardRef<
             tone="info"
             size="sm"
             onPress={() => {
-              Alert.alert('Thông tin', SERVICE_CALCULATE_METHOD_WITH_INFO[item.key].info);
+              Alert.alert(
+                'Thông tin',
+                SERVICE_CALCULATE_METHOD_WITH_INFO[item.key].info,
+              );
             }}
             accessibilityLabel={`Giải thích: ${item.label}`}
           />
@@ -263,213 +261,182 @@ const ContractServiceComponent = forwardRef<
     [index],
   );
 
-  const renderBackdrop = useCallback(
-    (props: any) => (
-      <AppSheetBackdropComponent
-        {...props}
-        onBackdropPress={() => {
-          bottomSheetRef.current?.close();
-        }}
-      />
-    ),
-    [],
-  );
-
   return (
-    <View
-      style={StyleSheet.absoluteFill}
-      pointerEvents={isOpen ? 'auto' : 'none'}
+    <AppSheet
+      ref={bottomSheetRef}
+      snapPoints={['90%']}
+      header={{ title: 'Cập nhật dịch vụ', height: 60 }}
+      renderFooter={_renderFooter}
     >
-      <BottomSheet
-        ref={bottomSheetRef}
-        snapPoints={['90%']}
-        index={-1}
-        onClose={() => {
-          // bottomSheetRef.current?.close();
-          setIsOpen(false);
-        }}
-        backdropComponent={renderBackdrop}
-        enablePanDownToClose
-        enableOverDrag={false}
-        handleComponent={AppSheetHandleComponent}
-        enableHandlePanningGesture={true}
-        detached={true}
-        footerComponent={_renderFooter}
+      <BottomSheetScrollView
+        style={sheetStyles.scroll}
+        contentContainerStyle={sheetStyles.body}
+        nestedScrollEnabled={true}
+        showsVerticalScrollIndicator={true}
       >
-        <View style={[styleHeader.fixedHeaderContainer, { height: 60 }]}>
-          <AppSheetHeader
-            title="Cập nhật dịch vụ"
-            onClose={() => {
-              bottomSheetRef.current?.close();
+        <View>
+          <Controller
+            control={control}
+            name="name"
+            rules={{
+              required: {
+                value: true,
+                message: 'Vui lòng nhập tên dịch vụ',
+              },
             }}
+            render={({ field: { onChange, onBlur, value } }) => (
+              <Input
+                label="Tên dịch vụ"
+                required={true}
+                error={errors.name?.message}
+                placeholder="Nhập tên dịch vụ"
+                value={value}
+                onChangeText={onChange}
+              />
+            )}
           />
         </View>
-        <BottomSheetScrollView
-          style={sheetStyles.scroll}
-          contentContainerStyle={sheetStyles.body}
-          nestedScrollEnabled={true}
-          showsVerticalScrollIndicator={true}
-        >
-          <View>
-            <Controller
-              control={control}
-              name="name"
-              rules={{
-                required: {
-                  value: true,
-                  message: 'Vui lòng nhập tên dịch vụ',
-                },
-              }}
-              render={({ field: { onChange, onBlur, value } }) => (
-                <Input
-                  label="Tên dịch vụ"
-                  required={true}
-                  error={errors.name?.message}
-                  placeholder="Nhập tên dịch vụ"
-                  value={value}
-                  onChangeText={onChange}
-                />
-              )}
-            />
-          </View>
 
-          <View>
-            <Controller
-              control={control}
-              name="calculationMethod"
-              render={({ field: { onChange, value } }) => (
-                <ComboBox
-                  value={value as any}
-                  options={calculationMethodOptions}
-                  required={true}
-                  onChange={(item) => {
-                    onChange(item?.key);
-                    setValueForm('helperValue', null);
-                  }}
-                  renderItem={(item, selected) => _renderItems(item, selected)}
-                  isSearch={false}
-                  placeholder="Chọn phương thức tính toán"
-                  error={errors.calculationMethod?.message}
-                  label="Phương thức tính toán"
-                  icon={(value, options, visible) => {
-                    if (value && !value?.icon) {
-                      const findIconInOptions = options.find(
-                        (option) => option.key === value,
-                      );
-                      if (findIconInOptions) {
-                        return (
-                          <Ionicons
-                            name={findIconInOptions.icon as any}
-                            size={18}
-                            style={sheetStyles.leftIcon}
-                            color={uiColors.textMuted}
-                          />
-                        );
-                      }
-                    }
-                    if (value?.icon) {
+        <View>
+          <Controller
+            control={control}
+            name="calculationMethod"
+            render={({ field: { onChange, value } }) => (
+              <ComboBox
+                value={value as any}
+                options={calculationMethodOptions}
+                required={true}
+                onChange={(item) => {
+                  onChange(item?.key);
+                  setValueForm('helperValue', null);
+                }}
+                renderItem={(item, selected) => _renderItems(item, selected)}
+                isSearch={false}
+                placeholder="Chọn phương thức tính toán"
+                error={errors.calculationMethod?.message}
+                label="Phương thức tính toán"
+                icon={(value, options, visible) => {
+                  if (value && !value?.icon) {
+                    const findIconInOptions = options.find(
+                      (option) => option.key === value,
+                    );
+                    if (findIconInOptions) {
                       return (
                         <Ionicons
-                          name={value.icon as any}
+                          name={findIconInOptions.icon as any}
                           size={18}
                           style={sheetStyles.leftIcon}
                           color={uiColors.textMuted}
                         />
                       );
                     }
-                    return null;
-                  }}
-                />
-              )}
-            />
-          </View>
-
-          {_renderHelpInfo()}
-
-          <View>
-            <Controller
-              control={control}
-              name="price"
-              rules={{
-                validate: (
-                  value: number,
-                  formValues: ContractServiceDetailResponse,
-                ) => {
-                  if (
-                    formValues.calculationMethod === ServiceCalculateMethod.FREE
-                  ) {
-                    return true;
                   }
-                  if (value > 0) return true;
-                  return 'Giá dịch vụ phải lớn hơn 0';
-                },
-              }}
-              render={({ field: { onChange, value } }) => (
-                <Input
-                  label="Giá dịch vụ"
-                  type="number"
-                  disabled={calculationMethod === ServiceCalculateMethod.FREE}
-                  required={true}
-                  error={errors.price?.message}
-                  placeholder="Nhập giá dịch vụ"
-                  value={value ? formatCurrency(value.toString()) : ''}
-                  onChangeText={onChange}
-                  keyboardType="numeric"
-                  icon="cash-outline"
-                />
-              )}
-            />
-          </View>
-
-          <View>
-            <Controller
-              control={control}
-              name="isEnabled"
-              render={({ field: { onChange, value } }) => {
-                return (
-                  <Switch
-                    value={value}
-                    alignLabel="horizontal"
-                    onValueChange={onChange}
-                    label="Sử dụng"
-                  />
-                );
-              }}
-            />
-          </View>
-
-          <View style={sheetStyles.summary}>
-            <Text style={uiType.eyebrow}>Tóm tắt cấu hình</Text>
-            <DisplayField
-              label="Phương thức"
-              value={SERVICE_CALCULATE_METHOD_WITH_INFO[calculationMethod].label}
-              strong
-            />
-            {helperValue && (
-              <DisplayField label="Số lượng / Giá trị" value={helperValue?.toString()} strong />
-            )}
-            {defaultValues?.calculationMethod !== ServiceCalculateMethod.FREE && (
-              <DisplayField
-                label="Giá dịch vụ"
-                value={`${formatCurrency(price?.toString() || '0')}đ`}
-                strong
+                  if (value?.icon) {
+                    return (
+                      <Ionicons
+                        name={value.icon as any}
+                        size={18}
+                        style={sheetStyles.leftIcon}
+                        color={uiColors.textMuted}
+                      />
+                    );
+                  }
+                  return null;
+                }}
               />
             )}
-            <DisplayField
-              compact
-              label="Sử dụng"
-              value={
-                <StatusBadge
-                  size="sm"
-                  tone={isEnabled ? 'success' : 'error'}
-                  label={isEnabled ? 'Đang sử dụng' : 'Không sử dụng'}
+          />
+        </View>
+
+        {_renderHelpInfo()}
+
+        <View>
+          <Controller
+            control={control}
+            name="price"
+            rules={{
+              validate: (
+                value: number,
+                formValues: ContractServiceDetailResponse,
+              ) => {
+                if (
+                  formValues.calculationMethod === ServiceCalculateMethod.FREE
+                ) {
+                  return true;
+                }
+                if (value > 0) return true;
+                return 'Giá dịch vụ phải lớn hơn 0';
+              },
+            }}
+            render={({ field: { onChange, value } }) => (
+              <Input
+                label="Giá dịch vụ"
+                type="number"
+                disabled={calculationMethod === ServiceCalculateMethod.FREE}
+                required={true}
+                error={errors.price?.message}
+                placeholder="Nhập giá dịch vụ"
+                value={value ? formatCurrency(value.toString()) : ''}
+                onChangeText={onChange}
+                keyboardType="numeric"
+                icon="cash-outline"
+              />
+            )}
+          />
+        </View>
+
+        <View>
+          <Controller
+            control={control}
+            name="isEnabled"
+            render={({ field: { onChange, value } }) => {
+              return (
+                <Switch
+                  value={value}
+                  alignLabel="horizontal"
+                  onValueChange={onChange}
+                  label="Sử dụng"
                 />
-              }
+              );
+            }}
+          />
+        </View>
+
+        <View style={sheetStyles.summary}>
+          <Text style={uiType.eyebrow}>Tóm tắt cấu hình</Text>
+          <DisplayField
+            label="Phương thức"
+            value={SERVICE_CALCULATE_METHOD_WITH_INFO[calculationMethod].label}
+            strong
+          />
+          {helperValue && (
+            <DisplayField
+              label="Số lượng / Giá trị"
+              value={helperValue?.toString()}
+              strong
             />
-          </View>
-        </BottomSheetScrollView>
-      </BottomSheet>
-    </View>
+          )}
+          {defaultValues?.calculationMethod !== ServiceCalculateMethod.FREE && (
+            <DisplayField
+              label="Giá dịch vụ"
+              value={`${formatCurrency(price?.toString() || '0')}đ`}
+              strong
+            />
+          )}
+          <DisplayField
+            compact
+            label="Sử dụng"
+            value={
+              <StatusBadge
+                size="sm"
+                tone={isEnabled ? 'success' : 'error'}
+                label={isEnabled ? 'Đang sử dụng' : 'Không sử dụng'}
+              />
+            }
+          />
+        </View>
+      </BottomSheetScrollView>
+    </AppSheet>
   );
 });
 
@@ -477,7 +444,6 @@ ContractServiceComponent.displayName = 'ContractServiceComponent';
 
 const sheetStyles = StyleSheet.create({
   scroll: {
-    marginTop: 60,
     marginBottom: 90,
   },
   body: {

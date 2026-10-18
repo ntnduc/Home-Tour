@@ -1,6 +1,7 @@
-import BottomSheet, {
+import {
   BottomSheetFooterProps,
-  BottomSheetProps,
+  BottomSheetModal,
+  BottomSheetModalProps,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
 import React, {
@@ -8,11 +9,13 @@ import React, {
   ReactNode,
   useCallback,
   useImperativeHandle,
+  useMemo,
   useRef,
   useState,
 } from "react";
 import { StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { tokens } from "@/theme";
 import AppSheetBackdropComponent from "./AppSheetBackdropComponent";
 import AppSheetHandleComponent from "./AppSheetHandleComponent";
 import AppSheetHeader from "./AppSheetHeader";
@@ -27,7 +30,7 @@ export type HeaderConfig = {
 };
 
 export interface AppSheetProps extends Omit<
-  BottomSheetProps,
+  BottomSheetModalProps,
   "ref" | "children"
 > {
   classNameContent?: string;
@@ -37,154 +40,195 @@ export interface AppSheetProps extends Omit<
   ignoreBottomInset?: boolean;
   ignoreBottomSheetInset?: boolean;
   renderFooter?: (props: BottomSheetFooterProps) => ReactNode;
+  /** Called once the sheet is fully dismissed (pan down, backdrop, close()). */
+  onClose?: () => void;
 }
 
 export interface AppSheetRef {
-  open: (children: ReactNode, config?: AppSheetProps) => void;
+  /**
+   * Present the sheet. `children` / `config` override the props given to
+   * <AppSheet>; omit them to present the declarative `children` prop.
+   */
+  open: (children?: ReactNode, config?: AppSheetProps) => void;
   close: () => void;
+  snapToIndex: (index: number) => void;
+  snapToPosition: (position: string | number) => void;
+  collapse: () => void;
 }
 
+type OpenState = {
+  children?: ReactNode;
+  config?: AppSheetProps;
+};
+
+const DEFAULT_SNAP_POINTS = ["50%"];
+const DEFAULT_HEADER_HEIGHT = 56;
+
+/**
+ * Shared bottom sheet built on BottomSheetModal:
+ * - rendered through the portal at the provider root, so it never shows up
+ *   inside the parent layout (e.g. at the end of a ScrollView) while closed,
+ *   and its content is not mounted until opened;
+ * - the header is rendered as the sheet handle, so scrollable content gets the
+ *   real remaining height and dragging/closing is done from the header only
+ *   (content panning is off by default when a header exists, which avoids a
+ *   scroll-to-top gesture closing the sheet).
+ */
 const AppSheet = forwardRef<AppSheetRef, AppSheetProps>((props, ref) => {
-  const { children: defaultChildren, ...bottomSheetProps } = props;
-
   const insets = useSafeAreaInsets();
+  const modalRef = useRef<BottomSheetModal>(null);
+  const [openState, setOpenState] = useState<OpenState | null>(null);
+  const openStateRef = useRef<OpenState | null>(null);
 
-  const bottomSheetRef = useRef<BottomSheet>(null);
-  const isOpeningRef = useRef(false);
-  const [isOpen, setIsOpen] = useState(false);
+  // Open-time config overrides the declarative props.
+  const { children: propChildren, ...propConfig } = props;
+  const config: AppSheetProps = { ...propConfig, ...openState?.config };
+  const children =
+    openState?.children !== undefined ? openState.children : propChildren;
 
-  const [state, setState] = useState<{
-    dynamicChildren: ReactNode | null;
-    config: AppSheetProps | null;
-  }>({
-    dynamicChildren: null,
-    config: null,
-  });
+  const {
+    header: headerConfig,
+    renderFooter,
+    ignoreBottomInset,
+    ignoreBottomSheetInset,
+    classNameContent,
+    styleContent,
+    onClose,
+    onDismiss,
+    ...modalProps
+  } = config;
 
-  useImperativeHandle(ref, () => ({
-    open,
-    close,
-  }));
+  const updateOpenState = (next: OpenState | null) => {
+    openStateRef.current = next;
+    setOpenState(next);
+  };
 
-  const open = useCallback((children: ReactNode, config?: AppSheetProps) => {
-    if (children && !isOpeningRef.current) {
-      isOpeningRef.current = true;
-      setState({ dynamicChildren: null, config: null });
-      setTimeout(() => {
-        setState({ dynamicChildren: children, config: config || null });
-        setTimeout(() => {
-          // bottomSheetRef.current?.expand();
-          isOpeningRef.current = false;
-        }, 100);
-      }, 100);
-    }
-  }, []);
+  const open = useCallback(
+    (nextChildren?: ReactNode, nextConfig?: AppSheetProps) => {
+      updateOpenState({ children: nextChildren, config: nextConfig });
+      if (!nextConfig?.ignoreBottomSheetInset) {
+        modalRef.current?.present();
+      }
+    },
+    [],
+  );
+
+  const handleDismiss = useCallback(() => {
+    const openConfig = openStateRef.current?.config;
+    (openConfig?.onClose ?? props.onClose)?.();
+    openConfig?.onDismiss?.();
+    props.onDismiss?.();
+    updateOpenState(null);
+  }, [props.onClose, props.onDismiss]);
 
   const close = useCallback(() => {
-    bottomSheetRef.current?.close();
-    if (state.config?.onClose) {
-      state.config.onClose();
+    if (openStateRef.current?.config?.ignoreBottomSheetInset) {
+      handleDismiss();
+      return;
     }
-    setState({ dynamicChildren: null, config: null });
-  }, [state.config]);
+    modalRef.current?.dismiss();
+  }, [handleDismiss]);
 
-  const handleSheetChanges = useCallback((index: number) => {
-    setIsOpen(index >= 0);
-  }, []);
-
-  const header = (headerConfig?: HeaderConfig) => {
-    return (
-      <>
-        {headerConfig?.element && headerConfig?.element}
-        {!headerConfig?.element && (
-          <AppSheetHeader {...headerConfig} onClose={close} />
-        )}
-      </>
-    );
-  };
-
-  const _renderChildren = () => {
-    if (state.dynamicChildren) {
-      if (state.config?.header) {
-        const headerConfig = state.config.header;
-        const headerHeight = headerConfig?.height ?? 56;
-        return (
-          <View
-            onLayout={() => {
-              bottomSheetRef.current?.expand();
-            }}
-          >
-            <View
-              style={[
-                stylesHeader.fixedHeaderContainer,
-                headerConfig?.style,
-                { height: headerHeight },
-              ]}
-            >
-              {header(headerConfig)}
-            </View>
-            <View style={{ marginTop: headerHeight }}>
-              {state.dynamicChildren}
-              {!state.config?.ignoreBottomInset && (
-                <BottomSheetView>
-                  <View style={{ height: insets.bottom }} />
-                </BottomSheetView>
-              )}
-            </View>
-          </View>
-        );
-      }
-      return state.dynamicChildren;
-    } else {
-      return (
-        <BottomSheetView>
-          <Text>Chưa có nội dung</Text>
-        </BottomSheetView>
-      );
-    }
-  };
-
-  const config = state.config || {};
+  useImperativeHandle(
+    ref,
+    () => ({
+      open,
+      close,
+      snapToIndex: (index: number) => modalRef.current?.snapToIndex(index),
+      snapToPosition: (position: string | number) =>
+        modalRef.current?.snapToPosition(position),
+      collapse: () => modalRef.current?.collapse(),
+    }),
+    [open, close],
+  );
 
   const renderBackdrop = useCallback(
-    (props: any) => (
-      <AppSheetBackdropComponent {...props} onBackdropPress={close} />
+    (backdropProps: any) => (
+      <AppSheetBackdropComponent {...backdropProps} onBackdropPress={close} />
     ),
     [close],
   );
 
-  if (config.ignoreBottomSheetInset && state.dynamicChildren) {
-    return <>{state.dynamicChildren}</>;
+  const headerElement = headerConfig?.element;
+  const headerTitle = headerConfig?.title;
+  const headerStyle = headerConfig?.style;
+  const headerClassName = headerConfig?.className;
+  const headerHeight = headerConfig?.height ?? DEFAULT_HEADER_HEIGHT;
+  const hasHeader = !!headerConfig;
+
+  // Header doubles as the drag handle; memoized so the handle is not remounted
+  // on every parent render.
+  const renderHandle = useMemo(() => {
+    if (!hasHeader) return AppSheetHandleComponent;
+    const HeaderHandle = () => (
+      <View
+        style={[styles.headerContainer, headerStyle, { height: headerHeight }]}
+      >
+        {headerElement ?? (
+          <AppSheetHeader
+            title={headerTitle}
+            className={headerClassName}
+            onClose={close}
+          />
+        )}
+      </View>
+    );
+    return HeaderHandle;
+  }, [
+    hasHeader,
+    headerElement,
+    headerTitle,
+    headerStyle,
+    headerClassName,
+    headerHeight,
+    close,
+  ]);
+
+  if (ignoreBottomSheetInset) {
+    return openState ? <>{children}</> : null;
   }
 
   return (
-    <View
-      style={StyleSheet.absoluteFill}
-      pointerEvents={isOpen ? "auto" : "none"}
+    <BottomSheetModal
+      ref={modalRef}
+      snapPoints={DEFAULT_SNAP_POINTS}
+      enableDynamicSizing={false}
+      enablePanDownToClose
+      enableOverDrag={false}
+      enableHandlePanningGesture
+      enableContentPanningGesture={!hasHeader}
+      stackBehavior="push"
+      detached
+      backdropComponent={renderBackdrop}
+      footerComponent={renderFooter}
+      {...modalProps}
+      handleComponent={
+        "handleComponent" in modalProps
+          ? modalProps.handleComponent
+          : renderHandle
+      }
+      onDismiss={handleDismiss}
+      android_keyboardInputMode="adjustResize"
     >
-      <BottomSheet
-        ref={bottomSheetRef}
-        index={-1}
-        enablePanDownToClose
-        onClose={close}
-        onChange={handleSheetChanges}
-        snapPoints={["50%"]}
-        backdropComponent={renderBackdrop}
-        handleComponent={AppSheetHandleComponent}
-        enableOverDrag={false}
-        enableHandlePanningGesture={true}
-        enableContentPanningGesture={true}
-        // activeOffsetY={[-1, 1]}
-        // failOffsetX={[-5, 5]}
-        footerComponent={config.renderFooter}
-        detached={true}
-        {...config}
-        android_keyboardInputMode="adjustResize"
-      >
-        {_renderChildren()}
-      </BottomSheet>
-    </View>
+      {children ?? (
+        <BottomSheetView>
+          <Text>Chưa có nội dung</Text>
+        </BottomSheetView>
+      )}
+      {hasHeader && !ignoreBottomInset && (
+        <View style={{ height: insets.bottom }} />
+      )}
+    </BottomSheetModal>
   );
+});
+
+const styles = StyleSheet.create({
+  headerContainer: {
+    backgroundColor: tokens.colors.surface,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    overflow: "hidden",
+  },
 });
 
 export const stylesHeader = StyleSheet.create({
