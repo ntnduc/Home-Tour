@@ -65,7 +65,10 @@ const CreateContractScreen = ({
   };
 
   return (
-    <SafeAreaView edges={[]} style={{ flex: 1, backgroundColor: uiColors.canvas }}>
+    <SafeAreaView
+      edges={[]}
+      style={{ flex: 1, backgroundColor: uiColors.canvas }}
+    >
       <ScreenHeader
         title="Tạo hợp đồng mới"
         onBack={() => navigation.goBack()}

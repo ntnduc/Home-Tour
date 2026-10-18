@@ -9,8 +9,8 @@ import Input from "@/components/Input";
 import Loading from "@/components/Loading";
 import { Switch } from "@/components/Switch";
 import { ServiceCalculateMethod } from "@/constant/service.constant";
-import { tokens, uiColors, uiType } from "@/theme";
 import { RootStackParamList } from "@/navigation/types";
+import { tokens, uiColors, uiType } from "@/theme";
 import { ContractServiceDetailResponse } from "@/types/contract-service";
 import { formatCurrency, generateId } from "@/utils/appUtil";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -309,27 +309,25 @@ const CreateContractForm = forwardRef<
       [handleSubmit, setError, roomData],
     );
 
+    const isRoomInvalid =
+      !isLoading && (!roomData || roomData.status !== RoomStatus.AVAILABLE);
+
+    // Toast / goBack phải chạy trong effect, không được gọi trong lúc render.
+    useEffect(() => {
+      if (!isRoomInvalid) return;
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: !roomData ? "Không tìm thấy phòng!" : "Phòng không khả dụng!",
+      });
+      navigation.goBack();
+    }, [isRoomInvalid]);
+
     if (isLoading) {
       return <Loading />;
     }
 
-    if (!roomData) {
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Không tìm thấy phòng!",
-      });
-      navigation.goBack();
-      return null;
-    }
-
-    if (roomData.status !== RoomStatus.AVAILABLE) {
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Phòng không khả dụng!",
-      });
-      navigation.goBack();
+    if (!roomData || isRoomInvalid) {
       return null;
     }
 
@@ -378,10 +376,7 @@ const CreateContractForm = forwardRef<
             control={control}
             name="contractClientLandlord.name"
             rules={{ required: "Vui lòng nhập tên người thuê" }}
-            render={({
-              field: { onChange, value },
-              fieldState: { error },
-            }) => (
+            render={({ field: { onChange, value }, fieldState: { error } }) => (
               <Input
                 label="Tên người thuê"
                 value={value}
@@ -397,10 +392,7 @@ const CreateContractForm = forwardRef<
             control={control}
             name="contractClientLandlord.phoneNumber"
             rules={{ required: "Vui lòng nhập số điện thoại người thuê" }}
-            render={({
-              field: { onChange, value },
-              fieldState: { error },
-            }) => (
+            render={({ field: { onChange, value }, fieldState: { error } }) => (
               <Input
                 label="Số điện thoại người thuê"
                 value={value}
@@ -419,10 +411,7 @@ const CreateContractForm = forwardRef<
             control={control}
             name="contractClientLandlord.idCardNumber"
             rules={{ required: "Vui lòng nhập CCCD/CMND người thuê" }}
-            render={({
-              field: { onChange, value },
-              fieldState: { error },
-            }) => (
+            render={({ field: { onChange, value }, fieldState: { error } }) => (
               <Input
                 label="CCCD/CMND người thuê"
                 value={value}
@@ -476,10 +465,7 @@ const CreateContractForm = forwardRef<
             control={control}
             name="startDate"
             rules={{ required: "Vui lòng chọn ngày bắt đầu" }}
-            render={({
-              field: { onChange, value },
-              fieldState: { error },
-            }) => (
+            render={({ field: { onChange, value }, fieldState: { error } }) => (
               <DatePicker
                 value={value}
                 label="Ngày bắt đầu"
@@ -497,10 +483,7 @@ const CreateContractForm = forwardRef<
           <Controller
             control={control}
             name="endDate"
-            render={({
-              field: { onChange, value },
-              fieldState: { error },
-            }) => (
+            render={({ field: { onChange, value }, fieldState: { error } }) => (
               <DatePicker
                 label="Ngày kết thúc (tùy chọn)"
                 value={value}
@@ -523,10 +506,7 @@ const CreateContractForm = forwardRef<
             control={control}
             name="rentAmountAgreed"
             rules={{ required: "Vui lòng nhập tiền thuê hàng tháng" }}
-            render={({
-              field: { onChange, value },
-              fieldState: { error },
-            }) => {
+            render={({ field: { onChange, value }, fieldState: { error } }) => {
               return (
                 <Input
                   type="number"
@@ -565,10 +545,7 @@ const CreateContractForm = forwardRef<
             control={control}
             name="paymentDueDay"
             rules={{ required: "Vui lòng nhập ngày thu tiền hàng tháng" }}
-            render={({
-              field: { onChange, value },
-              fieldState: { error },
-            }) => (
+            render={({ field: { onChange, value }, fieldState: { error } }) => (
               <Input
                 label="Ngày thu tiền hàng tháng"
                 value={value?.toString()}
@@ -591,10 +568,7 @@ const CreateContractForm = forwardRef<
             control={control}
             name="depositAmountPaid"
             rules={{ required: "Vui lòng nhập tiền cọc" }}
-            render={({
-              field: { onChange, value },
-              fieldState: { error },
-            }) => (
+            render={({ field: { onChange, value }, fieldState: { error } }) => (
               <Input
                 label="Tiền cọc"
                 value={value ? formatCurrency(value.toString()) : ""}
@@ -613,7 +587,11 @@ const CreateContractForm = forwardRef<
         <FormSection
           title="Dịch vụ"
           icon="flash-outline"
-          caption={contractServices.length > 0 ? `${contractServices.length} dịch vụ` : undefined}
+          caption={
+            contractServices.length > 0
+              ? `${contractServices.length} dịch vụ`
+              : undefined
+          }
           action={
             <AddButton
               label="Thêm"
@@ -621,59 +599,63 @@ const CreateContractForm = forwardRef<
               onPress={handleAddService}
               accessibilityLabel="Thêm dịch vụ"
             />
-            }
-          >
-            {contractServices.length === 0 ? (
-              <View style={styles.emptyRow}>
-                <Ionicons name="construct-outline" size={18} color={uiColors.textSubtle} />
-                <Text style={[uiType.caption, styles.flex]}>
-                  Chưa có dịch vụ nào — hãy tạo thêm trong cập nhật tòa nhà.
-                </Text>
-              </View>
-            ) : (
-              <>
-                  {contractServices.map((service, index) => (
-                    <Controller
-                      key={service.id || generateId()}
-                      control={control}
-                      name={`contractServices.${index}`}
-                      render={({ field: { value } }) => (
-                        <ServiceItem
-                          key={`service-item-${service.fieldId}`}
-                          service={service}
-                          onDelete={() => {
-                            Alert.alert(
-                              "Xóa dịch vụ",
-                              "Bạn có chắc chắn muốn xóa dịch vụ này không?",
-                              [
-                                {
-                                  text: "Hủy",
-                                  style: "cancel",
-                                },
-                                {
-                                  text: "Xóa",
-                                  style: "destructive",
-                                  onPress: () => {
-                                    remove(index);
-                                  },
-                                },
-                              ],
-                            );
-                          }}
-                          index={index}
-                          onEdit={() =>
-                            openContractServiceForm(
-                              value as ContractServiceDetailResponse,
-                              index,
-                            )
-                          }
-                          onChange={(service) => update(index, service)}
-                        />
-                      )}
+          }
+        >
+          {contractServices.length === 0 ? (
+            <View style={styles.emptyRow}>
+              <Ionicons
+                name="construct-outline"
+                size={18}
+                color={uiColors.textSubtle}
+              />
+              <Text style={[uiType.caption, styles.flex]}>
+                Chưa có dịch vụ nào — hãy tạo thêm trong cập nhật tòa nhà.
+              </Text>
+            </View>
+          ) : (
+            <>
+              {contractServices.map((service, index) => (
+                <Controller
+                  key={service.id || generateId()}
+                  control={control}
+                  name={`contractServices.${index}`}
+                  render={({ field: { value } }) => (
+                    <ServiceItem
+                      key={`service-item-${service.fieldId}`}
+                      service={service}
+                      onDelete={() => {
+                        Alert.alert(
+                          "Xóa dịch vụ",
+                          "Bạn có chắc chắn muốn xóa dịch vụ này không?",
+                          [
+                            {
+                              text: "Hủy",
+                              style: "cancel",
+                            },
+                            {
+                              text: "Xóa",
+                              style: "destructive",
+                              onPress: () => {
+                                remove(index);
+                              },
+                            },
+                          ],
+                        );
+                      }}
+                      index={index}
+                      onEdit={() =>
+                        openContractServiceForm(
+                          value as ContractServiceDetailResponse,
+                          index,
+                        )
+                      }
+                      onChange={(service) => update(index, service)}
                     />
-                  ))}
-              </>
-            )}
+                  )}
+                />
+              ))}
+            </>
+          )}
         </FormSection>
 
         <FormSection title="Điều khoản bổ sung" icon="document-text-outline">

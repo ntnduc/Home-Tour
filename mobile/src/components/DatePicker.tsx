@@ -1,14 +1,14 @@
-import { tokens, uiColors, uiType, uiWeight } from '@/theme';
-import { isAndroidSystem } from '@/utils/appUtil';
-import { formatDate, getCurrentDate } from '@/utils/dateUtil';
-import { Ionicons } from '@expo/vector-icons';
-import { BottomSheetView } from '@gorhom/bottom-sheet';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { FieldError, FieldLabel, fieldColors, fieldStyles } from './FormField';
-import { useGlobalAppSheet } from './GlobalAppSheet';
-import PressableScale from './PressableScale';
+import { tokens, uiColors, uiType, uiWeight } from "@/theme";
+import { isAndroidSystem } from "@/utils/appUtil";
+import { formatDate, getCurrentDate } from "@/utils/dateUtil";
+import { Ionicons } from "@expo/vector-icons";
+import { BottomSheetView } from "@gorhom/bottom-sheet";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { FieldError, FieldLabel, fieldColors, fieldStyles } from "./FormField";
+import { useGlobalAppSheet } from "./GlobalAppSheet";
+import PressableScale from "./PressableScale";
 
 export interface DatePickerIconProps {
   name?: keyof typeof Ionicons.glyphMap;
@@ -37,12 +37,12 @@ const DatePicker: React.FC<DatePickerProps> = ({
   label,
   value,
   onChange,
-  placeholder = 'Chọn ngày',
+  placeholder = "Chọn ngày",
   error,
   required = false,
   disabled = false,
   inputStyles,
-  icon = 'calendar',
+  icon = "calendar",
   iconProps,
   onClear,
   showClear = true,
@@ -78,16 +78,16 @@ const DatePicker: React.FC<DatePickerProps> = ({
     openAppSheet(
       <BottomSheetView
         style={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
         }}
       >
         <DateTimePicker
           style={{
-            width: '100%',
-            height: '100%',
+            width: "100%",
+            height: "100%",
           }}
           value={initialValue ? new Date(initialValue) : new Date()}
           mode="date"
@@ -95,7 +95,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
           display="spinner"
           maximumDate={maxDate}
           minimumDate={minDate}
-          onChange={(event, date) => {
+          onValueChange={(event, date) => {
             if (date) {
               setCurrentValue(date);
               pickerValueRef.current = date;
@@ -105,11 +105,15 @@ const DatePicker: React.FC<DatePickerProps> = ({
       </BottomSheetView>,
       {
         // snapPoints: [300],
-        snapPoints: ['35%'],
+        snapPoints: ["35%"],
         header: {
           element: (
             <View style={styles.sheetHeader}>
-              <PressableScale onPress={closeAppSheet} hitSlop={8} style={styles.sheetAction}>
+              <PressableScale
+                onPress={closeAppSheet}
+                hitSlop={8}
+                style={styles.sheetAction}
+              >
                 <Text style={styles.sheetCancel}>Hủy</Text>
               </PressableScale>
               <Text style={uiType.section}>Chọn ngày</Text>
@@ -148,21 +152,21 @@ const DatePicker: React.FC<DatePickerProps> = ({
     return (
       <DateTimePicker
         style={{
-          width: '100%',
-          height: '100%',
+          width: "100%",
+          height: "100%",
         }}
         value={value ? new Date(value) : new Date()}
         mode="date"
         locale="vi-VN"
         maximumDate={maxDate}
         minimumDate={minDate}
-        positiveButton={{ label: 'Xác nhận', textColor: tokens.colors.primary }}
-        negativeButton={{ label: 'Hủy', textColor: uiColors.textMuted }}
+        positiveButton={{ label: "Xác nhận", textColor: tokens.colors.primary }}
+        negativeButton={{ label: "Hủy", textColor: uiColors.textMuted }}
         onChange={(event, date) => {
-          if (event.type === 'dismissed') {
+          if (event.type === "dismissed") {
             setIsOpen(false);
           }
-          if (event.type === 'set') {
+          if (event.type === "set") {
             if (date) {
               onChange?.(date);
             }
@@ -203,7 +207,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
             style={[fieldStyles.text, !value && styles.placeholder]}
             numberOfLines={1}
           >
-            {value ? formatDate(value?.toString() ?? '') : placeholder}
+            {value ? formatDate(value?.toString() ?? "") : placeholder}
           </Text>
         </PressableScale>
         {!!value && showClear && !disabled && !required && (
@@ -226,8 +230,8 @@ const DatePicker: React.FC<DatePickerProps> = ({
 const styles = StyleSheet.create({
   trigger: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
     paddingVertical: 12,
   },
@@ -235,10 +239,10 @@ const styles = StyleSheet.create({
     color: fieldColors.placeholder,
   },
   sheetHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
     height: 60,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
@@ -255,7 +259,7 @@ const styles = StyleSheet.create({
   sheetDone: {
     paddingHorizontal: 16,
     height: 36,
-    justifyContent: 'center',
+    justifyContent: "center",
     borderRadius: 999,
     backgroundColor: tokens.colors.primary,
   },
