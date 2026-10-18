@@ -1,114 +1,59 @@
 /**
- * Room card for RoomListScreen (Modern Minimalist).
+ * Room card — Modern Minimalist redesign with compact layout and action hierarchy.
  *
  * ```
- * ┌───────────────────────────────────────────── (3) ┐ CardComponent · CountBadge = pending tasks
- * │ ⚠ Phòng có công việc quá hạn…                    │ NoticeBanner (overdue only)
- * │ P.101                                  (✎)(🗑)   │ title + IconButton actions
- * │ Nhà A                                            │ description
- * │ 3.500.000đ/tháng                                 │ price (primary)
- * │ Người thuê ··················· Nguyễn A          │ DisplayField rows
- * │ Trạng thái ··················· ● Đang hiệu lực   │ StatusBadge
- * │ [ Thu tiền ] [ Tạo hoá đơn ]                     │ Button (soft · tone by severity)
- * │ ───────── Hành động thêm ⌄ ─────────             │ animated secondary panel
- * └──────────────────────────────────────────────────┘
+ * ┌───────────────────────────────────────┐ Card padding="none" · body padding 16 · gap 12
+ * │ ⚠ Phòng có công việc quá hạn…         │ NoticeBanner (overdue only)
+ * │ [● Đang thuê] [⚡ 3]          (✎) (🗑) │ TOP: StatusBadge sm + CountBadge md icon · IconButton sm ×2
+ * │ P.101                                  │ name 18/24 bold −0.3 ink, 1 line
+ * │ ▣ Nhà A                                │ building icon 12 subtle + caption, 1 line
+ * │ 3.500.000đ /tháng                      │ rent 20/26 bold ink −0.3 + caption " /tháng"
+ * │ Phòng góc, ban công…                   │ description caption, max 2 lines
+ * │ ┌ RoomContractTile (ACTIVE only) ─┐   │ nested tile, bg canvas, r16, no shadow
+ * │ │ (👤) Nguyễn A    [● Đang h.lực] │   │
+ * │ │      HĐ #HD-001                 │   │
+ * │ │ ─────────────────────────────── │   │ hairline
+ * │ │ HẠN THANH TOÁN      TỔNG HOÁ ĐƠN│   │ 2 equal columns, eyebrow + values
+ * │ │ 12/10/2026          1.200.000đ  │   │
+ * │ └─────────────────────────────────┘   │
+ * ├──────────────────────────────────────┤ hairline (only if actions)
+ * │ RoomCardActions (primary + secondary) │ padding 16 · gap 10 (moved to RoomCardActions)
+ * └───────────────────────────────────────┘
  * ```
  */
-import Button, { ButtonVariant } from "@/components/Button";
+import Card from "@/components/Card";
 import CountBadge from "@/components/CountBadge";
-import DisplayField from "@/components/DisplayField";
+import IconButton from "@/components/IconButton";
 import NoticeBanner from "@/components/NoticeBanner";
-import PressableScale from "@/components/PressableScale";
 import StatusBadge from "@/components/StatusBadge";
-import CardComponent from "@/screens/common/CardComponent";
 import { tokens, uiColors, uiType, uiWeight } from "@/theme";
-import { CONTRACT_STATUS_BADGE, ContractStatus } from "@/types/contract";
-import { RoomAction, RoomActionType, RoomListResponse } from "@/types/room";
-import { formatDate } from "@/utils/dateUtil";
+import { ContractStatus } from "@/types/contract";
+import { RoomAction, RoomListResponse } from "@/types/room";
+import { formatCurrency } from "@/utils/appUtil";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
+import { RootStackParamList } from "@/navigation/types";
+import { ROOM_STATUS_BADGE } from "@/constant/room.constant";
+import { CARD_ACTION_PRESETS } from "@/components/CardActionsPresets";
+import RoomCardActions from "./RoomCardActions";
+import RoomContractTile from "./RoomContractTile";
 
-type Props = {
+type RoomCardItemProps = {
   item: RoomListResponse;
-  navigation: any;
-};
-
-type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
-
-const ROOM_ACTION_ICONS: Record<RoomActionType, IoniconName> = {
-  INVOICE_PAYMENT: "card-outline",
-  CREATE_INVOICE: "receipt-outline",
-  CONFIRM_CONTRACT: "checkmark-circle-outline",
-  CONFIRM_DEPOSIT: "cash-outline",
-  RENEW_CONTRACT: "refresh-outline",
-  CREATE_CONTRACT: "document-text-outline",
-  VIEW_CONTRACT: "document-outline",
-  TERMINATE_CONTRACT: "close-circle-outline",
+  navigation: NativeStackNavigationProp<RootStackParamList>;
 };
 
 const DEFAULT_OVERDUE_ALERT_MESSAGE = "Phòng có công việc quá hạn cần xử lý";
 
-/** Action severity → button variant. */
-const ACTION_VARIANT: Record<RoomAction["severity"], ButtonVariant> = {
-  overdue: "dangerSoft",
-  warning: "warningSoft",
-  normal: "soft",
-};
-
-/** Due-date color: overdue → error · within 3 days → warning · otherwise default. */
-const getDueDateColor = (endDate: string | Date) => {
-  const due = new Date(endDate);
-  const now = new Date();
-  if (due < now) return tokens.colors.error;
-  if (due <= new Date(new Date().setDate(now.getDate() + 3))) return tokens.palette.amber[600];
-  return uiColors.ink;
-};
-
-const RoomCardItemComponent = ({ item, navigation }: Props) => {
-  const [isSecondaryExpanded, setIsSecondaryExpanded] = useState(false);
-  const [secondaryPanelHeight, setSecondaryPanelHeight] = useState(0);
-  const chevronAnim = useRef(new Animated.Value(0)).current;
-  const expandAnim = useRef(new Animated.Value(0)).current;
-
+const RoomCardItemComponent = ({ item, navigation }: RoomCardItemProps) => {
   const contractActive = item.contracts?.find(
     (contract) => contract.status === ContractStatus.ACTIVE,
   );
 
-  const sortedActions = useMemo(
-    () =>
-      [...(item.actions ?? [])].sort(
-        (actionA, actionB) => (actionA.priority ?? 0) - (actionB.priority ?? 0),
-      ),
-    [item.actions],
-  );
-
-  const primaryActions = useMemo(
-    () => sortedActions.filter((action) => action.primary),
-    [sortedActions],
-  );
-
-  const secondaryActions = useMemo(
-    () => sortedActions.filter((action) => !action.primary),
-    [sortedActions],
-  );
-
   const pendingTaskCount = item.pendingTaskCount ?? 0;
   const hasOverdueAlert = item.hasOverdueAlert ?? false;
-
-  useEffect(() => {
-    setIsSecondaryExpanded(false);
-    chevronAnim.setValue(0);
-    expandAnim.setValue(0);
-  }, [chevronAnim, expandAnim, item.id]);
-
-  useEffect(() => {
-    if (secondaryActions.length === 0 && isSecondaryExpanded) {
-      setIsSecondaryExpanded(false);
-      chevronAnim.setValue(0);
-      expandAnim.setValue(0);
-    }
-  }, [chevronAnim, expandAnim, isSecondaryExpanded, secondaryActions.length]);
 
   const handleActionPress = (action: RoomAction) => {
     const payload = action.payload ?? {};
@@ -153,165 +98,119 @@ const RoomCardItemComponent = ({ item, navigation }: Props) => {
     }
   };
 
-  const toggleSecondaryActions = () => {
-    const nextValue = !isSecondaryExpanded;
-
-    setIsSecondaryExpanded(nextValue);
-    Animated.parallel([
-      Animated.timing(expandAnim, {
-        toValue: nextValue ? 1 : 0,
-        duration: 260,
-        useNativeDriver: false,
-      }),
-      Animated.timing(chevronAnim, {
-        toValue: nextValue ? 1 : 0,
-        duration: 220,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  const chevronRotate = chevronAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "180deg"],
-  });
-
-  const secondaryPanelAnimatedHeight = expandAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, secondaryPanelHeight],
-  });
-
-  const secondaryPanelTranslateY = expandAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-6, 0],
-  });
-
-  const renderActionButton = (action: RoomAction, index: number) => (
-    <Button
-      key={`${action.type}-${action.priority}-${index}`}
-      label={action.label}
-      icon={ROOM_ACTION_ICONS[action.type]}
-      variant={ACTION_VARIANT[action.severity] ?? "soft"}
-      size="sm"
-      block={action.primary}
-      onPress={() => handleActionPress(action)}
-    />
-  );
+  const statusBadge = ROOM_STATUS_BADGE[item.status] ?? ROOM_STATUS_BADGE.UNAVAILABLE;
 
   return (
-    <View>
-      <CardComponent
-        style={hasOverdueAlert ? styles.cardOverdue : undefined}
-        topContent={
-          hasOverdueAlert ? (
-            <NoticeBanner
-              tone="error"
-              icon="warning-outline"
-              message={item.overdueAlertMessage || DEFAULT_OVERDUE_ALERT_MESSAGE}
+    <Card
+      padding="none"
+      elevation="soft"
+      style={hasOverdueAlert ? styles.cardOverdue : undefined}
+    >
+      {/* Card body */}
+      <View style={styles.body}>
+        {/* Overdue banner */}
+        {hasOverdueAlert && (
+          <NoticeBanner
+            tone="error"
+            icon="warning-outline"
+            message={item.overdueAlertMessage || DEFAULT_OVERDUE_ALERT_MESSAGE}
+          />
+        )}
+
+        {/* Top row: status badge + count badge + actions */}
+        <View style={styles.topRow}>
+          <View style={styles.badgeCluster}>
+            <StatusBadge
+              label={statusBadge.label}
+              tone={statusBadge.tone}
+              size="sm"
             />
-          ) : undefined
-        }
-        title={item.name}
-        description={item.property?.name}
-        actions={["edit", "delete"]}
-        onActionPress={(key) => {
-          if (key === "edit") {
-            navigation.navigate("UpdateRoom", { roomId: item.id });
-          }
-        }}
-      >
-        <View style={styles.content}>
-          <Text style={styles.price}>{item.rentAmount?.toLocaleString() ?? ""}đ/tháng</Text>
-          {item.description ? <Text style={uiType.caption}>{item.description}</Text> : null}
-
-          {contractActive && (
-            <View style={styles.infoBlock}>
-              <DisplayField compact label="Người thuê" value={item.landlordClient || "N/A"} strong />
-              <DisplayField compact label="Hợp đồng" value={`#${contractActive.code}`} strong />
-              <DisplayField
-                compact
-                label="Trạng thái"
-                value={
-                  <StatusBadge
-                    size="sm"
-                    label={CONTRACT_STATUS_BADGE[contractActive.status].label}
-                    tone={CONTRACT_STATUS_BADGE[contractActive.status].tone}
-                  />
-                }
+            {pendingTaskCount > 0 && (
+              <CountBadge
+                count={pendingTaskCount}
+                tone="alert"
+                size="md"
+                icon={hasOverdueAlert ? "flame" : "flash"}
               />
-              {contractActive.endDate && (
-                <DisplayField
-                  compact
-                  label="Hạn thanh toán"
-                  value={formatDate(contractActive.endDate)}
-                  strong
-                  valueStyle={{ color: getDueDateColor(contractActive.endDate) }}
-                />
-              )}
-              {contractActive.id && (
-                <DisplayField
-                  compact
-                  label="Tổng hoá đơn"
-                  value={`${contractActive.depositAmountPaid.toLocaleString()}đ`}
-                  strong
-                  valueStyle={styles.amount}
-                />
-              )}
-            </View>
-          )}
+            )}
+          </View>
 
-          {primaryActions.length > 0 && (
-            <View style={styles.actionsRow}>{primaryActions.map(renderActionButton)}</View>
-          )}
-
-          {secondaryActions.length > 0 && (
-            <View>
-              <View style={styles.moreRow}>
-                <View style={styles.moreDivider} />
-                <PressableScale
-                  onPress={toggleSecondaryActions}
-                  scaleTo={0.96}
-                  hitSlop={8}
-                  accessibilityRole="button"
-                  accessibilityState={{ expanded: isSecondaryExpanded }}
-                  style={styles.moreToggle}
-                >
-                  <Text style={styles.moreToggleText}>Hành động thêm</Text>
-                  <Animated.View style={{ transform: [{ rotate: chevronRotate }] }}>
-                    <Ionicons name="chevron-down" size={16} color={uiColors.textMuted} />
-                  </Animated.View>
-                </PressableScale>
-                <View style={styles.moreDivider} />
-              </View>
-
-              <Animated.View
-                style={[
-                  styles.secondaryClip,
-                  { height: secondaryPanelAnimatedHeight, opacity: expandAnim },
-                ]}
-                pointerEvents={isSecondaryExpanded ? "auto" : "none"}
-              >
-                <Animated.View
-                  style={[
-                    styles.secondaryMeasure,
-                    { transform: [{ translateY: secondaryPanelTranslateY }] },
-                  ]}
-                  onLayout={(event) => {
-                    const measuredHeight = event.nativeEvent.layout.height;
-                    if (measuredHeight > 0 && measuredHeight !== secondaryPanelHeight) {
-                      setSecondaryPanelHeight(measuredHeight);
-                    }
-                  }}
-                >
-                  <View style={styles.actionsWrap}>{secondaryActions.map(renderActionButton)}</View>
-                </Animated.View>
-              </Animated.View>
-            </View>
-          )}
+          <View style={styles.iconCluster}>
+            <IconButton
+              icon={CARD_ACTION_PRESETS.edit.icon}
+              onPress={() =>
+                navigation.navigate("UpdateRoom", { roomId: item.id, room: item })
+              }
+              accessibilityLabel="Sửa phòng"
+              size="sm"
+              tone={CARD_ACTION_PRESETS.edit.tone}
+            />
+            <IconButton
+              icon={CARD_ACTION_PRESETS.delete.icon}
+              onPress={() => {
+                // No-op (existing behavior)
+              }}
+              accessibilityLabel="Xoá phòng"
+              size="sm"
+              tone={CARD_ACTION_PRESETS.delete.tone}
+            />
+          </View>
         </View>
-      </CardComponent>
-      <CountBadge count={pendingTaskCount} tone="alert" style={styles.pendingBadge} />
-    </View>
+
+        {/* Name block (room name + building with icon) */}
+        <View style={styles.nameBlock}>
+          {/* Room name (18/24 bold −0.3) */}
+          <Text style={styles.roomName} numberOfLines={1}>
+            {item.name}
+          </Text>
+
+          {/* Building name with icon (if present) */}
+          {item.property?.name ? (
+            <View style={styles.buildingRow}>
+              <Ionicons name="business-outline" size={12} color={uiColors.textSubtle} />
+              <Text style={[uiType.caption, styles.buildingText]} numberOfLines={1}>
+                {item.property.name}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+
+        {/* Rent (20/26 bold −0.3 + caption suffix) */}
+        <View style={styles.rentRow}>
+          <Text style={styles.rentValue}>
+            {formatCurrency(item.rentAmount ?? 0)}đ
+          </Text>
+          <Text style={uiType.caption}>/tháng</Text>
+        </View>
+
+        {/* Description (caption, max 2 lines) */}
+        {item.description ? (
+          <Text style={[uiType.caption, styles.description]} numberOfLines={2}>
+            {item.description}
+          </Text>
+        ) : null}
+
+        {/* Contract tile (only if ACTIVE contract) */}
+        {contractActive && (
+          <RoomContractTile
+            contract={contractActive}
+            tenantName={item.landlordClient || "N/A"}
+          />
+        )}
+      </View>
+
+      {/* Divider (only if actions exist) */}
+      {(item.actions ?? []).length > 0 && (
+        <View style={styles.divider} />
+      )}
+
+      {/* Actions section (moved to RoomCardActions component) */}
+      <RoomCardActions
+        actions={item.actions ?? []}
+        onActionPress={handleActionPress}
+        resetKey={item.id}
+      />
+    </Card>
   );
 };
 
@@ -320,67 +219,61 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: tokens.colors.errorSurface,
   },
-  content: {
+  body: {
+    padding: 16,
     gap: 12,
   },
-  price: {
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: uiWeight.bold,
-    color: tokens.colors.primary,
-  },
-  infoBlock: {
-    gap: 8,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: uiColors.hairline,
-  },
-  amount: {
-    color: tokens.colors.primary,
-  },
-  actionsRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  actionsWrap: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  moreRow: {
+  topRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
-  moreDivider: {
+  badgeCluster: {
     flex: 1,
-    height: 1,
-    backgroundColor: uiColors.hairline,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
-  moreToggle: {
+  iconCluster: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  nameBlock: {
+    gap: 2,
+  },
+  roomName: {
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: uiWeight.bold,
+    letterSpacing: -0.3,
+    color: uiColors.ink,
+  },
+  buildingRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    paddingVertical: 4,
   },
-  moreToggleText: {
-    ...uiType.caption,
-    fontWeight: uiWeight.semibold,
+  buildingText: {
+    flex: 1,
   },
-  secondaryClip: {
-    overflow: "hidden",
+  rentRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 2,
   },
-  secondaryMeasure: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: 0,
-    paddingTop: 10,
+  rentValue: {
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: uiWeight.bold,
+    letterSpacing: -0.3,
+    color: uiColors.ink,
   },
-  pendingBadge: {
-    position: "absolute",
-    top: -6,
-    right: -4,
+  description: {
+    color: uiColors.textMuted,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: uiColors.hairline,
   },
 });
 

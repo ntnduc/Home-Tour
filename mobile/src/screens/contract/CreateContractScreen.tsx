@@ -1,3 +1,4 @@
+import ScreenHeader from "@/components/ScreenHeader";
 import { ChildStep, ParrentStep } from "@/components/StepByStep";
 import { RootStackParamList } from "@/navigation/types";
 import { uiColors } from "@/theme";
@@ -8,7 +9,7 @@ import {
 import { RoomServiceDetailResponse } from "@/types/room";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useRef, useState } from "react";
-import { View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import ConfirmCreateContract, {
   ConfirmCreateContractRef,
 } from "./components/ConfirmCreateContract";
@@ -64,7 +65,12 @@ const CreateContractScreen = ({
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: uiColors.canvas }}>
+    <SafeAreaView edges={[]} style={{ flex: 1, backgroundColor: uiColors.canvas }}>
+      <ScreenHeader
+        title="Tạo hợp đồng mới"
+        onBack={() => navigation.goBack()}
+        insetTop
+      />
       <ParrentStep activeStep={activeStep} isComplete={activeStep === 2}>
         <ChildStep label="Thông tin" hideButtonRow={true}>
           <CreateContractForm
@@ -129,6 +135,7 @@ const CreateContractScreen = ({
           }}
         >
           <ContractDetailScreen
+            embedded
             navigation={navigation as any}
             route={{
               params: {
@@ -148,7 +155,7 @@ const CreateContractScreen = ({
           )}
         </ChildStep> */}
       </ParrentStep>
-    </View>
+    </SafeAreaView>
   );
 };
 

@@ -11,6 +11,15 @@
  * │  └───────────────────────────────────────┘    │
  * │  children (filters, chips…)                   │
  * └──────────────────────────────────────────────┘ ← soft shadow grows with `scrollY`
+ *
+ * `compact` variant (dense lists):
+ * ┌──────────────────────────────────────────────┐
+ * │  ░ soft blurred half-circle orbs (decor) ░    │  paddingTop 4 · paddingBottom 12 · gap 10
+ * │  Title            [action]                    │  title lineHeight 30 (fontSize stays 24)
+ * │  ┌────────────── Search ─────────────────┐    │  titleRow alignItems center
+ * │  └───────────────────────────────────────┘    │
+ * │  children (filters, chips…)                   │
+ * └──────────────────────────────────────────────┘
  * ```
  *
  * Use with `SafeAreaView edges={[]}` (the header pads the status bar itself when
@@ -29,6 +38,7 @@ import Animated, {
   useAnimatedStyle,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import IconButton from "./IconButton";
 import SearchField from "./SearchField";
 
 export interface ScreenHeaderSearch {
@@ -43,6 +53,11 @@ export interface ScreenHeaderProps {
   subtitle?: string;
   /** Right-aligned element next to the title (AddButton, IconButton…). */
   action?: ReactNode;
+  /**
+   * When set, a leading back button (chevron) is shown before the title —
+   * used by stack screens whose native header is hidden.
+   */
+  onBack?: () => void;
   search?: ScreenHeaderSearch;
   /** Body scroll offset — drives the bottom separator shadow. */
   scrollY?: SharedValue<number>;
@@ -51,6 +66,8 @@ export interface ScreenHeaderProps {
    * false inside the stack (where the native header already covers it).
    */
   insetTop?: boolean;
+  /** Tighter vertical rhythm for dense list screens (default false). */
+  compact?: boolean;
   children?: ReactNode;
 }
 
@@ -63,9 +80,11 @@ const ScreenHeader = ({
   title,
   subtitle,
   action,
+  onBack,
   search,
   scrollY,
   insetTop,
+  compact,
   children,
 }: ScreenHeaderProps) => {
   const insets = useSafeAreaInsets();
@@ -96,18 +115,28 @@ const ScreenHeader = ({
           <BlurView
             intensity={38}
             tint="light"
-            experimentalBlurMethod="dimezisBlurView"
+            blurMethod="dimezisBlurView"
             style={StyleSheet.absoluteFill}
           />
         </View>
 
-        <View style={styles.content}>
-          <View style={styles.titleRow}>
+        <View style={[styles.content, compact && styles.contentCompact]}>
+          <View style={[styles.titleRow, compact && styles.titleRowCompact]}>
+            {onBack && (
+              <IconButton
+                icon="chevron-back"
+                onPress={onBack}
+                accessibilityLabel="Quay lại"
+                style={styles.back}
+              />
+            )}
             <View style={styles.titleCol}>
-              <Text style={uiType.title} numberOfLines={1}>
+              <Text style={[uiType.title, compact && styles.titleCompact]} numberOfLines={1}>
                 {title}
               </Text>
-              {subtitle !== undefined && <Text style={uiType.caption}>{subtitle}</Text>}
+              {subtitle !== undefined && (
+                <Text style={uiType.caption}>{subtitle}</Text>
+              )}
             </View>
             {action}
           </View>
@@ -146,14 +175,29 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     gap: 14,
   },
+  contentCompact: {
+    paddingTop: 4,
+    paddingBottom: 12,
+    gap: 10,
+  },
   titleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: 12,
   },
+  titleRowCompact: {
+    alignItems: "center",
+  },
   titleCol: {
     flex: 1,
+  },
+  // Center the 40pt back button against the title's first line (lh 36).
+  back: {
+    marginTop: -2,
+  },
+  titleCompact: {
+    lineHeight: 30,
   },
   orb: {
     position: "absolute",

@@ -134,12 +134,12 @@ export default function App() {
                 <Stack.Screen
                   name="CreateProperty"
                   component={CreatePropertyScreen}
-                  options={{ title: "Tạo Tài Sản Mới" }}
+                  options={{ headerShown: false }}
                 />
                 <Stack.Screen
                   name="UpdateProperty"
                   component={UpdatePropertyScreen}
-                  options={{ title: "Cập Nhật Tài Sản" }}
+                  options={{ headerShown: false }}
                 />
 
                 {/* Room Management */}
@@ -163,7 +163,7 @@ export default function App() {
                 <Stack.Screen
                   name="UpdateRoom"
                   component={UpdateRoomScreen}
-                  options={{ title: "Cập Nhật Phòng" }}
+                  options={{ headerShown: false }}
                 />
 
                 {/* Tenant Management */}
@@ -197,12 +197,12 @@ export default function App() {
                 <Stack.Screen
                   name="ContractDetail"
                   component={ContractDetailScreen}
-                  options={{ title: "Chi Tiết Hợp Đồng" }}
+                  options={{ headerShown: false }}
                 />
                 <Stack.Screen
                   name="CreateContract"
                   component={CreateContractScreen}
-                  options={{ title: "Tạo Hợp Đồng Mới" }}
+                  options={{ headerShown: false }}
                 />
                 <Stack.Screen
                   name="TerminateContract"

@@ -26,7 +26,10 @@ import ActionButtonBottom from "@/components/ActionButtonBottom";
 import AddButton from "@/components/AddButton";
 import CalculationMethodPicker from "@/components/CalculationMethodPicker";
 import { ComboBox } from "@/components/ComboBox";
+import FormScreen from "@/components/FormScreen";
+import FormSection from "@/components/FormSection";
 import InputBase from "@/components/Input";
+import ScreenHeader from "@/components/ScreenHeader";
 import ServiceSearchInput from "@/components/ServiceSearchInput";
 import { ServiceCalculateMethod } from "@/constant/service.constant";
 import { RootStackParamList } from "@/navigation/types";
@@ -40,11 +43,10 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { Alert, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import PropertyEditSummary from "./components/PropertyEditSummary";
-import FormScreen from "@/components/FormScreen";
-import FormSection from "@/components/FormSection";
-import PropertyServiceItem from "./components/PropertyServiceItem";
 import PropertyFormSkeleton from "./components/PropertyFormSkeleton";
+import PropertyServiceItem from "./components/PropertyServiceItem";
 import { useUpdatePropertyData } from "./hooks/useUpdatePropertyData";
 import { PROP_SPACE, propColors, propType } from "./propertyListStyles";
 
@@ -124,7 +126,22 @@ const UpdatePropertyScreen = ({
     Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin");
   };
 
-  if (isLoading) return <PropertyFormSkeleton />;
+  const header = (
+    <ScreenHeader
+      title="Cập nhật tài sản"
+      // subtitle="Chỉnh sửa thông tin"
+      onBack={() => navigation.goBack()}
+      insetTop
+    />
+  );
+
+  if (isLoading)
+    return (
+      <SafeAreaView edges={[]} style={styles.screen}>
+        {header}
+        <PropertyFormSkeleton />
+      </SafeAreaView>
+    );
 
   const [name, address, numberFloor] = watch([
     "name",
@@ -148,7 +165,9 @@ const UpdatePropertyScreen = ({
   );
 
   return (
-    <FormScreen footer={footer}>
+    <SafeAreaView edges={[]} style={styles.screen}>
+      {header}
+      <FormScreen footer={footer}>
         <PropertyEditSummary
           name={name}
           address={address}
@@ -426,11 +445,16 @@ const UpdatePropertyScreen = ({
             ))
           )}
         </FormSection>
-    </FormScreen>
+      </FormScreen>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: propColors.canvas,
+  },
   fieldRow: {
     flexDirection: "row",
     gap: PROP_SPACE.gap,

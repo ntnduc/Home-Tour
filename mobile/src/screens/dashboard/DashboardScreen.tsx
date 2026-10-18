@@ -1,3 +1,4 @@
+import { useTabBarInset } from "@/navigation/useTabBarInset";
 import { tokens } from "@/theme";
 import { HomepagePropertyOption } from "@/types/homepage";
 import { User } from "@/types/user";
@@ -53,6 +54,7 @@ import { useHomepageData } from "./hooks/useHomepageData";
 const DashboardScreen = () => {
   const navigation = useNavigation<HomeNavigation>();
   const [user, setUser] = useState<User | undefined>(undefined);
+  const tabBarInset = useTabBarInset();
   const scrollRef = useRef<ScrollView>(null);
   const alertsOffsetY = useRef(0);
 
@@ -139,7 +141,7 @@ const DashboardScreen = () => {
       <ScrollView
         ref={scrollRef}
         style={styles.scroll}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: 40 + tabBarInset }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl

@@ -63,20 +63,22 @@ const StatBento = ({
 
   const { rooms } = summary;
   const others = rooms.maintenance + rooms.pendingDeposit + rooms.unavailable;
+  // Note: field is named `count`, not `value` — the Reanimated Babel plugin warns
+  // on any `.value` member expression inside an inline style object (even plain data).
   const segments = [
     {
       key: "occupied",
-      value: rooms.occupied,
+      count: rooms.occupied,
       color: colors.success,
       label: "Đang thuê",
     },
     {
       key: "available",
-      value: rooms.available,
+      count: rooms.available,
       color: palette.amber[400],
       label: "Trống",
     },
-    { key: "others", value: others, color: palette.gray[400], label: "Khác" },
+    { key: "others", count: others, color: palette.gray[400], label: "Khác" },
   ];
 
   return (
@@ -111,13 +113,13 @@ const StatBento = ({
             />
           ) : (
             segments
-              .filter((s) => s.value > 0)
+              .filter((s) => s.count > 0)
               .map((s) => (
                 <View
                   key={s.key}
                   style={[
                     styles.segment,
-                    { flex: s.value, backgroundColor: s.color },
+                    { flex: s.count, backgroundColor: s.color },
                   ]}
                 />
               ))
@@ -127,7 +129,7 @@ const StatBento = ({
           {segments.map((s) => (
             <View key={s.key} style={styles.legendItem}>
               <View style={[styles.dot, { backgroundColor: s.color }]} />
-              <Text style={styles.legendText}>{s.value}</Text>
+              <Text style={styles.legendText}>{s.count}</Text>
             </View>
           ))}
         </View>

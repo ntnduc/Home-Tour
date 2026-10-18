@@ -26,7 +26,10 @@ import ActionButtonBottom from "@/components/ActionButtonBottom";
 import AddButton from "@/components/AddButton";
 import CalculationMethodPicker from "@/components/CalculationMethodPicker";
 import { ComboBox } from "@/components/ComboBox";
+import FormScreen from "@/components/FormScreen";
+import FormSection from "@/components/FormSection";
 import InputBase from "@/components/Input";
+import ScreenHeader from "@/components/ScreenHeader";
 import ServiceSearchInput from "@/components/ServiceSearchInput";
 import { ServiceCalculateMethod } from "@/constant/service.constant";
 import { RootStackParamList } from "@/navigation/types";
@@ -38,9 +41,8 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { Alert, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import PropertyEditSummary from "./components/PropertyEditSummary";
-import FormScreen from "@/components/FormScreen";
-import FormSection from "@/components/FormSection";
 import PropertyFormSkeleton from "./components/PropertyFormSkeleton";
 import PropertyServiceItem from "./components/PropertyServiceItem";
 import { useCreatePropertyData } from "./hooks/useCreatePropertyData";
@@ -120,7 +122,22 @@ const CreatePropertyScreen = ({ navigation }: CreatePropertyScreenProps) => {
     Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin");
   };
 
-  if (isLoading) return <PropertyFormSkeleton />;
+  const header = (
+    <ScreenHeader
+      title="Tạo tài sản"
+      // subtitle="Thêm tài sản mới"
+      onBack={() => navigation.goBack()}
+      insetTop
+    />
+  );
+
+  if (isLoading)
+    return (
+      <SafeAreaView edges={[]} style={styles.screen}>
+        {header}
+        <PropertyFormSkeleton />
+      </SafeAreaView>
+    );
 
   const [name, address, numberFloor, totalRoom] = watch([
     "name",
@@ -145,7 +162,9 @@ const CreatePropertyScreen = ({ navigation }: CreatePropertyScreenProps) => {
   );
 
   return (
-    <FormScreen footer={footer}>
+    <SafeAreaView edges={[]} style={styles.screen}>
+      {header}
+      <FormScreen footer={footer}>
         <PropertyEditSummary
           name={name}
           address={address}
@@ -445,11 +464,16 @@ const CreatePropertyScreen = ({ navigation }: CreatePropertyScreenProps) => {
             ))
           )}
         </FormSection>
-    </FormScreen>
+      </FormScreen>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: propColors.canvas,
+  },
   fieldRow: {
     flexDirection: "row",
     gap: PROP_SPACE.gap,

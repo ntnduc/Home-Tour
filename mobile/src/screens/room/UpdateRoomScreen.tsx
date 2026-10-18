@@ -8,12 +8,13 @@ import Loading from '@/components/Loading';
 import FormScreen from '@/components/FormScreen';
 import FormSection from '@/components/FormSection';
 import IconSquircle from '@/components/IconSquircle';
+import ScreenHeader from '@/components/ScreenHeader';
 import Status from '@/components/Status';
 import { Switch } from '@/components/Switch';
 import CommonUpload from '@/components/Uploadfile';
 import { FileCategory } from '@/components/Uploadfile/fileEnum';
 import { ROOM_STATUS_OPTIONS } from '@/constant/room.constant';
-import { tokens, uiSpace, uiType } from '@/theme';
+import { tokens, uiColors, uiSpace, uiType } from '@/theme';
 import {
   RoomDetailResponse,
   RoomStatus,
@@ -24,6 +25,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 
 type RootStackParamList = {
@@ -99,8 +101,21 @@ const UpdateRoomScreen = ({ navigation, route }: UpdateRoomScreenProps) => {
     });
   };
 
+  const header = (
+    <ScreenHeader
+      title="Cập nhật phòng"
+      onBack={() => navigation.goBack()}
+      insetTop
+    />
+  );
+
   if (isLoading || !defaultValues) {
-    return <Loading />;
+    return (
+      <SafeAreaView edges={[]} style={styles.screen}>
+        {header}
+        <Loading />
+      </SafeAreaView>
+    );
   }
 
   const footer = (
@@ -126,7 +141,9 @@ const UpdateRoomScreen = ({ navigation, route }: UpdateRoomScreenProps) => {
   );
 
   return (
-    <FormScreen footer={footer}>
+    <SafeAreaView edges={[]} style={styles.screen}>
+      {header}
+      <FormScreen footer={footer}>
         {/* Summary: name · rent · status */}
         <Card style={styles.summary}>
           <IconSquircle icon="bed" />
@@ -360,11 +377,16 @@ const UpdateRoomScreen = ({ navigation, route }: UpdateRoomScreenProps) => {
             </Text>
           )}
         </FormSection>
-    </FormScreen>
+      </FormScreen>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: uiColors.canvas,
+  },
   summary: {
     flexDirection: 'row',
     alignItems: 'center',
