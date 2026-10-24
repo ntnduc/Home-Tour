@@ -5,21 +5,33 @@ import {
 } from '@nestjs/common';
 import { RequestContextService } from 'src/common/base/context/request-context.service';
 import { ContractStatus } from 'src/common/enums/contract.enum';
+import { InvoiceStatus } from 'src/common/enums/invoice.enum';
 import { getCurrentDate } from 'src/common/utils';
-import { DataSource, EntityManager, In, SelectQueryBuilder } from 'typeorm';
+import {
+  DataSource,
+  EntityManager,
+  In,
+  Not,
+  SelectQueryBuilder,
+} from 'typeorm';
 import { BaseService } from '../../common/base/crud/base.service';
 import { IBaseService } from '../../common/base/crud/IService';
 import { RoomStatus } from '../../common/enums/room.enum';
 import { AuthService } from '../auth/auth.service';
 import { Client } from '../client/entities/client.entity';
 import { ClientRepository } from '../client/repositories/client.repository';
+import { Invoice } from '../invoice/entities/invoice.entity';
 import { InvoiceService } from '../invoice/invoice.service';
+import { PaymentCreateDto } from '../payment/dto/payment-dto/payment.create.dto';
+import { Payment } from '../payment/entities/payment.entity';
 import { PropertiesServiceRepository } from '../property/repositories/properties-service.repository';
+import { Rooms } from '../property/entities/rooms.entity';
 import { RoomsRepository } from '../property/repositories/rooms.repository';
 import { ServicesRepository } from '../services/repositories/services.repository';
 import { UserRepository } from '../users/repositories/user.repository';
 import { ContractClientCreateDto } from './dto/contract-client-dto/contract-client.create.dto';
 import { ContractChangeStatusDto } from './dto/contract-dto/contract.change.status.dto';
+import { ContractConfirmPaymentDto } from './dto/contract-dto/contract.confirm-payment.dto';
 import { ContractCreateDto } from './dto/contract-dto/contract.create.dto';
 import { ContractDetailDto } from './dto/contract-dto/contract.detail.dto';
 import { ContractListDto } from './dto/contract-dto/contract.list.dto';
@@ -30,6 +42,21 @@ import { ContractChangeLog } from './entities/contract-change-log.entity';
 import { ContractServices } from './entities/contract-services.entity';
 import { Contracts } from './entities/contracts.entity';
 import { ContractsRepository } from './repositories/contracts.repository';
+import {
+  isDateRangeOverlapping,
+  isRoomRentable,
+  resolveCreationOutcome,
+  resolvePaymentConfirmedOutcome,
+  SLOT_BLOCKING_CONTRACT_STATUSES,
+} from './contract-workflow.util';
+
+// Invoice statuses that can still be settled by a payment confirmation
+const PAYABLE_INVOICE_STATUSES = [
+  InvoiceStatus.DRAFT,
+  InvoiceStatus.PENDING,
+  InvoiceStatus.PARTIALLY_PAID,
+  InvoiceStatus.OVERDUE,
+];
 
 @Injectable()
 export class ContractService
@@ -89,8 +116,8 @@ export class ContractService
     const detailDto = new ContractDetailDto();
 
     try {
-      // Kiểm tra phòng có tồn tại và trạng thái AVAILABLE
-      const room = await this.roomsRepository.findOne({
+      // Room must exist (read inside the transaction)
+      const room = await queryRunner.manager.findOne(Rooms, {
         where: { id: createDto.roomId },
       });
 
@@ -98,21 +125,31 @@ export class ContractService
         throw new NotFoundException('Phòng không tồn tại');
       }
 
-      if (room.status !== RoomStatus.AVAILABLE) {
+      // MAINTENANCE / UNAVAILABLE rooms can never be rented
+      if (!isRoomRentable(room.status)) {
         throw new BadRequestException('Phòng đang không sẵn sàng để cho thuê!');
       }
 
-      // TODO: Kiểm tra xem có hợp đồng ACTIVE nào khác cho phòng này không
-      // Thiếu kiểm tra ngày bắt đầu và ngày kết thúc của hợp đồng hiện tại với các hợp đồng khác
-      const activeContractExists = await this.contractsRepository.findOne({
+      // The requested period must not overlap any contract that reserves the room.
+      // A contract without endDate has no confirmed end, so it blocks all later dates.
+      const reservedContracts = await queryRunner.manager.find(Contracts, {
         where: {
           roomId: createDto.roomId,
-          status: ContractStatus.ACTIVE,
+          status: In(SLOT_BLOCKING_CONTRACT_STATUSES),
         },
       });
-
-      if (activeContractExists) {
-        throw new BadRequestException('Phòng đã có hợp đồng đang hoạt động');
+      const requestedRange = {
+        startDate: createDto.startDate,
+        endDate: createDto.endDate,
+      };
+      if (
+        reservedContracts.some((existing) =>
+          isDateRangeOverlapping(existing, requestedRange),
+        )
+      ) {
+        throw new BadRequestException(
+          'Phòng đã có hợp đồng trong khoảng thời gian này',
+        );
       }
 
       if (!createDto.contractClient || createDto.contractClient.length === 0) {
@@ -146,49 +183,36 @@ export class ContractService
         );
       }
 
-      // Tạo hóa đơn nếu hợp đồng là hợp đồng trả trước và đã thanh toán tiền cọc
+      // Create the pre-invoice when payment is required (deposit and/or prepaid rent)
       const invoiceCreateDto =
         this.invoiceService.getPreInvoiceContract(savedContract);
+      const outcome = resolveCreationOutcome({
+        startDate: contractEntity.startDate,
+        now: getCurrentDate(true),
+        requiresPayment: !!invoiceCreateDto,
+      });
+
       if (invoiceCreateDto) {
         const invoice = invoiceCreateDto.getEntity();
         const newInvoice = await queryRunner.manager.save(invoice);
-        detailDto.preInvoiceId = newInvoice.id; // Gán preInvoiceId vào detailDto
+        detailDto.preInvoiceId = newInvoice.id;
         invoice.invoiceItems.forEach((item) => {
           item.invoiceId = newInvoice.id;
         });
         await queryRunner.manager.save(invoice.invoiceItems);
+      }
 
+      await queryRunner.manager.update(
+        'contracts',
+        { id: savedContract.id },
+        { status: outcome.contractStatus },
+      );
+      if (outcome.roomStatus) {
         await queryRunner.manager.update(
-          'contracts',
-          { id: savedContract.id },
-          { status: ContractStatus.WAITING_PAYMENT_INVOICE },
+          'rooms',
+          { id: createDto.roomId },
+          { status: outcome.roomStatus },
         );
-        if (contractEntity.startDate <= getCurrentDate(true)) {
-          await queryRunner.manager.update(
-            'rooms',
-            { id: createDto.roomId },
-            { status: RoomStatus.PENDING_DEPOSIT },
-          );
-        }
-      } else {
-        if (contractEntity.startDate <= getCurrentDate(true)) {
-          await queryRunner.manager.update(
-            'rooms',
-            { id: createDto.roomId },
-            { status: RoomStatus.OCCUPIED },
-          );
-          await queryRunner.manager.update(
-            'contracts',
-            { id: savedContract.id },
-            { status: ContractStatus.ACTIVE },
-          );
-        } else {
-          await queryRunner.manager.update(
-            'contracts',
-            { id: savedContract.id },
-            { status: ContractStatus.PENDING_START },
-          );
-        }
       }
 
       await queryRunner.commitTransaction();
@@ -207,6 +231,111 @@ export class ContractService
     } catch (error) {
       await queryRunner.rollbackTransaction();
       console.error(error);
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  /**
+   * Confirm the first (pre) invoice of a contract as paid and move the contract on:
+   * started -> ACTIVE (+ room OCCUPIED), otherwise PENDING_START until the start date.
+   */
+  async confirmPayment(
+    contractId: string,
+    dto: ContractConfirmPaymentDto = new ContractConfirmPaymentDto(),
+  ): Promise<ContractDetailDto> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const contract = await queryRunner.manager.findOne(Contracts, {
+        where: { id: contractId },
+      });
+      if (!contract) {
+        throw new NotFoundException('Hợp đồng không tồn tại');
+      }
+      if (contract.status !== ContractStatus.WAITING_PAYMENT_INVOICE) {
+        throw new BadRequestException(
+          'Hợp đồng không ở trạng thái chờ xác nhận thanh toán',
+        );
+      }
+
+      // The oldest unpaid invoice of the contract is the pre-invoice
+      const invoice = await queryRunner.manager.findOne(Invoice, {
+        where: {
+          contractId: contract.id,
+          status: In(PAYABLE_INVOICE_STATUSES),
+        },
+        order: { createdAt: 'ASC' },
+      });
+      if (!invoice) {
+        throw new NotFoundException('Không tìm thấy hóa đơn cần thanh toán');
+      }
+
+      const totalAmount = Number(invoice.totalAmount);
+      const remainingAmount = Number(
+        invoice.remainingAmount ?? totalAmount - Number(invoice.paidAmount),
+      );
+
+      if (remainingAmount > 0) {
+        const paymentDto = new PaymentCreateDto();
+        paymentDto.invoiceId = invoice.id;
+        paymentDto.propertyId = invoice.propertyId;
+        paymentDto.amount = remainingAmount;
+        paymentDto.paymentMethod = dto.paymentMethod;
+        paymentDto.notes = dto.notes;
+        await queryRunner.manager.save(Payment, paymentDto.getEntity());
+      }
+
+      await queryRunner.manager.update(Invoice, invoice.id, {
+        paidAmount: totalAmount,
+        remainingAmount: 0,
+        status: InvoiceStatus.PAID,
+      });
+
+      const outcome = resolvePaymentConfirmedOutcome({
+        startDate: contract.startDate,
+        now: getCurrentDate(true),
+      });
+
+      if (outcome.contractStatus === ContractStatus.ACTIVE) {
+        const otherActive = await queryRunner.manager.count(Contracts, {
+          where: {
+            roomId: contract.roomId,
+            status: ContractStatus.ACTIVE,
+            id: Not(contract.id),
+          },
+        });
+        if (otherActive > 0) {
+          throw new BadRequestException(
+            'Không thể kích hoạt hợp đồng vì đã có hợp đồng đang hoạt động cho phòng này',
+          );
+        }
+      }
+
+      await queryRunner.manager.update(Contracts, contract.id, {
+        status: outcome.contractStatus,
+      });
+      if (outcome.roomStatus === RoomStatus.OCCUPIED) {
+        await queryRunner.manager.update(Rooms, contract.roomId, {
+          status: RoomStatus.OCCUPIED,
+        });
+      }
+
+      await this.recordChange(
+        { ...contract, status: outcome.contractStatus } as Contracts,
+        contract,
+        'STATUS_CHANGE',
+        'Xác nhận thanh toán hóa đơn đầu tiên',
+        queryRunner.manager,
+      );
+
+      await queryRunner.commitTransaction();
+      return await this.get(contract.id);
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
       throw error;
     } finally {
       await queryRunner.release();

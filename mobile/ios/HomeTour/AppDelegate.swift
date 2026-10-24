@@ -3,7 +3,7 @@ import React
 import ReactAppDependencyProvider
 
 @main
-class AppDelegate: ExpoAppDelegate, ExpoReactNativeFactoryProvider {
+class AppDelegate: ExpoAppDelegate {
   var window: UIWindow?
 
   var reactNativeDelegate: ExpoReactNativeFactoryDelegate?
@@ -20,7 +20,14 @@ class AppDelegate: ExpoAppDelegate, ExpoReactNativeFactoryProvider {
     reactNativeDelegate = delegate
     reactNativeFactory = factory
 
-    // React Native is started by SceneDelegate (iOS 27 requires the scene life cycle).
+#if os(iOS) || os(tvOS)
+    window = UIWindow(frame: UIScreen.main.bounds)
+    factory.startReactNative(
+      withModuleName: "main",
+      in: window,
+      launchOptions: launchOptions)
+#endif
+
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
@@ -60,7 +67,3 @@ class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
 #endif
   }
 }
-
-// Scene-based life cycle entry point, referenced from Info.plist (UIApplicationSceneManifest).
-@objc(SceneDelegate)
-class SceneDelegate: ExpoAppSceneDelegate {}

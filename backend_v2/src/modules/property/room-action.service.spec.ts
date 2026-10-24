@@ -19,7 +19,7 @@ describe('RoomActionService', () => {
   ): RoomActionSignalInput => ({
     roomId: 'room-1',
     roomStatus: RoomStatus.AVAILABLE,
-    hasIndefiniteActiveContract: false,
+    hasAvailableSlot: true,
     overdueInvoiceCount: 0,
     currentPeriodInvoiceExists: false,
     ...overrides,
@@ -66,7 +66,7 @@ describe('RoomActionService', () => {
         activeContractId: 'contract-active',
         activeContractStartDate: new Date(2026, 8, 1),
         activePaymentDueDay: 25,
-        hasIndefiniteActiveContract: true,
+        hasAvailableSlot: false,
       }),
       now,
     );
@@ -95,7 +95,7 @@ describe('RoomActionService', () => {
         activeContractId: 'contract-active',
         activeContractStartDate: new Date(2026, 8, 1),
         activePaymentDueDay: 25,
-        hasIndefiniteActiveContract: true,
+        hasAvailableSlot: false,
         actionableInvoiceId: 'invoice-overdue',
         actionableInvoiceStatus: InvoiceStatus.OVERDUE,
         overdueInvoiceCount: 1,
@@ -130,7 +130,7 @@ describe('RoomActionService', () => {
         activeContractId: 'contract-active',
         activeContractStartDate: new Date(2026, 8, 1),
         activePaymentDueDay: 5,
-        hasIndefiniteActiveContract: true,
+        hasAvailableSlot: false,
         currentPeriodInvoiceExists: false,
       }),
       now,
@@ -198,7 +198,7 @@ describe('RoomActionService', () => {
         activeContractId: 'contract-active',
         activeContractStartDate: new Date(2026, 8, 1),
         activePaymentDueDay: 5,
-        hasIndefiniteActiveContract: true,
+        hasAvailableSlot: false,
         currentPeriodInvoiceExists: true,
       }),
       now,
@@ -211,34 +211,106 @@ describe('RoomActionService', () => {
     expectSortedAndGrouped(result.actions);
   });
 
-  it('awaitingDepositContractId triggers CONFIRM_DEPOSIT', () => {
+  it('waiting-payment contract with no active contract shows only CONFIRM_PAYMENT', () => {
     const result = service.computeRoomActions(
       buildSignal({
-        pendingContractId: 'contract-pending',
-        awaitingDepositContractId: 'contract-deposit',
+        roomStatus: RoomStatus.PENDING_DEPOSIT,
+        pendingContractId: 'contract-waiting',
+        awaitingPaymentContractId: 'contract-waiting',
+        awaitingPaymentInvoiceId: 'invoice-pre',
+        actionableInvoiceId: 'invoice-pre',
+        actionableInvoiceStatus: InvoiceStatus.DRAFT,
+        hasAvailableSlot: true,
       }),
       now,
     );
 
-    expect(result.actions).toContainEqual(
+    expect(result.actions).toEqual([
       expect.objectContaining({
-        type: RoomActionType.CONFIRM_DEPOSIT,
-        payload: { contractId: 'contract-deposit', roomId: 'room-1' },
+        type: RoomActionType.CONFIRM_PAYMENT,
+        label: 'Xác nhận thanh toán',
+        urgent: true,
+        primary: true,
+        payload: {
+          contractId: 'contract-waiting',
+          invoiceId: 'invoice-pre',
+          roomId: 'room-1',
+        },
       }),
+    ]);
+    expect(result.pendingTaskCount).toBe(1);
+  });
+
+  it('waiting-payment contract next to an active contract keeps active-contract actions but no duplicate confirm/payment actions', () => {
+    const result = service.computeRoomActions(
+      buildSignal({
+        roomStatus: RoomStatus.OCCUPIED,
+        activeContractId: 'contract-active',
+        activeContractStartDate: new Date(2026, 8, 1),
+        activePaymentDueDay: 25,
+        currentPeriodInvoiceExists: true,
+        pendingContractId: 'contract-waiting',
+        awaitingPaymentContractId: 'contract-waiting',
+        awaitingPaymentInvoiceId: 'invoice-pre',
+        actionableInvoiceId: 'invoice-pre',
+        actionableInvoiceStatus: InvoiceStatus.PENDING,
+      }),
+      now,
     );
-    expect(result.pendingTaskCount).toBe(2);
+
+    const types = result.actions.map((action) => action.type);
+    expect(types).toContain(RoomActionType.CONFIRM_PAYMENT);
+    expect(types).toContain(RoomActionType.VIEW_CONTRACT);
+    expect(types).not.toContain(RoomActionType.INVOICE_PAYMENT);
+    expect(types).not.toContain(RoomActionType.CONFIRM_CONTRACT);
     expectSortedAndGrouped(result.actions);
   });
 
-  it('hasIndefiniteActiveContract hides CREATE_CONTRACT', () => {
+  it('PENDING_DEPOSIT room without a waiting contract no longer offers a deposit action', () => {
     const result = service.computeRoomActions(
-      buildSignal({
-        hasIndefiniteActiveContract: true,
-      }),
+      buildSignal({ roomStatus: RoomStatus.PENDING_DEPOSIT }),
+      now,
+    );
+
+    expect(result.actions.map((action) => action.type)).toEqual([
+      RoomActionType.CREATE_CONTRACT,
+    ]);
+  });
+
+  it('hasAvailableSlot = false hides CREATE_CONTRACT (open-ended contract, no end date)', () => {
+    const result = service.computeRoomActions(
+      buildSignal({ hasAvailableSlot: false }),
       now,
     );
 
     expect(result.actions).toEqual([]);
     expect(result.pendingTaskCount).toBe(0);
+  });
+
+  it('occupied room with a fixed-term contract (free slot after it) still offers CREATE_CONTRACT', () => {
+    const result = service.computeRoomActions(
+      buildSignal({
+        roomStatus: RoomStatus.OCCUPIED,
+        activeContractId: 'contract-active',
+        activeContractStartDate: new Date(2026, 8, 1),
+        activePaymentDueDay: 25,
+        currentPeriodInvoiceExists: true,
+        hasAvailableSlot: true,
+      }),
+      now,
+    );
+
+    expect(result.actions.map((action) => action.type)).toContain(
+      RoomActionType.CREATE_CONTRACT,
+    );
+  });
+
+  it('missing view row (undefined hasAvailableSlot) hides CREATE_CONTRACT', () => {
+    const result = service.computeRoomActions(
+      { roomId: 'room-1', roomStatus: RoomStatus.AVAILABLE },
+      now,
+    );
+
+    expect(result.actions).toEqual([]);
   });
 });

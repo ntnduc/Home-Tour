@@ -81,7 +81,7 @@ const ConfirmPaymentInvoice = forwardRef<ConfirmPaymentInvoiceRef, Props>(
             name="amount"
             rules={{
               required: "Vui lòng nhập số tiền",
-              min: { value: 0, message: "Số tiền không được nhỏ hơn 0" },
+              min: { value: 1, message: "Số tiền phải lớn hơn 0" },
               max: {
                 value: invoice.remainingAmount,
                 message: "Số tiền không được vượt quá số tiền còn lại",
@@ -111,7 +111,7 @@ const ConfirmPaymentInvoice = forwardRef<ConfirmPaymentInvoiceRef, Props>(
               name="isCarryOver"
               render={({ field: { onChange, value } }) => (
                 <Switch
-                  label="Ghi nợ vào thánh sau"
+                  label="Ghi nợ vào tháng sau"
                   value={value ?? true}
                   onValueChange={onChange}
                   alignLabel="horizontal"

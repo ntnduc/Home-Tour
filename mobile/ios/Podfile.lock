@@ -4,7 +4,7 @@ PODS:
   - EXJSONUtils (57.0.2)
   - EXManifests (57.0.2):
     - ExpoModulesCore
-  - Expo (57.0.30):
+  - Expo (57.0.31):
     - ExpoModulesCore
     - ExpoModulesJSI
     - hermes-engine
@@ -202,7 +202,7 @@ PODS:
     - ExpoModulesCore
   - ExpoLogBox (57.0.4):
     - React-Core
-  - ExpoModulesCore (57.0.23):
+  - ExpoModulesCore (57.0.24):
     - ExpoModulesJSI
     - hermes-engine
     - RCTRequired
@@ -226,13 +226,13 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - ExpoModulesJSI (57.1.2):
+  - ExpoModulesJSI (57.1.3):
     - React-Core
     - ReactCommon
-  - ExpoModulesWorklets (57.0.23):
+  - ExpoModulesWorklets (57.0.24):
     - ExpoModulesCore
     - ExpoModulesJSI
-  - ExpoModulesWorkletsAdapter (57.0.23):
+  - ExpoModulesWorkletsAdapter (57.0.24):
     - ExpoModulesCore
     - ExpoModulesJSI
     - ExpoModulesWorklets
@@ -2907,7 +2907,7 @@ SPEC CHECKSUMS:
   EXConstants: 8a0eb5e2553569c0e6710b73a8d90d1ce358c153
   EXJSONUtils: a49e3ef80dff762108e5690c7b2f360675dcf7f6
   EXManifests: 4c53b2602e03ccf44d0b4ff9c5d655b2c5acba3f
-  Expo: 83ceec8498d39a83bfcdf6ad56118bc6c5c81c72
+  Expo: caadf07d26cefa96b9840e7295c29493ea399cf3
   expo-dev-client: 2a2fe5cdd576b29c097356cb922d2403abe6df8d
   expo-dev-launcher: cd9d8fcf89622f23e21ffb6940fadbe07465785d
   expo-dev-menu: 7fb359361a69f0b5280f530e4f770878cea456f2
@@ -2924,10 +2924,10 @@ SPEC CHECKSUMS:
   ExpoImagePicker: 661e13a7616fbcea630cfb9409b7483094978e02
   ExpoKeepAwake: 72af0b3be3615e59bc819d26061ff4e06b155ee0
   ExpoLogBox: 80957303325cd4439137765c90a87d7f22aaf2ff
-  ExpoModulesCore: 8ebcdf3b59b38c853e6f23a10304ebc57c431610
-  ExpoModulesJSI: b767422763350d2b248fb218f71bbb286fd2ee77
-  ExpoModulesWorklets: 22d1898cfa60b815ffc7421c775e2e6a1bd8dc82
-  ExpoModulesWorkletsAdapter: 9d1e55ef8c1efc403c1cde5e716451f77ec05019
+  ExpoModulesCore: 5be7bb8fce92e6dd7d81a41f772dd4af924759a5
+  ExpoModulesJSI: ded9f4c72f35fc9400ad85506a94acdd87b2b23b
+  ExpoModulesWorklets: 44a66395ccb9c5683d06fcbfb6b1cc01df62d423
+  ExpoModulesWorkletsAdapter: d40a5e4923c1b8a3882b5e15f90b3488324eff0e
   ExpoSplashScreen: 856060f5724dc4fca4d69a2d18a161e3baa37019
   EXUpdatesInterface: 4c96533f11c8cefe879bd506564cc2d537f56804
   FBLazyVector: 2138c6c2ab66c31bf5754dc18097fbc498a49c7f

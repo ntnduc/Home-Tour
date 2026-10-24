@@ -31,6 +31,7 @@ export const openAlert = (navigation: HomeNavigation, alert: HomepageAlert) => {
 export const openRoomAction = (
   navigation: HomeNavigation,
   room: HomepageRoomFeedItem,
+  onConfirmPayment?: (contractId?: string) => void,
 ) => {
   const action = room.topAction;
   const payload = action?.payload ?? {};
@@ -54,8 +55,15 @@ export const openRoomAction = (
         roomId,
       });
       return;
+    case "CONFIRM_PAYMENT":
+      if (onConfirmPayment) {
+        onConfirmPayment(payload.contractId);
+        return;
+      }
+      if (!payload.contractId) break;
+      navigation.navigate("ContractDetail", { contractId: payload.contractId });
+      return;
     case "CONFIRM_CONTRACT":
-    case "CONFIRM_DEPOSIT":
     case "VIEW_CONTRACT":
       if (!payload.contractId) break;
       navigation.navigate("ContractDetail", { contractId: payload.contractId });

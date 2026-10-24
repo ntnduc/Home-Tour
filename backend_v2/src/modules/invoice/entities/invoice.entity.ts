@@ -64,6 +64,10 @@ export class Invoice extends BaseEntity {
   @Column({ type: 'decimal', precision: 15, scale: 2 })
   remainingAmount: number;
 
+  // Số tiền chưa thanh toán được ghi nợ sang hóa đơn kỳ sau (khi thanh toán với isCarryOver).
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
+  carriedOverAmount: number;
+
   // Trạng thái hiện tại của hóa đơn: nháp, chờ thanh toán, quá hạn, đã thanh toán...
   @Column({ type: 'enum', enum: InvoiceStatus, default: InvoiceStatus.DRAFT })
   status: InvoiceStatus;

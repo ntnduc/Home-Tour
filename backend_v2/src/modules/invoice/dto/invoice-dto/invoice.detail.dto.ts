@@ -18,6 +18,7 @@ export class InvoiceDetailDto extends BaseDetailDto<Invoice> {
   totalAmount: number;
   paidAmount: number;
   remainingAmount: number;
+  carriedOverAmount: number;
   clientName?: string;
   status: InvoiceStatus;
   notes?: string;
@@ -40,6 +41,9 @@ export class InvoiceDetailDto extends BaseDetailDto<Invoice> {
     this.paidAmount = entity.paidAmount ? Number(entity.paidAmount) : 0;
     this.remainingAmount = entity.remainingAmount
       ? Number(entity.remainingAmount)
+      : 0;
+    this.carriedOverAmount = entity.carriedOverAmount
+      ? Number(entity.carriedOverAmount)
       : 0;
     this.status = entity.status;
     this.notes = entity.notes;

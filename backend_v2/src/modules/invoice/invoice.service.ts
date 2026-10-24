@@ -28,6 +28,7 @@ import { BaseService } from '../../common/base/crud/base.service';
 import { IBaseService } from '../../common/base/crud/IService';
 import { Contracts } from '../contract/entities/contracts.entity';
 import { PaymentCreateDto } from '../payment/dto/payment-dto/payment.create.dto';
+import { Payment } from '../payment/entities/payment.entity';
 import { PaymentService } from '../payment/payment.service';
 import { InvoiceCreateDto } from './dto/invoice-dto/invoice.create.dto';
 import { InvoiceDetailDto } from './dto/invoice-dto/invoice.detail.dto';
@@ -39,6 +40,7 @@ import { InvoiceItemCreateDto } from './dto/invoice-item-dto/invoice-item.create
 import { Invoice } from './entities/invoice.entity';
 import { InvoiceItem } from './entities/invoice.item.entity';
 import { InvoiceItemRepository } from './repositories/invoice-item.repository';
+import { calculateInvoicePayment } from './invoice-payment.util';
 import { InvoiceRepository } from './repositories/invoice.repository';
 
 @Injectable()
@@ -104,8 +106,8 @@ export class InvoiceService
         .where('invoice.contractId = :contractId', {
           contractId: dto.contractId,
         })
-        .where('invoice.roomId = :roomId', { roomId: dto.roomId })
-        .where('invoice.status IN (:...statuses)', {
+        .andWhere('invoice.roomId = :roomId', { roomId: dto.roomId })
+        .andWhere('invoice.status IN (:...statuses)', {
           statuses: [
             InvoiceStatus.PENDING,
             InvoiceStatus.OVERDUE,
@@ -139,7 +141,25 @@ export class InvoiceService
           DEBT_INVOICE_STATUSES.includes(findPreInvoice.status) &&
           preInvoiceRemaining > 0;
 
-        if (findContract.carryDebtToNextInvoice && preInvoiceHasDebt) {
+        // Balance the client explicitly carried forward when paying (isCarryOver)
+        // is always added, regardless of the contract-level flag.
+        const carriedOverAmount = Number(findPreInvoice.carriedOverAmount ?? 0);
+        if (carriedOverAmount > 0) {
+          entity.totalAmount = Number(entity.totalAmount) + carriedOverAmount;
+          entity.remainingAmount =
+            Number(entity.remainingAmount) + carriedOverAmount;
+
+          const carriedItem = new InvoiceItem();
+          carriedItem.amount = carriedOverAmount;
+          carriedItem.type = InvoiceItemType.OTHER;
+          carriedItem.propertyId = entity.propertyId;
+          carriedItem.name = `Nợ hóa đơn: ${findPreInvoice.code}`;
+          carriedItem.metadata = {
+            reason: 'CARRY_OVER_DEBT',
+            preInvoiceId: findPreInvoice.id,
+          };
+          entity.invoiceItems.push(carriedItem);
+        } else if (findContract.carryDebtToNextInvoice && preInvoiceHasDebt) {
           entity.totalAmount = Number(entity.totalAmount) + preInvoiceRemaining;
           entity.remainingAmount =
             Number(entity.remainingAmount) + preInvoiceRemaining;
@@ -216,96 +236,109 @@ export class InvoiceService
     if (!invoice) {
       throw new NotFoundException('Hóa đơn không tồn tại');
     }
+
+    // Validate before opening a transaction: nothing is written on failure
+    const invoiceDetailDto = new InvoiceDetailDto();
+    invoiceDetailDto.fromEntity(invoice);
+
+    const validateStatus = this.getValidInvoiceStatusPayment(invoiceDetailDto);
+    if (!validateStatus.status) {
+      throw new BadRequestException(validateStatus.error);
+    }
+    const validateAmount = this.getValidInvoiceAmountPayment(
+      invoiceDetailDto,
+      dto,
+    );
+    if (!validateAmount.status) {
+      throw new BadRequestException(validateAmount.error);
+    }
+
+    // A partial payment is only accepted as "settled" when the client carries the balance over
+    const result = calculateInvoicePayment(
+      {
+        paidAmount: invoiceDetailDto.paidAmount,
+        remainingAmount: invoiceDetailDto.remainingAmount,
+        dueDate: invoice.dueDate,
+      },
+      { amount: dto.paidAmount, isCarryOver: dto.isCarryOver },
+      getCurrentDate(),
+    );
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const invoiceDetailDto = new InvoiceDetailDto();
-      invoiceDetailDto.fromEntity(invoice);
-
-      const validateStatus =
-        this.getValidInvoiceStatusPayment(invoiceDetailDto);
-      if (!validateStatus.status) {
-        throw new BadRequestException(validateStatus.error);
-      }
-
-      const validateAmount = this.getValidInvoiceAmountPayment(
-        invoiceDetailDto,
-        dto,
-      );
-      if (!validateAmount.status) {
-        throw new BadRequestException(validateAmount.error);
-      }
-
-      const entity = dto.getEntity(invoice);
-      await this.invoiceRepository.update(dto.id, {
-        paidAmount: entity.paidAmount,
-        remainingAmount: entity.remainingAmount,
-        status: entity.status,
+      await queryRunner.manager.update(Invoice, invoice.id, {
+        paidAmount: result.paidAmount,
+        remainingAmount: result.remainingAmount,
+        carriedOverAmount: result.carriedOverAmount,
+        status: result.status,
       });
 
-      //create payment
       const paymentCreateDto = new PaymentCreateDto();
       paymentCreateDto.amount = dto.paidAmount;
-      paymentCreateDto.invoiceId = dto.id;
+      paymentCreateDto.invoiceId = invoice.id;
       paymentCreateDto.propertyId = invoice.propertyId;
       paymentCreateDto.paymentMethod = dto.paymentMethod;
       paymentCreateDto.notes = dto.notes;
-      await this.paymentService.create(paymentCreateDto);
+      await queryRunner.manager.save(Payment, paymentCreateDto.getEntity());
 
-      //update pre-invoice
+      // Close the previous invoice debt that was rolled into this one
       if (invoice.preInvoiceId) {
-        const preInvoice = await this.invoiceRepository.findOne({
+        const preInvoice = await queryRunner.manager.findOne(Invoice, {
           where: { id: invoice.preInvoiceId },
         });
 
         if (preInvoice && DEBT_INVOICE_STATUSES.includes(preInvoice.status)) {
-          preInvoice.remainingAmount = 0;
-          preInvoice.status = InvoiceStatus.PAID;
-          await this.invoiceRepository.update(preInvoice.id, preInvoice);
+          await queryRunner.manager.update(Invoice, preInvoice.id, {
+            remainingAmount: 0,
+            status: InvoiceStatus.PAID,
+          });
         }
       }
 
-      queryRunner.commitTransaction();
-      const detailDto = new InvoiceDetailDto();
-      detailDto.fromEntity(entity);
-      return detailDto;
+      await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw new BadGatewayException(error.message);
     } finally {
       await queryRunner.release();
     }
+
+    return this.get(invoice.id);
   }
 
   async confirmInvoice(id: string): Promise<InvoiceDetailDto> {
+    const invoice = await this.invoiceRepository.findOne({ where: { id: id } });
+    if (!invoice) {
+      throw new NotFoundException('Không tìm thấy hóa đơn');
+    }
+    // Already published: nothing to write
+    if (invoice.status === InvoiceStatus.PENDING) {
+      return this.get(invoice.id);
+    }
+    if (invoice.status !== InvoiceStatus.DRAFT) {
+      throw new BadRequestException(
+        'Chỉ hóa đơn ở trạng thái nháp mới có thể xác nhận',
+      );
+    }
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
-    const invoice = await this.invoiceRepository.findOne({ where: { id: id } });
     try {
-      if (!invoice) {
-        throw new NotFoundException('Không tìm thấy hóa đơn');
-      }
-      if (
-        invoice.status !== InvoiceStatus.DRAFT &&
-        invoice.status !== InvoiceStatus.PENDING
-      ) {
-        throw new BadRequestException(
-          'Chỉ hóa đơn ở trạng thái nháp mới có thể xác nhận',
-        );
-      }
-
-      invoice.status = InvoiceStatus.PENDING;
-      this.invoiceRepository.update(invoice.id, invoice);
-
-      return this.get(invoice.id);
+      await queryRunner.manager.update(Invoice, invoice.id, {
+        status: InvoiceStatus.PENDING,
+      });
+      await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw new BadGatewayException(error.message);
     } finally {
       await queryRunner.release();
     }
+
+    return this.get(invoice.id);
   }
 
   async updateInvoiceItems(
@@ -445,14 +478,17 @@ export class InvoiceService
       invoiceItemCreateDtos.push(invoiceItemCreateDto);
     }
 
-    if (invoiceItemCreateDtos.length > 0) {
-      invoiceCreateDto.invoiceItems = invoiceItemCreateDtos;
-      const totalAmount = invoiceItemCreateDtos.reduce(
-        (sum, item) => Number(sum) + Number(item.amount),
-        0,
-      );
-      invoiceCreateDto.totalAmount = roundMoney(totalAmount);
+    // Nothing to collect up front -> contract needs no payment confirmation
+    if (invoiceItemCreateDtos.length === 0) {
+      return null;
     }
+
+    invoiceCreateDto.invoiceItems = invoiceItemCreateDtos;
+    const totalAmount = invoiceItemCreateDtos.reduce(
+      (sum, item) => Number(sum) + Number(item.amount),
+      0,
+    );
+    invoiceCreateDto.totalAmount = roundMoney(totalAmount);
 
     return invoiceCreateDto;
   }
@@ -576,7 +612,7 @@ export class InvoiceService
     error: string;
     status: boolean;
   } {
-    if (payment.paidAmount < 0) {
+    if (!(payment.paidAmount > 0)) {
       return { error: 'Số tiền thanh toán phải lớn hơn 0', status: false };
     }
 

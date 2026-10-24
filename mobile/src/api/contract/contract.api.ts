@@ -76,6 +76,14 @@ export const deactivateContract = async (id: string, reason: string) => {
   return response.data;
 };
 
+export const confirmContractPayment = async (id: string) => {
+  const response = await privateApi.post<ApiResponse<ContractDetailResponse>>(
+    `/contract/${id}/confirm-payment`,
+    {}
+  );
+  return response.data;
+};
+
 export const renewContract = async (id: string, newEndDate: string) => {
   const response = await privateApi.post<ApiResponse<ContractDetailResponse>>(
     `/contract/${id}/renew`,

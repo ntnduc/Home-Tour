@@ -32,6 +32,7 @@ import { RoomAction, RoomListResponse } from "@/types/room";
 import { formatCurrency } from "@/utils/appUtil";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useQueryClient } from "@tanstack/react-query";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { RootStackParamList } from "@/navigation/types";
@@ -39,6 +40,7 @@ import { ROOM_STATUS_BADGE } from "@/constant/room.constant";
 import { CARD_ACTION_PRESETS } from "@/components/CardActionsPresets";
 import RoomCardActions from "./RoomCardActions";
 import RoomContractTile from "./RoomContractTile";
+import { promptConfirmContractPayment } from "../confirmContractPayment";
 
 type RoomCardItemProps = {
   item: RoomListResponse;
@@ -51,6 +53,12 @@ const RoomCardItemComponent = ({ item, navigation }: RoomCardItemProps) => {
   const contractActive = item.contracts?.find(
     (contract) => contract.status === ContractStatus.ACTIVE,
   );
+
+  const queryClient = useQueryClient();
+  const refreshRooms = () => {
+    queryClient.invalidateQueries({ queryKey: ["rooms"] });
+    queryClient.invalidateQueries({ queryKey: ["homepage"] });
+  };
 
   const pendingTaskCount = item.pendingTaskCount ?? 0;
   const hasOverdueAlert = item.hasOverdueAlert ?? false;
@@ -76,8 +84,10 @@ const RoomCardItemComponent = ({ item, navigation }: RoomCardItemProps) => {
           roomId: payload.roomId,
         });
         return;
+      case "CONFIRM_PAYMENT":
+        promptConfirmContractPayment(payload.contractId, refreshRooms);
+        return;
       case "CONFIRM_CONTRACT":
-      case "CONFIRM_DEPOSIT":
       case "VIEW_CONTRACT":
         if (!payload.contractId) return;
         navigation.navigate("ContractDetail", { contractId: payload.contractId });

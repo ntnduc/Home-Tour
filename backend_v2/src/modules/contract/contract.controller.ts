@@ -20,6 +20,7 @@ import { Role } from '../../common/enums/role.enum';
 import { Roles } from '../rbac/decorators/roles.decorator';
 import { ContractService } from './contract.service';
 import { ContractChangeStatusDto } from './dto/contract-dto/contract.change.status.dto';
+import { ContractConfirmPaymentDto } from './dto/contract-dto/contract.confirm-payment.dto';
 import { ContractCreateDto } from './dto/contract-dto/contract.create.dto';
 import { ContractDetailDto } from './dto/contract-dto/contract.detail.dto';
 import { ContractListDto } from './dto/contract-dto/contract.list.dto';
@@ -125,6 +126,19 @@ export class ContractController extends BaseController<
       updateDto.reason = body.reason;
     }
     return await this.contractService.active(updateDto);
+  }
+
+  @Post(':id/confirm-payment')
+  @ApiOperation({
+    summary: 'Confirm the first invoice as paid and activate the contract',
+  })
+  @ApiResponse({ status: 200, description: 'Đã xác nhận thanh toán.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy hợp đồng.' })
+  async confirmPayment(
+    @Param('id') id: string,
+    @Body() body: ContractConfirmPaymentDto,
+  ) {
+    return await this.contractService.confirmPayment(id, body);
   }
 
   @Post(':id/deactivate')

@@ -33,7 +33,7 @@ const ROOM_ACTION_ICONS: Record<RoomActionType, IoniconName> = {
   INVOICE_PAYMENT: "card-outline",
   CREATE_INVOICE: "receipt-outline",
   CONFIRM_CONTRACT: "checkmark-circle-outline",
-  CONFIRM_DEPOSIT: "cash-outline",
+  CONFIRM_PAYMENT: "cash-outline",
   RENEW_CONTRACT: CARD_ACTION_PRESETS.renew.icon,
   CREATE_CONTRACT: "document-text-outline",
   VIEW_CONTRACT: CARD_ACTION_PRESETS.view.icon,
@@ -47,7 +47,7 @@ const ROOM_ACTION_ICONS: Record<RoomActionType, IoniconName> = {
  */
 const ACTION_TYPE_VARIANT: Record<RoomActionType, ButtonVariant> = {
   INVOICE_PAYMENT: "successSoft",
-  CONFIRM_DEPOSIT: "successSoft",
+  CONFIRM_PAYMENT: "successSoft",
   RENEW_CONTRACT: "successSoft",
   CREATE_INVOICE: "soft",
   CREATE_CONTRACT: "soft",

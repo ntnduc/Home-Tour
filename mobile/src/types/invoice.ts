@@ -19,6 +19,8 @@ export interface Invoice {
   totalAmount: number;
   paidAmount: number;
   remainingAmount: number;
+  /** Unpaid balance carried forward to the next invoice (isCarryOver). */
+  carriedOverAmount?: number;
   status: InvoiceStatus;
   createdAt?: string;
   updatedAt?: string;
