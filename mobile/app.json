@@ -1,18 +1,19 @@
 {
   "expo": {
-    "name": "mobile",
+    "name": "Home Tour",
     "slug": "home-tour",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "icon": "./logo/ios/AppIcon.appiconset/AppIcon-1024-dark.png",    
+    "userInterfaceStyle": "automatic",
+    "platforms": ["ios", "android"],
     "plugins": [
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash-icon.png",
+          "image": "./logo/ios/AppIcon-1024.png",
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#2B2580"
         }
       ],
       [
@@ -37,14 +38,22 @@
     ],
     "ios": {
       "supportsTablet": true,
+      "name": "",
+      "icon": {
+        "light": "./logo/ios/AppIcon.appiconset/AppIcon-1024-light.png",
+        "dark": "./logo/ios/AppIcon.appiconset/AppIcon-1024-light.png",
+        "tinted": "./logo/ios/AppIcon.appiconset/AppIcon-1024-tinted.png"
+      },
       "bundleIdentifier": "com.hometour.mobile",
       "buildNumber": "1"
     },
     "android": {
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./logo/android/adaptive-foreground-432.png",
+        "backgroundImage": "./logo/android/adaptive-background-432.png",
+        "monochromeImage": "./logo/android/adaptive-monochrome-432.png",
+        "backgroundColor": "#2B2580"
       },
       "permissions": [
         "android.permission.RECORD_AUDIO",

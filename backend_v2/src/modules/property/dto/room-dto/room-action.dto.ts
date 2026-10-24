@@ -22,7 +22,7 @@ export type RoomActionPayload = {
   invoiceStatus?: string;
 };
 
-export class RoomActionDto {
+export type RoomActionDto = {
   type: RoomActionType;
   label: string;
   priority: number;
@@ -30,7 +30,7 @@ export class RoomActionDto {
   primary: boolean;
   severity: RoomActionSeverity;
   payload: RoomActionPayload;
-}
+};
 
 export const ROOM_ACTION_CONFIG: Record<
   RoomActionType,
