@@ -35,13 +35,22 @@ export type RootStackParamList = {
   TerminateContract: { contractId: string };
 
   // Invoice Management
-  InvoiceDetail: { invoiceId: string; fromHistory?: boolean };
+  InvoiceDetail: {
+    invoiceId: string;
+    fromHistory?: boolean;
+    // Set when the invoice is the pre-invoice of a contract awaiting payment confirmation
+    confirmContractId?: string;
+  };
   InvoiceHistory: undefined;
   CreateInvoice: { contractId?: string; roomId?: string };
   ConfirmCreateInvoice: {
     invoice: InvoiceCreateRequest;
   };
-  ConfirmDraftInvoice: { invoiceId: string };
+  ConfirmDraftInvoice: {
+    invoiceId: string;
+    // Pre-invoice of a just-created contract: must be confirmed or cancelled, no going back
+    isPreInvoice?: boolean;
+  };
   InvoiceDetailScreen: { invoiceId: string };
 
   // Reports
@@ -49,6 +58,7 @@ export type RootStackParamList = {
 
   // Profile
   Profile: undefined;
+  EditProfile: undefined;
 
   // Test
   TestScreen: undefined;

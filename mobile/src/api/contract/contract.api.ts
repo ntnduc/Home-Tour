@@ -8,6 +8,7 @@ import {
   ContractListResponse,
   ContractUpdateRequest,
 } from "@/types/contract";
+import { InvoicePaymentRequest } from "@/types/invoice";
 
 export const getListContract = async (
   queryKey: BasePagingRequest
@@ -76,10 +77,28 @@ export const deactivateContract = async (id: string, reason: string) => {
   return response.data;
 };
 
-export const confirmContractPayment = async (id: string) => {
+/** Record the first-invoice payment (payment-form data) and move the contract on. */
+export const payContractFirstInvoice = async (
+  id: string,
+  data: Pick<
+    InvoicePaymentRequest,
+    "paidAmount" | "isCarryOver" | "paymentMethod" | "notes"
+  >,
+) => {
   const response = await privateApi.post<ApiResponse<ContractDetailResponse>>(
     `/contract/${id}/confirm-payment`,
-    {}
+    data,
+  );
+  return response.data;
+};
+
+export const cancelContractPreInvoice = async (
+  id: string,
+  reason: string,
+) => {
+  const response = await privateApi.post<ApiResponse<ContractDetailResponse>>(
+    `/contract/${id}/cancel-pre-invoice`,
+    { reason },
   );
   return response.data;
 };

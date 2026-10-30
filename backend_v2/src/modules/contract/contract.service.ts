@@ -21,6 +21,7 @@ import { AuthService } from '../auth/auth.service';
 import { Client } from '../client/entities/client.entity';
 import { ClientRepository } from '../client/repositories/client.repository';
 import { Invoice } from '../invoice/entities/invoice.entity';
+import { InvoicePaymentDto } from '../invoice/dto/invoice-dto/invoice.payment.dto';
 import { InvoiceService } from '../invoice/invoice.service';
 import { PaymentCreateDto } from '../payment/dto/payment-dto/payment.create.dto';
 import { Payment } from '../payment/entities/payment.entity';
@@ -31,6 +32,7 @@ import { ServicesRepository } from '../services/repositories/services.repository
 import { UserRepository } from '../users/repositories/user.repository';
 import { ContractClientCreateDto } from './dto/contract-client-dto/contract-client.create.dto';
 import { ContractChangeStatusDto } from './dto/contract-dto/contract.change.status.dto';
+import { ContractCancelPreInvoiceDto } from './dto/contract-dto/contract.cancel-pre-invoice.dto';
 import { ContractConfirmPaymentDto } from './dto/contract-dto/contract.confirm-payment.dto';
 import { ContractCreateDto } from './dto/contract-dto/contract.create.dto';
 import { ContractDetailDto } from './dto/contract-dto/contract.detail.dto';
@@ -43,6 +45,7 @@ import { ContractServices } from './entities/contract-services.entity';
 import { Contracts } from './entities/contracts.entity';
 import { ContractsRepository } from './repositories/contracts.repository';
 import {
+  ContractCreationOutcome,
   isDateRangeOverlapping,
   isRoomRentable,
   resolveCreationOutcome,
@@ -280,49 +283,40 @@ export class ContractService
       );
 
       if (remainingAmount > 0) {
-        const paymentDto = new PaymentCreateDto();
-        paymentDto.invoiceId = invoice.id;
-        paymentDto.propertyId = invoice.propertyId;
-        paymentDto.amount = remainingAmount;
-        paymentDto.paymentMethod = dto.paymentMethod;
-        paymentDto.notes = dto.notes;
-        await queryRunner.manager.save(Payment, paymentDto.getEntity());
-      }
-
-      await queryRunner.manager.update(Invoice, invoice.id, {
-        paidAmount: totalAmount,
-        remainingAmount: 0,
-        status: InvoiceStatus.PAID,
-      });
-
-      const outcome = resolvePaymentConfirmedOutcome({
-        startDate: contract.startDate,
-        now: getCurrentDate(true),
-      });
-
-      if (outcome.contractStatus === ContractStatus.ACTIVE) {
-        const otherActive = await queryRunner.manager.count(Contracts, {
-          where: {
-            roomId: contract.roomId,
-            status: ContractStatus.ACTIVE,
-            id: Not(contract.id),
-          },
-        });
-        if (otherActive > 0) {
-          throw new BadRequestException(
-            'Không thể kích hoạt hợp đồng vì đã có hợp đồng đang hoạt động cho phòng này',
-          );
+        // A draft pre-invoice is published by taking its first payment
+        if (invoice.status === InvoiceStatus.DRAFT) {
+          await queryRunner.manager.update(Invoice, invoice.id, {
+            status: InvoiceStatus.PENDING,
+          });
         }
-      }
-
-      await queryRunner.manager.update(Contracts, contract.id, {
-        status: outcome.contractStatus,
-      });
-      if (outcome.roomStatus === RoomStatus.OCCUPIED) {
-        await queryRunner.manager.update(Rooms, contract.roomId, {
-          status: RoomStatus.OCCUPIED,
+        const paymentDto = new InvoicePaymentDto();
+        paymentDto.id = invoice.id;
+        paymentDto.paidAmount = dto.paidAmount ?? remainingAmount;
+        paymentDto.remainingAmount = remainingAmount;
+        paymentDto.isCarryOver = dto.isCarryOver;
+        paymentDto.paymentMethod = dto.paymentMethod ?? 'CASH';
+        paymentDto.notes = dto.notes;
+        const invoiceStatus = await this.invoiceService.applyPayment(
+          paymentDto,
+          queryRunner.manager,
+        );
+        // Partially paid and not carried over: contract keeps waiting
+        if (invoiceStatus !== InvoiceStatus.PAID) {
+          await queryRunner.commitTransaction();
+          return await this.get(contract.id);
+        }
+      } else {
+        await queryRunner.manager.update(Invoice, invoice.id, {
+          paidAmount: totalAmount,
+          remainingAmount: 0,
+          status: InvoiceStatus.PAID,
         });
       }
+
+      const outcome = await this.moveContractAfterPreInvoice(
+        contract,
+        queryRunner.manager,
+      );
 
       await this.recordChange(
         { ...contract, status: outcome.contractStatus } as Contracts,
@@ -330,6 +324,116 @@ export class ContractService
         'STATUS_CHANGE',
         'Xác nhận thanh toán hóa đơn đầu tiên',
         queryRunner.manager,
+      );
+
+      await queryRunner.commitTransaction();
+      return await this.get(contract.id);
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  /**
+   * Settle the contract once its pre-invoice no longer blocks it (paid or
+   * cancelled): started -> ACTIVE (+ room OCCUPIED), otherwise PENDING_START.
+   */
+  private async moveContractAfterPreInvoice(
+    contract: Contracts,
+    manager: EntityManager,
+  ): Promise<ContractCreationOutcome> {
+    const outcome = resolvePaymentConfirmedOutcome({
+      startDate: contract.startDate,
+      now: getCurrentDate(true),
+    });
+
+    if (outcome.contractStatus === ContractStatus.ACTIVE) {
+      const otherActive = await manager.count(Contracts, {
+        where: {
+          roomId: contract.roomId,
+          status: ContractStatus.ACTIVE,
+          id: Not(contract.id),
+        },
+      });
+      if (otherActive > 0) {
+        throw new BadRequestException(
+          'Không thể kích hoạt hợp đồng vì đã có hợp đồng đang hoạt động cho phòng này',
+        );
+      }
+    }
+
+    await manager.update(Contracts, contract.id, {
+      status: outcome.contractStatus,
+    });
+    if (outcome.roomStatus === RoomStatus.OCCUPIED) {
+      await manager.update(Rooms, contract.roomId, {
+        status: RoomStatus.OCCUPIED,
+      });
+    }
+    return outcome;
+  }
+
+  /**
+   * Cancel the DRAFT pre-invoice of a contract that waits for its first payment.
+   * The contract then proceeds as if no payment were required, and the reason
+   * is stored in the contract change log - all in one transaction.
+   */
+  async cancelPreInvoice(
+    contractId: string,
+    dto: ContractCancelPreInvoiceDto,
+  ): Promise<ContractDetailDto> {
+    const reason = dto.reason?.trim();
+    if (!reason) {
+      throw new BadRequestException('Vui lòng nhập lý do hủy hóa đơn');
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Row lock: a concurrent/duplicate submit waits, then fails the status guard
+      const contract = await queryRunner.manager.findOne(Contracts, {
+        where: { id: contractId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!contract) {
+        throw new NotFoundException('Hợp đồng không tồn tại');
+      }
+      if (contract.status !== ContractStatus.WAITING_PAYMENT_INVOICE) {
+        throw new BadRequestException(
+          'Hợp đồng không ở trạng thái chờ xác nhận thanh toán',
+        );
+      }
+
+      const invoice = await queryRunner.manager.findOne(Invoice, {
+        where: { contractId: contract.id, status: InvoiceStatus.DRAFT },
+        order: { createdAt: 'ASC' },
+      });
+      if (!invoice) {
+        throw new NotFoundException('Không tìm thấy hóa đơn nháp để hủy');
+      }
+
+      // Invoice rules live in InvoiceService; join this transaction
+      await this.invoiceService.cancel(
+        { id: invoice.id, reason },
+        queryRunner.manager,
+      );
+
+      const outcome = await this.moveContractAfterPreInvoice(
+        contract,
+        queryRunner.manager,
+      );
+
+      await this.recordChange(
+        { ...contract, status: outcome.contractStatus } as Contracts,
+        contract,
+        'INVOICE_CANCEL',
+        reason,
+        queryRunner.manager,
+        { contractId: contract.id },
       );
 
       await queryRunner.commitTransaction();
@@ -590,9 +694,16 @@ export class ContractService
   private async recordChange(
     contract: Contracts,
     oldContract: Contracts,
-    type: 'CREATE' | 'UPDATE' | 'STATUS_CHANGE' | 'TERMINATE' | 'EXTEND',
+    type:
+      | 'CREATE'
+      | 'UPDATE'
+      | 'STATUS_CHANGE'
+      | 'TERMINATE'
+      | 'EXTEND'
+      | 'INVOICE_CANCEL',
     reason: string,
     manager: EntityManager,
+    metadata: Record<string, any> = {},
   ): Promise<void> {
     const user = RequestContextService.getUserObj();
     const userRoleCurretProperty = user?.properties?.find(
@@ -607,7 +718,7 @@ export class ContractService
     changeLog.contractId = contract.id;
     changeLog.changeType = type;
     changeLog.changeReason = reason;
-    changeLog.metadata = {};
+    changeLog.metadata = metadata;
     const changeDetails = this.getChangeDetails(oldContract, contract);
     changeLog.contractChangeDetails = changeDetails;
     await manager.save(changeLog);

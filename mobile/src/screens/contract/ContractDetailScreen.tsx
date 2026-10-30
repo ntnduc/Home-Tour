@@ -1,34 +1,34 @@
-import { getContract } from '@/api/contract/contract.api';
-import ActionButtonBottom from '@/components/ActionButtonBottom';
-import Button from '@/components/Button';
-import Card from '@/components/Card';
-import DisplayField from '@/components/DisplayField';
-import FormScreen from '@/components/FormScreen';
-import FormSection from '@/components/FormSection';
-import IconSquircle from '@/components/IconSquircle';
-import ListRow from '@/components/ListRow';
-import Loading from '@/components/Loading';
-import NoticeBanner from '@/components/NoticeBanner';
-import ScreenHeader from '@/components/ScreenHeader';
-import Status from '@/components/Status';
-import { CONTRACT_STATUS_OPTIONS } from '@/constant/contract.constant';
-import { RootStackParamList } from '@/navigation/types';
-import { uiColors, uiType } from '@/theme';
-import { ContractDetailResponse, ContractStatus } from '@/types/contract';
-import { formatCurrency } from '@/utils/appUtil';
-import { formatDate } from '@/utils/dateUtil';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { useFocusEffect } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useCallback, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { Alert, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Toast from 'react-native-toast-message';
+import { getContract } from "@/api/contract/contract.api";
+import ActionButtonBottom from "@/components/ActionButtonBottom";
+import Button from "@/components/Button";
+import Card from "@/components/Card";
+import DisplayField from "@/components/DisplayField";
+import FormScreen from "@/components/FormScreen";
+import FormSection from "@/components/FormSection";
+import IconSquircle from "@/components/IconSquircle";
+import ListRow from "@/components/ListRow";
+import Loading from "@/components/Loading";
+import NoticeBanner from "@/components/NoticeBanner";
+import ScreenHeader from "@/components/ScreenHeader";
+import Status from "@/components/Status";
+import { CONTRACT_STATUS_OPTIONS } from "@/constant/contract.constant";
+import { RootStackParamList } from "@/navigation/types";
+import { uiColors, uiType } from "@/theme";
+import { ContractDetailResponse, ContractStatus } from "@/types/contract";
+import { formatCurrency } from "@/utils/appUtil";
+import { formatDate } from "@/utils/dateUtil";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { useFocusEffect } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import React, { useCallback, useState } from "react";
+import { useForm } from "react-hook-form";
+import { Alert, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 type ContractDetailScreenProps = {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'ContractDetail'>;
-  route: { params: RootStackParamList['ContractDetail'] };
+  navigation: NativeStackNavigationProp<RootStackParamList, "ContractDetail">;
+  route: { params: RootStackParamList["ContractDetail"] };
   /** Rendered inside another screen (CreateContract step) — hides the header. */
   embedded?: boolean;
 };
@@ -44,9 +44,9 @@ const ContractDetailScreen = ({
   const {
     watch,
     formState: { defaultValues },
-    reset
+    reset,
   } = useForm<ContractDetailResponse>({
-    defaultValues: {} as ContractDetailResponse
+    defaultValues: {} as ContractDetailResponse,
   });
 
   const fetchData = useCallback(async () => {
@@ -61,18 +61,18 @@ const ContractDetailScreen = ({
       }
 
       Toast.show({
-        type: 'error',
-        text1: 'Lỗi',
-        text2: response.message ?? 'Không thể tải thông tin hợp đồng',
+        type: "error",
+        text1: "Lỗi",
+        text2: response.message ?? "Không thể tải thông tin hợp đồng",
       });
       navigation.goBack();
     } catch (error: any) {
-      console.error('Error fetching contract detail:', error);
+      console.error("Error fetching contract detail:", error);
       Toast.show({
-        type: 'error',
-        text1: 'Lỗi',
+        type: "error",
+        text1: "Lỗi",
         text2:
-          error.response?.data?.message ?? 'Không thể tải thông tin hợp đồng',
+          error.response?.data?.message ?? "Không thể tải thông tin hợp đồng",
       });
       navigation.goBack();
     } finally {
@@ -101,45 +101,15 @@ const ContractDetailScreen = ({
 
   const handleTerminateContract = () => {
     if (!contract) return;
-    navigation.navigate('TerminateContract', { contractId: contract.id });
+    navigation.navigate("TerminateContract", { contractId: contract.id });
     return;
-
-    // const landlordClient = contract.contractClient?.find(
-    //   (client) => client.isActiveInContract,
-    // );
-    // Alert.prompt(
-    //   'Xác nhận kết thúc hợp đồng',
-    //   `Bạn có chắc chắn muốn kết thúc hợp đồng với ${landlordClient?.name || 'người thuê'}?\nHành động này sẽ chuyển phòng về trạng thái trống.
-    //   \nLý do kết thúc:`,
-    //   async (text: string) => {
-    //     if (!text.trim()) {
-    //       Toast.show({
-    //         type: 'error',
-    //         text1: 'Lỗi',
-    //         text2: 'Vui lòng nhập lý do kết thúc hợp đồng',
-    //       });
-    //       return;
-    //     }
-
-    //     deactivateContract(contract.id, text)
-    //       .then(() => { })
-    //       .finally(() => {
-    //         Toast.show({
-    //           type: 'success',
-    //           text1: 'Thành công',
-    //           text2: 'Đã kết thúc hợp đồng thành công!',
-    //         });
-    //         navigation.goBack();
-    //       });
-    //   },
-    // );
   };
 
   const handleRenewContract = () => {
     Alert.alert(
-      'Gia hạn hợp đồng',
-      'Tính năng gia hạn hợp đồng sẽ được phát triển trong phiên bản tiếp theo.',
-      [{ text: 'OK' }],
+      "Gia hạn hợp đồng",
+      "Tính năng gia hạn hợp đồng sẽ được phát triển trong phiên bản tiếp theo.",
+      [{ text: "OK" }],
     );
   };
 
@@ -147,7 +117,7 @@ const ContractDetailScreen = ({
     label: string,
     value?: string | number | React.ReactNode,
     strong?: boolean,
-    type: 'text' | 'phone' = 'text',
+    type: "text" | "phone" = "text",
   ) => <DisplayField label={label} value={value} strong={strong} type={type} />;
 
   const withHeader = (content: React.ReactNode) =>
@@ -186,9 +156,9 @@ const ContractDetailScreen = ({
             ...(canRenew
               ? [
                   {
-                    label: 'Gia hạn',
-                    icon: 'refresh' as keyof typeof Ionicons.glyphMap,
-                    variant: 'success' as const,
+                    label: "Gia hạn",
+                    icon: "refresh" as keyof typeof Ionicons.glyphMap,
+                    variant: "success" as const,
                     onPress: handleRenewContract,
                   },
                 ]
@@ -196,9 +166,9 @@ const ContractDetailScreen = ({
             ...(canTerminate
               ? [
                   {
-                    label: 'Kết thúc hợp đồng',
-                    icon: 'close-circle' as keyof typeof Ionicons.glyphMap,
-                    variant: 'danger' as const,
+                    label: "Kết thúc hợp đồng",
+                    icon: "close-circle" as keyof typeof Ionicons.glyphMap,
+                    variant: "danger" as const,
                     onPress: handleTerminateContract,
                   },
                 ]
@@ -235,10 +205,14 @@ const ContractDetailScreen = ({
 
       <FormSection title="Thông tin phòng" icon="bed-outline">
         <View>
-          {renderRow('Phòng', contract?.room?.name)}
-          {renderRow('Tòa nhà', contract?.property?.name)}
-          {renderRow('Địa chỉ', contract.property?.address)}
-          {renderRow('Giá thuê', `${formatCurrency(contract.rentAmountAgreed)}đ/tháng`, true)}
+          {renderRow("Phòng", contract?.room?.name)}
+          {renderRow("Tòa nhà", contract?.property?.name)}
+          {renderRow("Địa chỉ", contract.property?.address)}
+          {renderRow(
+            "Giá thuê",
+            `${formatCurrency(contract.rentAmountAgreed)}đ/tháng`,
+            true,
+          )}
         </View>
       </FormSection>
 
@@ -246,16 +220,30 @@ const ContractDetailScreen = ({
         <View>
           {landlordClient && (
             <>
-              {renderRow('Họ và tên', landlordClient.name, true)}
-              {renderRow('Số điện thoại', landlordClient?.phoneNumber ?? '-', false, 'phone')}
+              {renderRow("Họ và tên", landlordClient.name, true)}
+              {renderRow(
+                "Số điện thoại",
+                landlordClient?.phoneNumber ?? "-",
+                false,
+                "phone",
+              )}
               {landlordClient.moveInDate &&
-                renderRow('Ngày vào ở', formatDate(landlordClient.moveInDate?.toISOString()))}
+                renderRow(
+                  "Ngày vào ở",
+                  formatDate(landlordClient.moveInDate?.toISOString()),
+                )}
               {landlordClient.moveOutDate &&
-                renderRow('Ngày ra', formatDate(landlordClient.moveOutDate?.toISOString()))}
+                renderRow(
+                  "Ngày ra",
+                  formatDate(landlordClient.moveOutDate?.toISOString()),
+                )}
             </>
           )}
           {(contract.contractClient?.length ?? 0) > 1 &&
-            renderRow('Số người ở cùng', (contract.contractClient?.length ?? 1) - 1)}
+            renderRow(
+              "Số người ở cùng",
+              (contract.contractClient?.length ?? 1) - 1,
+            )}
         </View>
       </FormSection>
 
@@ -268,33 +256,49 @@ const ContractDetailScreen = ({
             value={formatDate(contract.startDate)}
             strong
           />
-          <Ionicons name="arrow-forward" size={18} color={uiColors.textSubtle} />
+          <Ionicons
+            name="arrow-forward"
+            size={18}
+            color={uiColors.textSubtle}
+          />
           <DisplayField
             compact
             direction="vertical"
             align="end"
             label="Ngày kết thúc"
-            value={contract.endDate ? formatDate(contract.endDate) : 'Không xác định'}
+            value={
+              contract.endDate ? formatDate(contract.endDate) : "Không xác định"
+            }
             strong
           />
         </View>
-        {contract.status === ContractStatus.ACTIVE && daysRemaining !== null && (
-          <NoticeBanner
-            tone={daysRemaining <= 7 ? 'warning' : 'info'}
-            icon="time-outline"
-            title="Thời gian còn lại"
-            message={daysRemaining > 0 ? `${daysRemaining} ngày` : 'Hết hạn hôm nay'}
-          />
-        )}
+        {contract.status === ContractStatus.ACTIVE &&
+          daysRemaining !== null && (
+            <NoticeBanner
+              tone={daysRemaining <= 7 ? "warning" : "info"}
+              icon="time-outline"
+              title="Thời gian còn lại"
+              message={
+                daysRemaining > 0 ? `${daysRemaining} ngày` : "Hết hạn hôm nay"
+              }
+            />
+          )}
       </FormSection>
 
       <FormSection title="Thông tin thanh toán" icon="cash-outline">
         <View>
-          {renderRow('Tiền thuê hàng tháng', `${formatCurrency(contract.rentAmountAgreed)}đ`, true)}
-          {renderRow('Tiền cọc (đã thanh toán)', `${formatCurrency(contract.depositAmountPaid)}đ`)}
           {renderRow(
-            'Ngày thu tiền hàng tháng',
-            contract.paymentDueDay ? `Ngày ${contract.paymentDueDay}` : '-',
+            "Tiền thuê hàng tháng",
+            `${formatCurrency(contract.rentAmountAgreed)}đ`,
+            true,
+          )}
+          {renderRow(
+            "Tiền cọc (đã thanh toán)",
+            `${formatCurrency(contract.depositAmountPaid)}đ`,
+          )}
+          {renderRow(
+            "Ngày thu tiền hàng tháng",
+            contract.paymentDueDay ? `Ngày ${contract.paymentDueDay}` : "-",
           )}
         </View>
       </FormSection>
@@ -312,11 +316,13 @@ const ContractDetailScreen = ({
               <ListRow
                 key={service.id || idx}
                 divider={idx > 0}
-                icon={service.isEnabled ? 'checkmark-circle' : 'close-circle'}
-                iconTone={service.isEnabled ? 'success' : 'error'}
+                icon={service.isEnabled ? "checkmark-circle" : "close-circle"}
+                iconTone={service.isEnabled ? "success" : "error"}
                 title={service.name}
                 trailing={
-                  <Text style={uiType.bodyStrong}>{formatCurrency(service.price)}đ/tháng</Text>
+                  <Text style={uiType.bodyStrong}>
+                    {formatCurrency(service.price)}đ/tháng
+                  </Text>
                 }
               />
             ))}
@@ -326,11 +332,15 @@ const ContractDetailScreen = ({
 
       <FormSection title="Thông tin bổ sung" icon="information-circle-outline">
         <View>
-          {renderRow('Ngày tạo', formatDate(contract.createdAt ?? ''))}
-          {renderRow('Ngày cập nhật', formatDate(contract.updatedAt ?? ''))}
-          {renderRow('Số người ở cùng', contract.partnerClientCount ?? 0)}
+          {renderRow("Ngày tạo", formatDate(contract.createdAt ?? ""))}
+          {renderRow("Ngày cập nhật", formatDate(contract.updatedAt ?? ""))}
+          {renderRow("Số người ở cùng", contract.partnerClientCount ?? 0)}
           {contract.notes && (
-            <DisplayField direction="vertical" label="Ghi chú" value={contract.notes} />
+            <DisplayField
+              direction="vertical"
+              label="Ghi chú"
+              value={contract.notes}
+            />
           )}
         </View>
         {contract.contractScanURL && (
@@ -342,12 +352,15 @@ const ContractDetailScreen = ({
             style={styles.selfStart}
             onPress={() => {
               // TODO: Mở xem hợp đồng đã quét
-              Alert.alert('Thông báo', 'Tính năng xem hợp đồng đã quét sẽ được phát triển');
+              Alert.alert(
+                "Thông báo",
+                "Tính năng xem hợp đồng đã quét sẽ được phát triển",
+              );
             }}
           />
         )}
       </FormSection>
-    </FormScreen>
+    </FormScreen>,
   );
 };
 
@@ -357,8 +370,8 @@ const styles = StyleSheet.create({
     backgroundColor: uiColors.canvas,
   },
   summary: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   summaryTitle: {
@@ -369,16 +382,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   periodRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     gap: 8,
   },
   bleed: {
     marginHorizontal: -16,
   },
   selfStart: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
 });
 

@@ -15,6 +15,7 @@ import { BaseController } from '../../common/base/crud/base.controller';
 import { AutoCrudPermissions } from '../../common/decorators/crud-permissions.decorator';
 import { Role } from '../../common/enums/role.enum';
 import { Roles } from '../rbac/decorators/roles.decorator';
+import { InvoiceCancelDto } from './dto/invoice-dto/invoice.cancel.dto';
 import { InvoiceCreateDto } from './dto/invoice-dto/invoice.create.dto';
 import { InvoiceDetailDto } from './dto/invoice-dto/invoice.detail.dto';
 import { InvoiceListDto } from './dto/invoice-dto/invoice.list.dto';
@@ -103,6 +104,18 @@ export class InvoiceController extends BaseController<
   @ApiResponse({ status: 404, description: 'Invoice not found.' })
   async confirmInvoice(@Param('id') id: string): Promise<InvoiceDetailDto> {
     return await this.invoiceService.confirmInvoice(id);
+  }
+
+  @Patch('cancel')
+  @ApiOperation({
+    summary: 'Cancel a draft / pending invoice (reason required)',
+  })
+  @ApiResponse({ status: 200, description: 'Invoice cancelled successfully.' })
+  @ApiResponse({ status: 404, description: 'Invoice not found.' })
+  async cancelInvoice(
+    @Body() data: InvoiceCancelDto,
+  ): Promise<InvoiceDetailDto> {
+    return await this.invoiceService.cancel(data);
   }
 
   @Patch('items')

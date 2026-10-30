@@ -11,6 +11,8 @@ export interface Payment {
   paymentMethod?: string;
   status: PaymentStatus;
   note?: string;
+  /** Field name returned by the backend payment DTO. */
+  notes?: string;
   createdAt: string;
   updatedAt?: string;
 }

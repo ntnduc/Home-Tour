@@ -15,10 +15,14 @@ const ConfirmDraftInvoiceScreen = ({
   navigation,
   route,
 }: ConfirmDraftInvoiceScreenProps) => {
-  const { invoiceId } = route.params;
+  const { invoiceId, isPreInvoice } = route.params;
 
   return (
-    <CreateInvoice navigation={navigation as any} invoiceId={invoiceId} />
+    <CreateInvoice
+      navigation={navigation as any}
+      invoiceId={invoiceId}
+      isPreInvoice={isPreInvoice}
+    />
   );
 };
 

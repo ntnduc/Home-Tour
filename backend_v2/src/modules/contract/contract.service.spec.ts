@@ -24,7 +24,11 @@ describe('ContractService workflows', () => {
     update: jest.Mock;
   };
   let queryRunner: any;
-  let invoiceService: { getPreInvoiceContract: jest.Mock };
+  let invoiceService: {
+    getPreInvoiceContract: jest.Mock;
+    cancel: jest.Mock;
+    applyPayment: jest.Mock;
+  };
   let contractsRepository: { findOne: jest.Mock };
 
   const buildService = () => {
@@ -43,7 +47,11 @@ describe('ContractService workflows', () => {
       release: jest.fn(),
       manager,
     };
-    invoiceService = { getPreInvoiceContract: jest.fn().mockReturnValue(null) };
+    invoiceService = {
+      getPreInvoiceContract: jest.fn().mockReturnValue(null),
+      cancel: jest.fn().mockResolvedValue(undefined),
+      applyPayment: jest.fn().mockResolvedValue(InvoiceStatus.PAID),
+    };
     contractsRepository = {
       findOne: jest.fn().mockResolvedValue({ id: 'c-1' }),
     };
@@ -200,23 +208,24 @@ describe('ContractService workflows', () => {
       expect(queryRunner.rollbackTransaction).toHaveBeenCalled();
     });
 
-    it('marks the invoice PAID, records a payment and activates a started contract', async () => {
-      mockLookups(waitingContract(isoDay(-1)));
-      await service.confirmPayment('c-1', { paymentMethod: 'BANK' });
+    it('records the payment via InvoiceService and activates a started contract', async () => {
+      mockLookups(waitingContract(isoDay(-1)), {
+        ...invoice,
+        status: InvoiceStatus.PENDING,
+      });
+      await service.confirmPayment('c-1', {
+        paymentMethod: 'BANK',
+        paidAmount: 5000000,
+      });
 
-      expect(manager.save).toHaveBeenCalledWith(
-        Payment,
+      expect(invoiceService.applyPayment).toHaveBeenCalledWith(
         expect.objectContaining({
-          invoiceId: 'inv-1',
-          amount: 5000000,
+          id: 'inv-1',
+          paidAmount: 5000000,
           paymentMethod: 'BANK',
         }),
+        manager,
       );
-      expect(manager.update).toHaveBeenCalledWith(Invoice, 'inv-1', {
-        paidAmount: 5000000,
-        remainingAmount: 0,
-        status: InvoiceStatus.PAID,
-      });
       expect(manager.update).toHaveBeenCalledWith(Contracts, 'c-1', {
         status: ContractStatus.ACTIVE,
       });
@@ -240,6 +249,33 @@ describe('ContractService workflows', () => {
       );
     });
 
+    it('keeps the contract waiting when the invoice is only partially paid', async () => {
+      mockLookups(waitingContract(isoDay(-1)), {
+        ...invoice,
+        status: InvoiceStatus.PENDING,
+      });
+      invoiceService.applyPayment.mockResolvedValue(
+        InvoiceStatus.PARTIALLY_PAID,
+      );
+      await service.confirmPayment('c-1', { paidAmount: 1000000 });
+
+      expect(manager.update).not.toHaveBeenCalledWith(
+        Contracts,
+        expect.anything(),
+        expect.anything(),
+      );
+      expect(queryRunner.commitTransaction).toHaveBeenCalled();
+    });
+
+    it('publishes a draft pre-invoice before taking its payment', async () => {
+      mockLookups(waitingContract(isoDay(-1)));
+      await service.confirmPayment('c-1');
+      expect(manager.update).toHaveBeenCalledWith(Invoice, 'inv-1', {
+        status: InvoiceStatus.PENDING,
+      });
+      expect(invoiceService.applyPayment).toHaveBeenCalled();
+    });
+
     it('refuses to activate when another ACTIVE contract exists in the room', async () => {
       mockLookups(waitingContract(isoDay(-1)));
       manager.count.mockResolvedValue(1);
@@ -254,6 +290,76 @@ describe('ContractService workflows', () => {
       await expect(service.confirmPayment('c-1')).rejects.toThrow(
         'Không tìm thấy hóa đơn cần thanh toán',
       );
+    });
+  });
+
+  describe('cancelPreInvoice', () => {
+    const waiting = (
+      startDate: string,
+      status = ContractStatus.WAITING_PAYMENT_INVOICE,
+    ) => ({
+      id: 'c-1',
+      roomId: 'room-1',
+      propertyId: 'p-1',
+      startDate: new Date(startDate),
+      status,
+    });
+    const draft = { id: 'inv-1', status: InvoiceStatus.DRAFT };
+
+    const mockLookups = (contract: any, inv: any = draft) =>
+      manager.findOne.mockImplementation(async (entity) => {
+        if (entity === Contracts) return contract;
+        if (entity === Invoice) return inv;
+        return null;
+      });
+
+    beforeEach(() => {
+      jest.spyOn(service, 'get').mockResolvedValue({ id: 'c-1' } as any);
+    });
+
+    it('rejects a blank reason before opening a transaction', async () => {
+      await expect(
+        service.cancelPreInvoice('c-1', { reason: '   ' }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(queryRunner.startTransaction).not.toHaveBeenCalled();
+    });
+
+    it('rejects a contract that is not waiting for payment (duplicate submit)', async () => {
+      mockLookups(waiting(isoDay(-1), ContractStatus.ACTIVE));
+      await expect(
+        service.cancelPreInvoice('c-1', { reason: 'Khách hủy' }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(queryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(invoiceService.cancel).not.toHaveBeenCalled();
+    });
+
+    it('cancels the draft, activates the contract and logs INVOICE_CANCEL', async () => {
+      mockLookups(waiting(isoDay(-1)));
+      await service.cancelPreInvoice('c-1', { reason: ' Khách hủy ' });
+
+      expect(invoiceService.cancel).toHaveBeenCalledWith(
+        { id: 'inv-1', reason: 'Khách hủy' },
+        manager,
+      );
+      expect(manager.update).toHaveBeenCalledWith(Contracts, 'c-1', {
+        status: ContractStatus.ACTIVE,
+      });
+      expect(manager.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          changeType: 'INVOICE_CANCEL',
+          changeReason: 'Khách hủy',
+          metadata: { contractId: 'c-1' },
+        }),
+      );
+      expect(queryRunner.commitTransaction).toHaveBeenCalled();
+    });
+
+    it('rolls back when no draft pre-invoice exists', async () => {
+      mockLookups(waiting(isoDay(-1)), null);
+      await expect(
+        service.cancelPreInvoice('c-1', { reason: 'Khách hủy' }),
+      ).rejects.toThrow('Không tìm thấy hóa đơn nháp để hủy');
+      expect(queryRunner.commitTransaction).not.toHaveBeenCalled();
     });
   });
 });

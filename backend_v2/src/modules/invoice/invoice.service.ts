@@ -23,13 +23,19 @@ import {
   getEndOfMonth,
 } from 'src/common/utils';
 import { roundMoney } from 'src/common/utils/number.utils';
-import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
+import {
+  DataSource,
+  EntityManager,
+  Repository,
+  SelectQueryBuilder,
+} from 'typeorm';
 import { BaseService } from '../../common/base/crud/base.service';
 import { IBaseService } from '../../common/base/crud/IService';
 import { Contracts } from '../contract/entities/contracts.entity';
 import { PaymentCreateDto } from '../payment/dto/payment-dto/payment.create.dto';
 import { Payment } from '../payment/entities/payment.entity';
 import { PaymentService } from '../payment/payment.service';
+import { InvoiceCancelDto } from './dto/invoice-dto/invoice.cancel.dto';
 import { InvoiceCreateDto } from './dto/invoice-dto/invoice.create.dto';
 import { InvoiceDetailDto } from './dto/invoice-dto/invoice.detail.dto';
 import { InvoiceListDto } from './dto/invoice-dto/invoice.list.dto';
@@ -238,6 +244,45 @@ export class InvoiceService
     }
 
     // Validate before opening a transaction: nothing is written on failure
+    const result = this.preparePayment(invoice, dto);
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      await this.writePayment(queryRunner.manager, invoice, dto, result);
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new BadGatewayException(error.message);
+    } finally {
+      await queryRunner.release();
+    }
+
+    return this.get(invoice.id);
+  }
+
+  /**
+   * Validate and record a payment inside the caller's transaction (e.g. the
+   * contract's first-invoice payment). Returns the invoice status afterwards.
+   */
+  async applyPayment(
+    dto: InvoicePaymentDto,
+    manager: EntityManager,
+  ): Promise<InvoiceStatus> {
+    const invoice = await manager.findOne(Invoice, {
+      where: { id: dto.id },
+      relations: ['invoiceItems'],
+    });
+    if (!invoice) {
+      throw new NotFoundException('Hóa đơn không tồn tại');
+    }
+    const result = this.preparePayment(invoice, dto);
+    await this.writePayment(manager, invoice, dto, result);
+    return result.status;
+  }
+
+  private preparePayment(invoice: Invoice, dto: InvoicePaymentDto) {
     const invoiceDetailDto = new InvoiceDetailDto();
     invoiceDetailDto.fromEntity(invoice);
 
@@ -254,7 +299,7 @@ export class InvoiceService
     }
 
     // A partial payment is only accepted as "settled" when the client carries the balance over
-    const result = calculateInvoicePayment(
+    return calculateInvoicePayment(
       {
         paidAmount: invoiceDetailDto.paidAmount,
         remainingAmount: invoiceDetailDto.remainingAmount,
@@ -263,49 +308,119 @@ export class InvoiceService
       { amount: dto.paidAmount, isCarryOver: dto.isCarryOver },
       getCurrentDate(),
     );
+  }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    try {
-      await queryRunner.manager.update(Invoice, invoice.id, {
-        paidAmount: result.paidAmount,
-        remainingAmount: result.remainingAmount,
-        carriedOverAmount: result.carriedOverAmount,
-        status: result.status,
+  private async writePayment(
+    manager: EntityManager,
+    invoice: Invoice,
+    dto: InvoicePaymentDto,
+    result: ReturnType<typeof calculateInvoicePayment>,
+  ): Promise<void> {
+    await manager.update(Invoice, invoice.id, {
+      paidAmount: result.paidAmount,
+      remainingAmount: result.remainingAmount,
+      carriedOverAmount: result.carriedOverAmount,
+      status: result.status,
+    });
+
+    const paymentCreateDto = new PaymentCreateDto();
+    paymentCreateDto.amount = dto.paidAmount;
+    paymentCreateDto.invoiceId = invoice.id;
+    paymentCreateDto.propertyId = invoice.propertyId;
+    paymentCreateDto.paymentMethod = dto.paymentMethod;
+    paymentCreateDto.notes = dto.notes;
+    await manager.save(Payment, paymentCreateDto.getEntity());
+
+    // Close the previous invoice debt that was rolled into this one
+    if (invoice.preInvoiceId) {
+      const preInvoice = await manager.findOne(Invoice, {
+        where: { id: invoice.preInvoiceId },
       });
 
-      const paymentCreateDto = new PaymentCreateDto();
-      paymentCreateDto.amount = dto.paidAmount;
-      paymentCreateDto.invoiceId = invoice.id;
-      paymentCreateDto.propertyId = invoice.propertyId;
-      paymentCreateDto.paymentMethod = dto.paymentMethod;
-      paymentCreateDto.notes = dto.notes;
-      await queryRunner.manager.save(Payment, paymentCreateDto.getEntity());
-
-      // Close the previous invoice debt that was rolled into this one
-      if (invoice.preInvoiceId) {
-        const preInvoice = await queryRunner.manager.findOne(Invoice, {
-          where: { id: invoice.preInvoiceId },
+      if (preInvoice && DEBT_INVOICE_STATUSES.includes(preInvoice.status)) {
+        await manager.update(Invoice, preInvoice.id, {
+          remainingAmount: 0,
+          status: InvoiceStatus.PAID,
         });
+      }
+    }
+  }
 
-        if (preInvoice && DEBT_INVOICE_STATUSES.includes(preInvoice.status)) {
-          await queryRunner.manager.update(Invoice, preInvoice.id, {
-            remainingAmount: 0,
-            status: InvoiceStatus.PAID,
-          });
+  /**
+   * Cancel a DRAFT / PENDING invoice that has no payment yet. Pass `manager`
+   * to join the caller's transaction (e.g. contract pre-invoice cancel);
+   * otherwise the cancel runs in its own transaction.
+   */
+  async cancel(
+    dto: InvoiceCancelDto,
+    manager?: EntityManager,
+  ): Promise<InvoiceDetailDto> {
+    const reason = dto.reason?.trim();
+    if (!reason) {
+      throw new BadRequestException('Vui lòng nhập lý do hủy hóa đơn');
+    }
+
+    const run = async (em: EntityManager) => {
+      // Row lock: a duplicate submit waits, then fails the status guard
+      const invoice = await em.findOne(Invoice, {
+        where: { id: dto.id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!invoice) {
+        throw new NotFoundException('Hóa đơn không tồn tại');
+      }
+      if (
+        invoice.status !== InvoiceStatus.DRAFT &&
+        invoice.status !== InvoiceStatus.PENDING
+      ) {
+        throw new BadRequestException(
+          'Chỉ hóa đơn nháp hoặc chờ thanh toán mới có thể hủy',
+        );
+      }
+      if (Number(invoice.paidAmount ?? 0) > 0) {
+        throw new BadRequestException(
+          'Hóa đơn đã có thanh toán, không thể hủy',
+        );
+      }
+
+      // The first invoice of a waiting contract must go through the contract
+      // flow, which also moves the contract on; a bare cancel would strand it.
+      if (!manager) {
+        const contract = await em.findOne(Contracts, {
+          where: { id: invoice.contractId },
+        });
+        if (contract?.status === ContractStatus.WAITING_PAYMENT_INVOICE) {
+          throw new BadRequestException(
+            'Hóa đơn đầu tiên của hợp đồng đang chờ thanh toán chỉ có thể hủy trong luồng hợp đồng',
+          );
         }
       }
 
-      await queryRunner.commitTransaction();
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw new BadGatewayException(error.message);
-    } finally {
-      await queryRunner.release();
+      const cancelNote = `Lý do hủy: ${reason}`;
+      await em.update(Invoice, invoice.id, {
+        status: InvoiceStatus.CANCELLED,
+        notes: invoice.notes ? `${invoice.notes}\n${cancelNote}` : cancelNote,
+      });
+    };
+
+    if (manager) {
+      await run(manager);
+    } else {
+      const queryRunner = this.dataSource.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+      try {
+        await run(queryRunner.manager);
+        await queryRunner.commitTransaction();
+      } catch (error) {
+        await queryRunner.rollbackTransaction();
+        throw error;
+      } finally {
+        await queryRunner.release();
+      }
     }
 
-    return this.get(invoice.id);
+    return this.get(dto.id);
   }
 
   async confirmInvoice(id: string): Promise<InvoiceDetailDto> {

@@ -1,4 +1,4 @@
-import { tokens } from "@/theme";
+import { cancelContractPreInvoice } from "@/api/contract/contract.api";
 import {
   confirmInvoice,
   getInvoice,
@@ -11,12 +11,16 @@ import Loading from "@/components/Loading";
 import Status from "@/components/Status";
 import { RootStackParamList } from "@/navigation/types";
 import CardComponent from "@/screens/common/CardComponent";
+import CancelPreInvoiceReason, {
+  CancelPreInvoiceReasonRef,
+} from "@/screens/invoice/components/CancelPreInvoiceReason";
 import ConfirmPaymentInvoice, {
   ConfirmPaymentInvoiceRef,
 } from "@/screens/invoice/components/ConfirmPaymentInvoice";
 import UpdateInvoiceItemsPrice, {
   UpdateInvoiceItemsPriceRef,
 } from "@/screens/invoice/components/UpdateInvoiceItemsPrice";
+import { tokens } from "@/theme";
 import {
   INVOICE_STATUS_OPTIONS,
   InvoiceDetailResponse,
@@ -32,8 +36,9 @@ import { formatDate } from "@/utils/dateUtil";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { BottomSheetFooter } from "@gorhom/bottom-sheet";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useQueryClient } from "@tanstack/react-query";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Text, View } from "react-native";
+import { Alert, BackHandler, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import Toast from "react-native-toast-message";
 
@@ -41,12 +46,21 @@ interface CreateInvoiceProps {
   navigation: NativeStackNavigationProp<RootStackParamList, "CreateContract">;
   /** Id của hóa đơn được backend tạo ra sau khi tạo hợp đồng. */
   invoiceId: string;
+  /**
+   * Pre-invoice of a just-created contract: while it is still a draft the user
+   * can only confirm it or cancel it (with a reason) - back navigation is blocked.
+   */
+  isPreInvoice?: boolean;
 }
 
 const formatDateSafe = (value?: string | Date) =>
   value ? formatDate(String(value)) : "-";
 
-const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
+const CreateInvoice = ({
+  navigation,
+  invoiceId,
+  isPreInvoice = false,
+}: CreateInvoiceProps) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [invoice, setInvoice] = useState<InvoiceDetailResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -55,6 +69,11 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
   const [isConfirming, setIsConfirming] = useState<boolean>(false);
   const refPaymentForm = useRef<ConfirmPaymentInvoiceRef>(null);
   const refUpdateItemsPriceForm = useRef<UpdateInvoiceItemsPriceRef>(null);
+  const refCancelForm = useRef<CancelPreInvoiceReasonRef>(null);
+  // Synchronous guard against double submit (state is stale inside the sheet footer)
+  const isCancellingRef = useRef(false);
+  const [isCancelling, setIsCancelling] = useState<boolean>(false);
+  const queryClient = useQueryClient();
   const { openAppSheet, closeAppSheet } = useGlobalAppSheet();
 
   const fetchInvoice = useCallback(async () => {
@@ -91,6 +110,109 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
   useEffect(() => {
     fetchInvoice();
   }, [fetchInvoice]);
+
+  // Lock back navigation while the pre-invoice is still an unresolved draft
+  const isBackLocked =
+    isPreInvoice && (!invoice || invoice.status === InvoiceStatus.DRAFT);
+
+  useEffect(() => {
+    if (!isPreInvoice) return;
+    navigation.setOptions({
+      gestureEnabled: !isBackLocked,
+      headerBackVisible: !isBackLocked,
+    });
+    if (!isBackLocked) return;
+
+    const removeListener = navigation.addListener("beforeRemove", (event) => {
+      event.preventDefault();
+    });
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => true,
+    );
+    return () => {
+      removeListener();
+      backHandler.remove();
+    };
+  }, [isPreInvoice, isBackLocked, navigation]);
+
+  const handleCancelPreInvoice = async (reason: string) => {
+    if (!invoice || isCancellingRef.current) return;
+    isCancellingRef.current = true;
+    setIsCancelling(true);
+    try {
+      const response = await cancelContractPreInvoice(
+        invoice.contractId,
+        reason,
+      );
+      if (!response.success) {
+        throw new Error(response.message || "Không thể hủy hóa đơn");
+      }
+      queryClient.invalidateQueries({ queryKey: ["rooms"] });
+      queryClient.invalidateQueries({ queryKey: ["homepage"] });
+      Toast.show({
+        type: "success",
+        text1: "Thành công",
+        text2: "Đã hủy hóa đơn đầu tiên",
+      });
+      closeAppSheet();
+      // Contract is settled: unlock, then leave this step
+      setInvoice({ ...invoice, status: InvoiceStatus.CANCELLED });
+      requestAnimationFrame(() => navigation.goBack());
+    } catch (error: any) {
+      console.log("💞💓💗💞💓💗 ~ handleCancelPreInvoice ~ error:", error);
+      // Backend rolled back: invoice stays DRAFT, the sheet stays open for a retry
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2:
+          error?.response?.data?.message ??
+          error?.message ??
+          "Không thể hủy hóa đơn",
+      });
+    } finally {
+      isCancellingRef.current = false;
+      setIsCancelling(false);
+    }
+  };
+
+  const handleOpenCancelPreInvoice = () => {
+    if (!invoice) return;
+
+    openAppSheet(
+      <CancelPreInvoiceReason
+        ref={refCancelForm}
+        onSubmit={handleCancelPreInvoice}
+      />,
+      {
+        snapPoints: ["50%"],
+        detached: false,
+        header: {
+          title: "Hủy hóa đơn đầu tiên",
+          onClose: () => {
+            closeAppSheet();
+          },
+        },
+        renderFooter: (props) => (
+          <BottomSheetFooter {...props}>
+            <ActionButtonBottom
+              actions={[
+                {
+                  label: "Xác nhận hủy",
+                  icon: "close-circle",
+                  variant: "danger",
+                  isLoading: isCancelling,
+                  onPress: () => {
+                    refCancelForm.current?.submit();
+                  },
+                },
+              ]}
+            />
+          </BottomSheetFooter>
+        ),
+      },
+    );
+  };
 
   const handleSavePayment = async (formData: InvoicePaymentRequest) => {
     if (!invoice) return;
@@ -348,7 +470,11 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
     return (
       <View className="flex-1 items-center justify-center px-6">
         <View className="w-16 h-16 bg-gray-100 rounded-full items-center justify-center mb-3">
-          <Ionicons name="receipt-outline" size={26} color={tokens.colors.subtle} />
+          <Ionicons
+            name="receipt-outline"
+            size={26}
+            color={tokens.colors.subtle}
+          />
         </View>
         <Text className="text-base font-semibold text-gray-900 mb-1">
           Không tìm thấy hóa đơn
@@ -388,7 +514,11 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
         {/* Thông báo tạo thành công */}
         <CardComponent>
           <View className="flex-row items-center w-full bg-green-50 border border-green-200 p-3 rounded-lg">
-            <Ionicons name="checkmark-circle" size={20} color={tokens.colors.success} />
+            <Ionicons
+              name="checkmark-circle"
+              size={20}
+              color={tokens.colors.success}
+            />
             <Text className="text-sm text-green-700 ml-2 flex-1">
               Hợp đồng đã được tạo cùng hóa đơn đầu tiên. Kiểm tra lại thông tin
               bên dưới.
@@ -484,7 +614,11 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
           {invoiceItems.length === 0 ? (
             <View className="flex-1 items-center justify-center py-8">
               <View className="w-14 h-14 bg-gray-100 rounded-full items-center justify-center mb-2">
-                <Ionicons name="list-outline" size={22} color={tokens.colors.subtle} />
+                <Ionicons
+                  name="list-outline"
+                  size={22}
+                  color={tokens.colors.subtle}
+                />
               </View>
               <Text className="text-gray-500">Chưa có khoản mục nào</Text>
             </View>
@@ -540,14 +674,23 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
             onPress: handleOpenPaymentForm,
           },
           [
-            {
-              label: "Hủy",
-              icon: "close-circle",
-              variant: "danger",
-              onPress: () => {
-                navigation.goBack();
-              },
-            },
+            isPreInvoice
+              ? {
+                  label: "Hủy hóa đơn",
+                  icon: "close-circle",
+                  variant: "danger",
+                  isLoading: isCancelling,
+                  hidden: status !== InvoiceStatus.DRAFT,
+                  onPress: handleOpenCancelPreInvoice,
+                }
+              : {
+                  label: "Hủy",
+                  icon: "close-circle",
+                  variant: "danger",
+                  onPress: () => {
+                    navigation.goBack();
+                  },
+                },
             {
               label: "Xác nhận hóa đơn",
               icon: "checkmark-circle",

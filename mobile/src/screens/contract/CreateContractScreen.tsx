@@ -14,7 +14,6 @@ import ConfirmCreateContract, {
   ConfirmCreateContractRef,
 } from "./components/ConfirmCreateContract";
 import CreateContractForm from "./components/CreateContractForm";
-import ContractDetailScreen from "./ContractDetailScreen";
 
 type CreateContractScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, "CreateContract">;
@@ -33,17 +32,12 @@ const CreateContractScreen = ({
   // );
   const [defaultContractData, setDefaultContractData] =
     useState<ContractCreateRequest | null>(null);
-  const [invoiceId, setInvoiceId] = useState<string | null>();
-  const [contractId, setContractId] = useState<string | null>();
   const [activeStep, setActiveStep] = useState<number>(0);
 
   const confirmRef = useRef<ConfirmCreateContractRef>(null);
 
   const handleConfirm = async () => {
-    const response = await confirmRef.current?.confirm();
-    if (response && typeof response === "string") {
-      setInvoiceId(response);
-    }
+    await confirmRef.current?.confirm();
     return false;
   };
 
@@ -56,12 +50,15 @@ const CreateContractScreen = ({
   };
 
   const onContractCreated = (contract: ContractDetailResponse) => {
+    // Pre-invoice required: continue on the draft invoice view (no way back)
     if (contract.preInvoiceId) {
-      setInvoiceId(contract.preInvoiceId);
-      setContractId(contract.id);
-      setActiveStep(2);
+      navigation.replace("ConfirmDraftInvoice", {
+        invoiceId: contract.preInvoiceId,
+        isPreInvoice: true,
+      });
       return;
     }
+    navigation.replace("ContractDetail", { contractId: contract.id });
   };
 
   return (
@@ -74,7 +71,7 @@ const CreateContractScreen = ({
         onBack={() => navigation.goBack()}
         insetTop
       />
-      <ParrentStep activeStep={activeStep} isComplete={activeStep === 2}>
+      <ParrentStep activeStep={activeStep} isComplete={false}>
         <ChildStep label="Thông tin" hideButtonRow={true}>
           <CreateContractForm
             navigation={navigation}
@@ -98,7 +95,7 @@ const CreateContractScreen = ({
               return true;
             },
           }}
-          nextAction={{
+          finishAction={{
             label: "Xác nhận tạo hợp đồng",
             icon: "checkmark-circle",
             onPress: handleConfirm,
@@ -116,47 +113,6 @@ const CreateContractScreen = ({
             />
           )}
         </ChildStep>
-        <ChildStep
-          offsetBottomActionButtom={-12}
-          label="Hoàn thành"
-          // hideButtonRow={true}
-          finishAction={{
-            onPress: () => {
-              navigation.goBack();
-            },
-          }}
-          previousAction={{
-            hidden: !invoiceId,
-            label: "Tạo hóa đơn",
-            icon: "document",
-            onPress: () => {
-              navigation.replace("ConfirmDraftInvoice", {
-                invoiceId: invoiceId || "",
-              });
-              return true;
-            },
-          }}
-        >
-          <ContractDetailScreen
-            embedded
-            navigation={navigation as any}
-            route={{
-              params: {
-                contractId: contractId || "",
-              },
-            }}
-          />
-        </ChildStep>
-
-        {/* <ChildStep
-          offsetBottomActionButtom={-12}
-          label="Hóa đơn"
-          hideButtonRow={true}
-        >
-          {invoiceId && (
-            <CreateInvoice navigation={navigation} invoiceId={invoiceId} />
-          )}
-        </ChildStep> */}
       </ParrentStep>
     </SafeAreaView>
   );

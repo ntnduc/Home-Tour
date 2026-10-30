@@ -1,6 +1,12 @@
 import { uiColors, uiSpace } from "@/theme";
 import React, { ReactNode } from "react";
-import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
+import {
+  RefreshControlProps,
+  StyleProp,
+  StyleSheet,
+  View,
+  ViewStyle,
+} from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 export interface FormScreenProps {
@@ -8,6 +14,8 @@ export interface FormScreenProps {
   /** Sticky element under the scroll area (usually `ActionButtonBottom`). */
   footer?: ReactNode;
   contentStyle?: StyleProp<ViewStyle>;
+  /** Forwarded to KeyboardAwareScrollView (pull-to-refresh on detail screens). */
+  refreshControl?: React.ReactElement<RefreshControlProps>;
 }
 
 /**
@@ -23,7 +31,12 @@ export interface FormScreenProps {
  * └──────────────────────────────┘
  * ```
  */
-const FormScreen = ({ children, footer, contentStyle }: FormScreenProps) => (
+const FormScreen = ({
+  children,
+  footer,
+  contentStyle,
+  refreshControl,
+}: FormScreenProps) => (
   <View style={styles.container}>
     <KeyboardAwareScrollView
       style={styles.scroll}
@@ -35,6 +48,7 @@ const FormScreen = ({ children, footer, contentStyle }: FormScreenProps) => (
       enableResetScrollToCoords={false}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
+      refreshControl={refreshControl}
     >
       {children}
     </KeyboardAwareScrollView>

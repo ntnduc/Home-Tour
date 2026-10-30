@@ -22,7 +22,6 @@ import RoomStatusCarousel from "./components/RoomStatusCarousel";
 import SectionError from "@/components/SectionError";
 import SectionHeader from "@/components/SectionHeader";
 import StatBento from "./components/StatBento";
-import { promptConfirmContractPayment } from "../room/confirmContractPayment";
 import { HomeNavigation, openAlert, openRoomAction } from "./homeNavigation";
 import { HOME_SPACE, homeColors } from "./homeStyles";
 import { useHomepageData } from "./hooks/useHomepageData";
@@ -231,11 +230,7 @@ const DashboardScreen = () => {
               onPressRoom={(room) =>
                 navigation.navigate("RoomDetail", { roomId: room.roomId })
               }
-              onPressAction={(room) =>
-                openRoomAction(navigation, room, (contractId) =>
-                  promptConfirmContractPayment(contractId, refresh),
-                )
-              }
+              onPressAction={(room) => openRoomAction(navigation, room)}
             />
           )}
         </View>

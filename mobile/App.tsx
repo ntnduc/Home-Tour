@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Toast from "react-native-toast-message";
-import "./global.css";
 
 // Components
 import { GlobalAppSheetProvider } from "./src/components/GlobalAppSheet";
@@ -20,6 +19,7 @@ import OTPVerificationScreen from "./src/screens/auth/OTPVerificationScreen";
 import RegisterScreen from "./src/screens/auth/RegisterScreen";
 
 // Property Screens
+import EditProfileScreen from "./src/screens/profile/EditProfileScreen";
 import CreatePropertyScreen from "./src/screens/property/CreatePropertyScreen";
 import PropertyDetailScreen from "./src/screens/property/PropertyDetailScreen";
 import PropertyListScreen from "./src/screens/property/PropertyListScreen";
@@ -120,6 +120,13 @@ export default function App() {
                   }}
                 />
 
+                {/* Profile */}
+                <Stack.Screen
+                  name="EditProfile"
+                  component={EditProfileScreen}
+                  options={{ title: "Chỉnh sửa thông tin" }}
+                />
+
                 {/* Property Management */}
                 <Stack.Screen
                   name="PropertyList"
@@ -214,27 +221,7 @@ export default function App() {
                 <Stack.Screen
                   name="InvoiceDetail"
                   component={InvoiceDetailScreen}
-                  options={({ navigation, route }) => {
-                    const isFromHistory = route.params?.fromHistory;
-                    return {
-                      title: "Chi Tiết Hóa Đơn",
-                      headerRight: () =>
-                        !isFromHistory ? (
-                          <Pressable
-                            style={{ marginRight: 16 }}
-                            onPress={() =>
-                              navigation.navigate("InvoiceHistory")
-                            }
-                          >
-                            <Ionicons
-                              name="time-outline"
-                              size={24}
-                              color="#007AFF"
-                            />
-                          </Pressable>
-                        ) : null,
-                    };
-                  }}
+                  options={{ headerShown: false }}
                 />
                 <Stack.Screen
                   name="InvoiceHistory"

@@ -1,6 +1,7 @@
+import CountBadge from "@/components/CountBadge";
+import PressableScale from "@/components/PressableScale";
 import { tokens } from "@/theme";
 import { Ionicons } from "@expo/vector-icons";
-import CountBadge from "@/components/CountBadge";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { formatHeaderDate, getGreeting, getInitials } from "../homeFormat";
@@ -11,7 +12,6 @@ import {
   homeType,
   homeWeight,
 } from "../homeStyles";
-import PressableScale from "@/components/PressableScale";
 
 type Props = {
   fullName?: string;
@@ -57,7 +57,13 @@ const HomeHeader = ({
             size={22}
             color={homeColors.ink}
           />
-          <CountBadge count={alertCount} max={9} tone="alert" size="sm" style={styles.badge} />
+          <CountBadge
+            count={alertCount}
+            max={9}
+            tone="alert"
+            size="sm"
+            style={styles.badge}
+          />
         </PressableScale>
         <PressableScale
           onPress={onPressAvatar}
