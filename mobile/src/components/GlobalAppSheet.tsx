@@ -29,6 +29,13 @@ export const useGlobalAppSheet = () => {
   return context;
 };
 
+// Separate from the actions context so open/close does not re-render every
+// useGlobalAppSheet() consumer. Defaults to false outside the provider.
+const GlobalAppSheetOpenContext = createContext(false);
+
+/** True while at least one global sheet is mounted (open or closing). */
+export const useIsAppSheetOpen = () => useContext(GlobalAppSheetOpenContext);
+
 interface GlobalAppSheetProviderProps {
   children: React.ReactNode;
 }
@@ -122,17 +129,19 @@ export const GlobalAppSheetProvider: React.FC<GlobalAppSheetProviderProps> = ({
   // its portal host) can still call useGlobalAppSheet, e.g. DatePicker.
   return (
     <GlobalAppSheetContext.Provider value={value}>
-      <BottomSheetModalProvider>
-        {children}
-        {entries.map((entry) => (
-          <GlobalSheetItem
-            key={entry.id}
-            entry={entry}
-            register={register}
-            onDismissed={handleDismissed}
-          />
-        ))}
-      </BottomSheetModalProvider>
+      <GlobalAppSheetOpenContext.Provider value={entries.length > 0}>
+        <BottomSheetModalProvider>
+          {children}
+          {entries.map((entry) => (
+            <GlobalSheetItem
+              key={entry.id}
+              entry={entry}
+              register={register}
+              onDismissed={handleDismissed}
+            />
+          ))}
+        </BottomSheetModalProvider>
+      </GlobalAppSheetOpenContext.Provider>
     </GlobalAppSheetContext.Provider>
   );
 };

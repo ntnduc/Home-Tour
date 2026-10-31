@@ -8,6 +8,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { useIsAppSheetOpen } from "./GlobalAppSheet";
 
 export interface FormScreenProps {
   children: ReactNode;
@@ -36,25 +37,31 @@ const FormScreen = ({
   footer,
   contentStyle,
   refreshControl,
-}: FormScreenProps) => (
-  <View style={styles.container}>
-    <KeyboardAwareScrollView
-      style={styles.scroll}
-      contentContainerStyle={[styles.content, contentStyle]}
-      enableOnAndroid
-      extraScrollHeight={30}
-      keyboardOpeningTime={0}
-      enableAutomaticScroll
-      enableResetScrollToCoords={false}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-      refreshControl={refreshControl}
-    >
-      {children}
-    </KeyboardAwareScrollView>
-    {footer}
-  </View>
-);
+}: FormScreenProps) => {
+  // Sheet inputs live in a portal outside this scroll view; while a sheet is
+  // open, auto-scroll would try to measure a view it does not own.
+  const isSheetOpen = useIsAppSheetOpen();
+
+  return (
+    <View style={styles.container}>
+      <KeyboardAwareScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.content, contentStyle]}
+        enableOnAndroid
+        extraScrollHeight={30}
+        keyboardOpeningTime={0}
+        enableAutomaticScroll={!isSheetOpen}
+        enableResetScrollToCoords={false}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        refreshControl={refreshControl}
+      >
+        {children}
+      </KeyboardAwareScrollView>
+      {footer}
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
