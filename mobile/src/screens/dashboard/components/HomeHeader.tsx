@@ -1,9 +1,10 @@
 import CountBadge from "@/components/CountBadge";
 import PressableScale from "@/components/PressableScale";
+import { getFileUrl } from "@/components/Uploadfile/uploadfile.api";
 import { tokens } from "@/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 import { formatHeaderDate, getGreeting, getInitials } from "../homeFormat";
 import {
   HOME_RADIUS,
@@ -15,6 +16,8 @@ import {
 
 type Props = {
   fullName?: string;
+  /** Profile photo; falls back to initials when missing. */
+  avatarFileId?: string | null;
   alertCount: number;
   onPressBell: () => void;
   onPressAvatar: () => void;
@@ -23,10 +26,11 @@ type Props = {
 /**
  * HEADER cá nhân hóa.
  * Bố cục 2 cột: trái = eyebrow ngày + lời chào theo giờ + tên (thứ bậc chữ rõ ràng),
- * phải = cụm nút tròn nổi (chuông có badge đếm việc cần xử lý + avatar viết tắt).
+ * phải = cụm nút tròn nổi (chuông có badge đếm việc cần xử lý + ảnh đại diện, chưa có ảnh thì chữ viết tắt).
  */
 const HomeHeader = ({
   fullName,
+  avatarFileId,
   alertCount,
   onPressBell,
   onPressAvatar,
@@ -71,7 +75,15 @@ const HomeHeader = ({
           scaleTo={0.92}
           accessibilityLabel="Hồ sơ"
         >
-          <Text style={styles.avatarText}>{getInitials(fullName)}</Text>
+          {avatarFileId ? (
+            <Image
+              source={{ uri: getFileUrl(avatarFileId) }}
+              style={styles.avatarImage}
+              accessibilityIgnoresInvertColors
+            />
+          ) : (
+            <Text style={styles.avatarText}>{getInitials(fullName)}</Text>
+          )}
         </PressableScale>
       </View>
     </View>
@@ -102,7 +114,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  avatar: { backgroundColor: homeColors.ink },
+  avatar: { backgroundColor: homeColors.ink, overflow: "hidden" },
+  avatarImage: { width: SIZE, height: SIZE },
   avatarText: {
     color: tokens.colors.onInverse,
     fontSize: tokens.typography.fontSize.sm,

@@ -201,6 +201,8 @@ const AppSheet = forwardRef<AppSheetRef, AppSheetProps>((props, ref) => {
       detached
       backdropComponent={renderBackdrop}
       footerComponent={renderFooter}
+      keyboardBehavior="interactive"
+      keyboardBlurBehavior="restore"
       {...modalProps}
       handleComponent={
         "handleComponent" in modalProps

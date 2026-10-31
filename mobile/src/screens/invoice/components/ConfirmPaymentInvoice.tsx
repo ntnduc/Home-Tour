@@ -11,10 +11,13 @@ import {
   PaymentMethod,
 } from "@/types/payment";
 import { formatCurrency } from "@/utils/appUtil";
-import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
+import AppSheetScrollView, {
+  SHEET_FOOTER_CLEARANCE,
+} from "@/components/AppSheet/AppSheetScrollView";
 import React, { forwardRef, useImperativeHandle } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { StyleSheet, Text, View } from "react-native";
+import { Alert, StyleSheet, Text, View } from "react-native";
 
 type Props = {
   invoice: InvoiceDetailResponse;
@@ -24,9 +27,6 @@ type Props = {
 export interface ConfirmPaymentInvoiceRef {
   submit: () => void;
 }
-
-// Bottom padding under the last field so the BottomSheetFooter never covers it
-const SHEET_FOOTER_CLEARANCE = 120;
 
 /**
  * Record-payment bottom sheet form (opened from the invoice detail).
@@ -73,30 +73,34 @@ const ConfirmPaymentInvoice = forwardRef<ConfirmPaymentInvoiceRef, Props>(
 
     const amount = watch("amount");
     const isPartialPayment = amount != null && amount < invoice.remainingAmount;
+    const CONTRACT_PAYMENT_ALERT =
+      "Xác nhận thanh toán hợp đồng sẽ chuyển sang trạng thái hoạt động hoặc chờ hoạt động khi thời gian bắt đầu chưa đến.";
 
     useImperativeHandle(ref, () => ({
       submit() {
-        handleSubmit((data) => {
-          const submitData: InvoicePaymentRequest = {
-            id: invoice.id as string,
-            paymentMethod: data.paymentMethod ?? PaymentMethod.CASH,
-            remainingAmount: data.remainingAmount,
-            isCarryOver: data.isCarryOver,
-            paidAmount: data.amount,
-            notes: data.note,
-          };
-          onSubmit?.(submitData);
-        })();
+        Alert.alert("Xác nhận thanh toán", CONTRACT_PAYMENT_ALERT, [
+          { text: "Hủy", style: "cancel" },
+          {
+            text: "Tiếp tục",
+            onPress: () =>
+              handleSubmit((data) => {
+                const submitData: InvoicePaymentRequest = {
+                  id: invoice.id as string,
+                  paymentMethod: data.paymentMethod ?? PaymentMethod.CASH,
+                  remainingAmount: data.remainingAmount,
+                  isCarryOver: data.isCarryOver,
+                  paidAmount: data.amount,
+                  notes: data.note,
+                };
+                onSubmit?.(submitData);
+              })(),
+          },
+        ]);
       },
     }));
 
     return (
-      <BottomSheetScrollView
-        contentContainerStyle={styles.content}
-        nestedScrollEnabled={true}
-        showsVerticalScrollIndicator={true}
-        keyboardShouldPersistTaps="handled"
-      >
+      <AppSheetScrollView contentContainerStyle={styles.content}>
         <View style={styles.tile}>
           <IconSquircle icon="wallet-outline" tone="info" size="md" />
           <View style={styles.tileText}>
@@ -222,6 +226,7 @@ const ConfirmPaymentInvoice = forwardRef<ConfirmPaymentInvoiceRef, Props>(
                 value={value}
                 onChangeText={onChange}
                 placeholder="Nhập ghi chú"
+                inputComponent={BottomSheetTextInput}
                 multiline
                 numberOfLines={3}
                 textAlignVertical="top"
@@ -229,7 +234,7 @@ const ConfirmPaymentInvoice = forwardRef<ConfirmPaymentInvoiceRef, Props>(
             )}
           />
         </View>
-      </BottomSheetScrollView>
+      </AppSheetScrollView>
     );
   },
 );

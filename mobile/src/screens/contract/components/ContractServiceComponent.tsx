@@ -1,38 +1,41 @@
-import { Ionicons } from '@expo/vector-icons';
-import DisplayField from '@/components/DisplayField';
-import { fieldStyles } from '@/components/FormField';
-import IconButton from '@/components/IconButton';
-import StatusBadge from '@/components/StatusBadge';
-import { uiColors, uiRadius, uiSpace, uiType } from '@/theme';
+import DisplayField from "@/components/DisplayField";
+import { fieldStyles } from "@/components/FormField";
+import IconButton from "@/components/IconButton";
+import StatusBadge from "@/components/StatusBadge";
+import { uiColors, uiRadius, uiSpace, uiType } from "@/theme";
+import { Ionicons } from "@expo/vector-icons";
 import React, {
   forwardRef,
   useCallback,
   useImperativeHandle,
   useRef,
   useState,
-} from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+} from "react";
+import { Alert, StyleSheet, Text, View } from "react-native";
 
 // Components
-import Input from '@/components/Input';
+import AppSheetScrollView, {
+  SHEET_FOOTER_CLEARANCE,
+} from "@/components/AppSheet/AppSheetScrollView";
+import Input from "@/components/Input";
 
 // Types & Constants
-import ActionButtonBottom from '@/components/ActionButtonBottom';
-import AppSheet, { AppSheetRef } from '@/components/AppSheet/AppSheet';
-import { ComboBox } from '@/components/ComboBox';
-import { Switch } from '@/components/Switch';
+import ActionButtonBottom from "@/components/ActionButtonBottom";
+import AppSheet, { AppSheetRef } from "@/components/AppSheet/AppSheet";
+import { ComboBox } from "@/components/ComboBox";
+import { Switch } from "@/components/Switch";
 import {
   SERVICE_CALCULATE_METHOD_WITH_INFO,
   ServiceCalculateMethod,
-} from '@/constant/service.constant';
-import { ContractServiceDetailResponse } from '@/types/contract-service';
-import { formatCurrency } from '@/utils/appUtil';
+} from "@/constant/service.constant";
+import { ContractServiceDetailResponse } from "@/types/contract-service";
+import { formatCurrency } from "@/utils/appUtil";
 import {
   BottomSheetFooter,
   BottomSheetFooterProps,
-  BottomSheetScrollView,
-} from '@gorhom/bottom-sheet';
-import { Controller, useForm } from 'react-hook-form';
+  BottomSheetTextInput,
+} from "@gorhom/bottom-sheet";
+import { Controller, useForm } from "react-hook-form";
 
 interface ContractServiceComponentProps {
   onSuccess?: (service: ContractServiceDetailResponse, index: number) => void;
@@ -71,7 +74,7 @@ const ContractServiceComponent = forwardRef<
     formState: { errors, defaultValues },
   } = useForm<ContractServiceDetailResponse>({
     defaultValues: {
-      name: '',
+      name: "",
       calculationMethod: ServiceCalculateMethod.PER_UNIT_SIMPLE,
       price: 0,
       isEnabled: true,
@@ -92,18 +95,18 @@ const ContractServiceComponent = forwardRef<
     expand: (service: ContractServiceDetailResponse, index: number) => {
       reset();
       setIndex(index);
-      service?.name && setValueForm('name', service.name);
+      service?.name && setValueForm("name", service.name);
       setValueForm(
-        'calculationMethod',
+        "calculationMethod",
         service.calculationMethod ?? ServiceCalculateMethod.PER_UNIT_SIMPLE,
       );
       if (service.calculationMethod === ServiceCalculateMethod.FREE) {
-        setValueForm('price', 0);
+        setValueForm("price", 0);
       } else {
-        setValueForm('price', service.price);
+        setValueForm("price", service.price);
       }
-      setValueForm('isEnabled', service.isEnabled);
-      setValueForm('helperValue', service.helperValue);
+      setValueForm("isEnabled", service.isEnabled);
+      setValueForm("helperValue", service.helperValue);
 
       bottomSheetRef.current?.open();
     },
@@ -123,19 +126,19 @@ const ContractServiceComponent = forwardRef<
     unit: value.unit,
   }));
 
-  const calculationMethod = watch('calculationMethod');
-  const price = watch('price');
-  const isEnabled = watch('isEnabled');
-  const helperValue = watch('helperValue');
+  const calculationMethod = watch("calculationMethod");
+  const price = watch("price");
+  const isEnabled = watch("isEnabled");
+  const helperValue = watch("helperValue");
 
   const _renderItems = useCallback(
     (item: CalculationMethodOption, selected?: boolean) => {
       return (
         <View
           style={{
-            justifyContent: 'space-between',
-            flexDirection: 'row',
-            alignItems: 'center',
+            justifyContent: "space-between",
+            flexDirection: "row",
+            alignItems: "center",
             height: 50,
             paddingHorizontal: 10,
           }}
@@ -154,7 +157,7 @@ const ContractServiceComponent = forwardRef<
             size="sm"
             onPress={() => {
               Alert.alert(
-                'Thông tin',
+                "Thông tin",
                 SERVICE_CALCULATE_METHOD_WITH_INFO[item.key].info,
               );
             }}
@@ -177,7 +180,7 @@ const ContractServiceComponent = forwardRef<
               rules={{
                 required: {
                   value: true,
-                  message: 'Nhập số hiện tại',
+                  message: "Nhập số hiện tại",
                 },
               }}
               render={({ field: { onChange, onBlur, value } }) => (
@@ -207,7 +210,7 @@ const ContractServiceComponent = forwardRef<
               rules={{
                 required: {
                   value: true,
-                  message: 'Nhập số lượng',
+                  message: "Nhập số lượng",
                 },
               }}
               render={({ field: { onChange, value } }) => (
@@ -242,7 +245,7 @@ const ContractServiceComponent = forwardRef<
         <ActionButtonBottom
           actions={[
             {
-              label: 'Xác nhận',
+              label: "Xác nhận",
               onPress: handleSubmit(
                 (value) => {
                   onSuccess?.(value, index);
@@ -252,7 +255,7 @@ const ContractServiceComponent = forwardRef<
                   // TODO: Do nothing
                 },
               ),
-              variant: 'success',
+              variant: "success",
             },
           ]}
         />
@@ -264,16 +267,11 @@ const ContractServiceComponent = forwardRef<
   return (
     <AppSheet
       ref={bottomSheetRef}
-      snapPoints={['90%']}
-      header={{ title: 'Cập nhật dịch vụ', height: 60 }}
+      snapPoints={["75%"]}
+      header={{ title: "Cập nhật dịch vụ", height: 60 }}
       renderFooter={_renderFooter}
     >
-      <BottomSheetScrollView
-        style={sheetStyles.scroll}
-        contentContainerStyle={sheetStyles.body}
-        nestedScrollEnabled={true}
-        showsVerticalScrollIndicator={true}
-      >
+      <AppSheetScrollView contentContainerStyle={sheetStyles.body}>
         <View>
           <Controller
             control={control}
@@ -281,11 +279,12 @@ const ContractServiceComponent = forwardRef<
             rules={{
               required: {
                 value: true,
-                message: 'Vui lòng nhập tên dịch vụ',
+                message: "Vui lòng nhập tên dịch vụ",
               },
             }}
             render={({ field: { onChange, onBlur, value } }) => (
               <Input
+                inputComponent={BottomSheetTextInput}
                 label="Tên dịch vụ"
                 required={true}
                 error={errors.name?.message}
@@ -308,7 +307,7 @@ const ContractServiceComponent = forwardRef<
                 required={true}
                 onChange={(item) => {
                   onChange(item?.key);
-                  setValueForm('helperValue', null);
+                  setValueForm("helperValue", null);
                 }}
                 renderItem={(item, selected) => _renderItems(item, selected)}
                 isSearch={false}
@@ -365,18 +364,19 @@ const ContractServiceComponent = forwardRef<
                   return true;
                 }
                 if (value > 0) return true;
-                return 'Giá dịch vụ phải lớn hơn 0';
+                return "Giá dịch vụ phải lớn hơn 0";
               },
             }}
             render={({ field: { onChange, value } }) => (
               <Input
+                inputComponent={BottomSheetTextInput}
                 label="Giá dịch vụ"
                 type="number"
                 disabled={calculationMethod === ServiceCalculateMethod.FREE}
                 required={true}
                 error={errors.price?.message}
                 placeholder="Nhập giá dịch vụ"
-                value={value ? formatCurrency(value.toString()) : ''}
+                value={value ? formatCurrency(value.toString()) : ""}
                 onChangeText={onChange}
                 keyboardType="numeric"
                 icon="cash-outline"
@@ -419,7 +419,7 @@ const ContractServiceComponent = forwardRef<
           {defaultValues?.calculationMethod !== ServiceCalculateMethod.FREE && (
             <DisplayField
               label="Giá dịch vụ"
-              value={`${formatCurrency(price?.toString() || '0')}đ`}
+              value={`${formatCurrency(price?.toString() || "0")}đ`}
               strong
             />
           )}
@@ -429,31 +429,29 @@ const ContractServiceComponent = forwardRef<
             value={
               <StatusBadge
                 size="sm"
-                tone={isEnabled ? 'success' : 'error'}
-                label={isEnabled ? 'Đang sử dụng' : 'Không sử dụng'}
+                tone={isEnabled ? "success" : "error"}
+                label={isEnabled ? "Đang sử dụng" : "Không sử dụng"}
               />
             }
           />
         </View>
-      </BottomSheetScrollView>
+      </AppSheetScrollView>
     </AppSheet>
   );
 });
 
-ContractServiceComponent.displayName = 'ContractServiceComponent';
+ContractServiceComponent.displayName = "ContractServiceComponent";
 
 const sheetStyles = StyleSheet.create({
-  scroll: {
-    marginBottom: 90,
-  },
   body: {
     padding: uiSpace.screen,
+    paddingBottom: SHEET_FOOTER_CLEARANCE,
     gap: uiSpace.gap,
   },
   itemRow: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   leftIcon: {

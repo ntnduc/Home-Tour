@@ -7,6 +7,7 @@ import { RbacModule } from '../rbac/rbac.module';
 import { Payment } from './entities/payment.entity';
 import { PaymentController } from './payment.controller';
 import { PaymentService } from './payment.service';
+import { PaymentRepository } from './repositories/payment.repository';
 
 @Module({
   imports: [
@@ -14,8 +15,8 @@ import { PaymentService } from './payment.service';
     CurrentUserModule,
     RbacModule,
   ],
-  providers: [PaymentService],
-  exports: [PaymentService],
+  providers: [PaymentService, PaymentRepository],
+  exports: [PaymentService, PaymentRepository],
   controllers: [PaymentController],
 })
 export class PaymentModule {}

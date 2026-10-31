@@ -75,13 +75,7 @@ export class BaseService<
     filter: BaseFilterDto<TEntity>,
   ): Promise<PaginateResult<TListDto>> {
     try {
-      const {
-        globalKey,
-        filters: filterDto,
-        sort,
-        limit = 50,
-        offset,
-      } = filter;
+      const { globalKey, filters: filterDto, sort, limit, offset } = filter;
       let query = await this.specQuery();
 
       query.skip(offset);

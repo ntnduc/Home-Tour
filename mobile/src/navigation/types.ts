@@ -1,3 +1,4 @@
+import { NavigatorScreenParams } from "@react-navigation/native";
 import { InvoiceCreateRequest } from "@/types/invoice";
 import { Room } from "@/types/room";
 
@@ -8,7 +9,7 @@ export type RootStackParamList = {
   Register: { registrationToken: string };
 
   // Main App
-  MainTabs: undefined;
+  MainTabs: NavigatorScreenParams<TabParamList> | undefined;
 
   // Property Management
   PropertyList: undefined;

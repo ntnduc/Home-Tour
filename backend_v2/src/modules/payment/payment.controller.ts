@@ -14,6 +14,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { BaseFilterDto } from 'src/common/base/dto/filter.dto';
 import { BaseController } from '../../common/base/crud/base.controller';
 import { AutoCrudPermissions } from '../../common/decorators/crud-permissions.decorator';
 import { PaymentStatus, PaymentType } from '../../common/enums/payment.enum';
@@ -70,10 +71,9 @@ export class PaymentController extends BaseController<
   })
   async getPaymentsByInvoiceId(
     @Param('invoiceId') invoiceId: string,
-    @Query() query: any,
+    @Query() query: BaseFilterDto<Payment>,
   ) {
-    query.invoiceId = invoiceId;
-    return await this.getAll(query);
+    return await this.getAll(this.withFilter(query, { invoiceId }));
   }
 
   @Get('status/:status')
@@ -84,10 +84,9 @@ export class PaymentController extends BaseController<
   })
   async getPaymentsByStatus(
     @Param('status') status: PaymentStatus,
-    @Query() query: any,
+    @Query() query: BaseFilterDto<Payment>,
   ) {
-    query.status = status;
-    return await this.getAll(query);
+    return await this.getAll(this.withFilter(query, { status }));
   }
 
   @Get('type/:type')
@@ -98,9 +97,19 @@ export class PaymentController extends BaseController<
   })
   async getPaymentsByType(
     @Param('type') type: PaymentType,
-    @Query() query: any,
+    @Query() query: BaseFilterDto<Payment>,
   ) {
-    query.type = type;
-    return await this.getAll(query);
+    return await this.getAll(this.withFilter(query, { type }));
+  }
+
+  // Merge a fixed filter into the paging query, keeping limit/offset/sort from the request
+  private withFilter(
+    query: BaseFilterDto<Payment>,
+    fixed: Partial<Payment>,
+  ): BaseFilterDto<Payment> {
+    return {
+      ...query,
+      filters: { ...query?.filters, ...fixed } as Payment,
+    };
   }
 }

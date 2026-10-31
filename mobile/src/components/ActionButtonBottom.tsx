@@ -5,7 +5,8 @@ import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Button, { ButtonVariant } from "./Button";
 
-type ActionVariant = "primary" | "secondary" | "danger" | "success" | "outline" | "soft";
+type ActionVariant =
+  "primary" | "secondary" | "danger" | "success" | "outline" | "soft";
 
 interface ActionButton {
   label: string;
@@ -40,7 +41,9 @@ const VARIANT: Record<ActionVariant, ButtonVariant> = {
 };
 
 const isActionHidden = (action: ActionButton, allActions: ActionButton[]) =>
-  typeof action.hidden === "function" ? action.hidden(allActions) : !!action.hidden;
+  typeof action.hidden === "function"
+    ? action.hidden(allActions)
+    : !!action.hidden;
 
 /**
  * Sticky bottom action bar (safe-area aware) — Modern Minimalist.

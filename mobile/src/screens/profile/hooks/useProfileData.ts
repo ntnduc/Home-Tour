@@ -49,6 +49,18 @@ const syncStoredUser = async (profile: Profile) => {
   }
 };
 
+/** Shared profile query (same cache entry for Profile screen and dashboard header). */
+export const useProfileQuery = () =>
+  useQuery({
+    queryKey: PROFILE_KEY,
+    queryFn: async () => {
+      const profile = unwrap(await getProfile());
+      await syncStoredUser(profile);
+      return profile;
+    },
+    staleTime: STALE_TIME,
+  });
+
 /**
  * Data + actions for the profile area.
  *
@@ -60,15 +72,7 @@ export const useProfileData = () => {
   const queryClient = useQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const query = useQuery({
-    queryKey: PROFILE_KEY,
-    queryFn: async () => {
-      const profile = unwrap(await getProfile());
-      await syncStoredUser(profile);
-      return profile;
-    },
-    staleTime: STALE_TIME,
-  });
+  const query = useProfileQuery();
 
   const isFirstFocus = useRef(true);
   const { refetch } = query;

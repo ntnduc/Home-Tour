@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AlertFeed from "./components/AlertFeed";
+import { useProfileQuery } from "@/screens/profile/hooks/useProfileData";
 import HomeHeader from "./components/HomeHeader";
 import PropertyFilterChips from "./components/PropertyFilterChips";
 import QuickActionGrid, { QuickAction } from "./components/QuickActionGrid";
@@ -71,6 +72,9 @@ const DashboardScreen = () => {
   useEffect(() => {
     getStoreUser().then(setUser);
   }, []);
+
+  // Shares the profile cache entry, so the photo updates right after an upload
+  const { data: profile } = useProfileQuery();
 
   // Giữ danh sách chip từ lần tải thành công gần nhất → chip không biến mất khi đang tải/lỗi.
   const [properties, setProperties] = useState<HomepagePropertyOption[]>([]);
@@ -155,7 +159,8 @@ const DashboardScreen = () => {
         {/* 1. Header cá nhân hóa + chip lọc tài sản */}
         <View style={styles.headerBlock}>
           <HomeHeader
-            fullName={user?.fullName}
+            fullName={profile?.fullName ?? user?.fullName}
+            avatarFileId={profile?.avatarFileId}
             alertCount={alertCount}
             onPressBell={scrollToAlerts}
             onPressAvatar={() => navigation.navigate("Profile")}

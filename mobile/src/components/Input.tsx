@@ -39,6 +39,8 @@ interface InputProps extends Omit<TextInputProps, "onChangeText" | "editable"> {
   iconProps?: InputIconProps;
   onClear?: () => void;
   showClear?: boolean;
+  /** Swap the native TextInput, e.g. BottomSheetTextInput inside a bottom sheet. */
+  inputComponent?: React.ComponentType<TextInputProps>;
 }
 
 type FocusEvent = Parameters<NonNullable<TextInputProps["onFocus"]>>[0];
@@ -73,6 +75,7 @@ const Input: React.FC<InputProps> = ({
   iconProps,
   onClear,
   showClear = true,
+  inputComponent: InputComponent = TextInput,
   onFocus,
   onBlur,
   ...props
@@ -124,7 +127,7 @@ const Input: React.FC<InputProps> = ({
             style={isArea && styles.areaIcon}
           />
         )}
-        <TextInput
+        <InputComponent
           value={value}
           style={[fieldStyles.text, styles.input, isArea && styles.areaInput, inputStyles]}
           onChangeText={handleChangeText}
@@ -145,6 +148,7 @@ const Input: React.FC<InputProps> = ({
             size={18}
             color={fieldColors.icon}
             accessibilityLabel="Xoá nội dung"
+            style={isArea && styles.areaClear}
             suppressHighlighting
             onPress={() => {
               onChangeText?.("");
@@ -168,6 +172,10 @@ const styles = StyleSheet.create({
   },
   areaIcon: {
     marginTop: 13,
+  },
+  // Center the clear button vertically in the multiline box
+  areaClear: {
+    alignSelf: "center",
   },
   areaInput: {
     minHeight: 96,

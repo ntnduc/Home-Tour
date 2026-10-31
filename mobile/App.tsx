@@ -258,7 +258,7 @@ export default function App() {
                 <Stack.Screen
                   name="ConfirmDraftInvoice"
                   component={ConfirmDraftInvoiceScreen}
-                  options={{ title: "Xác Nhận Hóa Đơn Nháp" }}
+                  options={{ headerShown: false }}
                 />
 
                 <Stack.Screen

@@ -1,8 +1,13 @@
 import Input from "@/components/Input";
-import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import NoticeBanner from "@/components/NoticeBanner";
+import { uiSpace } from "@/theme";
+import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
+import AppSheetScrollView, {
+  SHEET_FOOTER_CLEARANCE,
+} from "@/components/AppSheet/AppSheetScrollView";
 import React, { forwardRef, useImperativeHandle } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Text } from "react-native";
+import { StyleSheet } from "react-native";
 
 type FormValues = { reason: string };
 
@@ -16,7 +21,22 @@ export interface CancelPreInvoiceReasonRef {
 
 const MAX_REASON_LENGTH = 500;
 
-/** Bottom-sheet form collecting the required reason for cancelling a pre-invoice. */
+/**
+ * Bottom-sheet form collecting the required reason for cancelling a pre-invoice.
+ * Header and footer (Xác nhận hủy) are owned by the host sheet.
+ *
+ * ```
+ * AppSheetScrollView · padding 16 · paddingBottom 120 · gap 16
+ * ╭─────────────────────────────────────────────────────╮
+ * │ (!)  Hóa đơn đầu tiên sẽ bị hủy và hợp đồng sẽ tiếp │ NoticeBanner warning
+ * │      tục mà không cần thanh toán. Thao tác này ... │ (no title)
+ * ╰─────────────────────────────────────────────────────╯
+ * Lý do hủy *                                          Input type area
+ * ┌─────────────────────────────────────────────────────┐
+ * │ Nhập lý do hủy hóa đơn                              │
+ * └─────────────────────────────────────────────────────┘
+ * ```
+ */
 const CancelPreInvoiceReason = forwardRef<CancelPreInvoiceReasonRef, Props>(
   ({ onSubmit }, ref) => {
     const { control, handleSubmit } = useForm<FormValues>({
@@ -30,14 +50,12 @@ const CancelPreInvoiceReason = forwardRef<CancelPreInvoiceReasonRef, Props>(
     }));
 
     return (
-      <BottomSheetScrollView
-        className="p-4"
-        keyboardShouldPersistTaps="handled"
-      >
-        <Text className="text-sm text-gray-500 mb-3">
-          Hóa đơn đầu tiên sẽ bị hủy và hợp đồng sẽ tiếp tục mà không cần thanh
-          toán. Thao tác này không thể hoàn tác.
-        </Text>
+      <AppSheetScrollView contentContainerStyle={styles.content}>
+        <NoticeBanner
+          tone="warning"
+          icon="warning"
+          message="Hóa đơn đầu tiên sẽ bị hủy và hợp đồng sẽ tiếp tục mà không cần thanh toán. Thao tác này không thể hoàn tác."
+        />
         <Controller
           control={control}
           name="reason"
@@ -55,6 +73,7 @@ const CancelPreInvoiceReason = forwardRef<CancelPreInvoiceReasonRef, Props>(
             <Input
               label="Lý do hủy"
               type="area"
+              inputComponent={BottomSheetTextInput}
               value={value}
               onChangeText={onChange}
               placeholder="Nhập lý do hủy hóa đơn"
@@ -64,9 +83,17 @@ const CancelPreInvoiceReason = forwardRef<CancelPreInvoiceReasonRef, Props>(
             />
           )}
         />
-      </BottomSheetScrollView>
+      </AppSheetScrollView>
     );
   },
 );
+
+const styles = StyleSheet.create({
+  content: {
+    padding: uiSpace.card,
+    paddingBottom: SHEET_FOOTER_CLEARANCE,
+    gap: 16,
+  },
+});
 
 export default CancelPreInvoiceReason;

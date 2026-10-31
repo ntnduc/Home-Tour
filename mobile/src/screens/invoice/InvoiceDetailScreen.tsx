@@ -15,7 +15,7 @@ import { BottomSheetFooter } from "@gorhom/bottom-sheet";
 import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useCallback, useRef } from "react";
-import { Alert, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { RefreshControl, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import CancelPreInvoiceReason, {
@@ -63,8 +63,6 @@ type InvoiceDetailScreenProps = {
  * └─────────────────────────────────────────┘
  * Actions: pay on PENDING / PARTIALLY_PAID / OVERDUE · cancel on DRAFT / PENDING · none otherwise.
  */
-const CONTRACT_PAYMENT_ALERT =
-  "Xác nhận thanh toán hợp đồng sẽ chuyển sang trạng thái hoạt động hoặc chờ hoạt động khi thời gian bắt đầu chưa đến.";
 
 const InvoiceDetailScreen = ({
   navigation,
@@ -194,16 +192,16 @@ const InvoiceDetailScreen = ({
   };
 
   // First invoice of a contract: warn that paying also moves the contract on
-  const handleStartPayment = () => {
-    if (!confirmContractId) {
-      handleOpenPaymentForm();
-      return;
-    }
-    Alert.alert("Xác nhận thanh toán", CONTRACT_PAYMENT_ALERT, [
-      { text: "Hủy", style: "cancel" },
-      { text: "Tiếp tục", onPress: handleOpenPaymentForm },
-    ]);
-  };
+  // const handleStartPayment = () => {
+  //   if (!confirmContractId) {
+  //     handleOpenPaymentForm();
+  //     return;
+  //   }
+  //   Alert.alert("Xác nhận thanh toán", CONTRACT_PAYMENT_ALERT, [
+  //     { text: "Hủy", style: "cancel" },
+  //     { text: "Tiếp tục", onPress: handleOpenPaymentForm },
+  //   ]);
+  // };
 
   const handleOpenCancelForm = () => {
     openAppSheet(
@@ -293,7 +291,7 @@ const InvoiceDetailScreen = ({
             variant: "success",
             isLoading: isPaying,
             disabled: isCancelling,
-            onPress: handleStartPayment,
+            onPress: handleOpenPaymentForm,
             hidden: !canPay,
           },
         ],
