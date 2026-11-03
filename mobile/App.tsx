@@ -1,7 +1,7 @@
-import { Ionicons } from "@expo/vector-icons";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/services/queryClient";
 import React from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Toast from "react-native-toast-message";
@@ -24,6 +24,8 @@ import CreatePropertyScreen from "./src/screens/property/CreatePropertyScreen";
 import PropertyDetailScreen from "./src/screens/property/PropertyDetailScreen";
 import PropertyListScreen from "./src/screens/property/PropertyListScreen";
 import UpdatePropertyScreen from "./src/screens/property/UpdatePropertyScreen";
+import MyInvitationsScreen from "./src/screens/propertyMember/MyInvitationsScreen";
+import PropertyMembersScreen from "./src/screens/propertyMember/PropertyMembersScreen";
 
 // Room Screens
 import CreateRoomScreen from "./src/screens/room/CreateRoomScreen";
@@ -48,10 +50,9 @@ import ConfirmCreateInvoiceScreen from "./src/screens/invoice/ConfirmCreateInvoi
 import ConfirmDraftInvoiceScreen from "./src/screens/invoice/ConfirmDraftInvoiceScreen";
 import CreateInvoiceScreen from "./src/screens/invoice/CreateInvoiceScreen";
 import InvoiceDetailScreen from "./src/screens/invoice/InvoiceDetailScreen";
-import InvoiceHistoryScreen from "./src/screens/invoice/InvoiceHistoryScreen";
+import InvoiceListScreen from "./src/screens/invoice/InvoiceListScreen";
 
 // Config
-import { Pressable } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 //Test
@@ -60,8 +61,6 @@ import TestScreen from "@/screens/test/TestScreen";
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
-  const queryClient = new QueryClient();
-
   // Polyfill for web compatibility
   if (typeof window !== "undefined" && !window.matchMedia) {
     window.matchMedia = () => ({
@@ -148,6 +147,16 @@ export default function App() {
                   component={UpdatePropertyScreen}
                   options={{ headerShown: false }}
                 />
+                <Stack.Screen
+                  name="PropertyMembers"
+                  component={PropertyMembersScreen}
+                  options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                  name="MyInvitations"
+                  component={MyInvitationsScreen}
+                  options={{ headerShown: false }}
+                />
 
                 {/* Room Management */}
                 <Stack.Screen
@@ -224,22 +233,9 @@ export default function App() {
                   options={{ headerShown: false }}
                 />
                 <Stack.Screen
-                  name="InvoiceHistory"
-                  component={InvoiceHistoryScreen}
-                  options={({ navigation }) => ({
-                    title: "Lịch Sử Hóa Đơn",
-                    headerRight: () => (
-                      <Pressable
-                        style={{ marginRight: 16 }}
-                        onPress={() => {
-                          // TODO: Implement filter modal
-                          console.log("Open filter modal");
-                        }}
-                      >
-                        <Ionicons name="filter" size={24} color="#007AFF" />
-                      </Pressable>
-                    ),
-                  })}
+                  name="InvoiceList"
+                  component={InvoiceListScreen}
+                  options={{ headerShown: false }}
                 />
                 <Stack.Screen
                   name="CreateInvoice"

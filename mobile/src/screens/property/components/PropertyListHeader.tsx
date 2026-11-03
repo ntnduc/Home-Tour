@@ -4,8 +4,10 @@
  */
 
 import AddButton from "@/components/AddButton";
+import InvitationsButton from "@/components/InvitationsButton";
 import ScreenHeader from "@/components/ScreenHeader";
 import React from "react";
+import { View } from "react-native";
 import { type SharedValue } from "react-native-reanimated";
 
 export interface PropertyListHeaderProps {
@@ -31,13 +33,16 @@ const PropertyListHeader = ({
     scrollY={scrollY}
     search={{ placeholder: "Tìm theo tên hoặc địa chỉ…", onSearch }}
     action={
-      <AddButton
-        label="Thêm"
-        icon="add"
-        variant="solid"
-        onPress={onPressCreate}
-        accessibilityLabel="Thêm tài sản"
-      />
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <InvitationsButton />
+        <AddButton
+          label="Thêm"
+          icon="add"
+          variant="solid"
+          onPress={onPressCreate}
+          accessibilityLabel="Thêm tài sản"
+        />
+      </View>
     }
   />
 );

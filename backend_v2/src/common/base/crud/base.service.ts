@@ -75,7 +75,7 @@ export class BaseService<
     filter: BaseFilterDto<TEntity>,
   ): Promise<PaginateResult<TListDto>> {
     try {
-      const { globalKey, filters: filterDto, sort, limit, offset } = filter;
+      const { filters: filterDto, sort, limit, offset } = filter;
       let query = await this.specQuery();
 
       query.skip(offset);
@@ -92,9 +92,10 @@ export class BaseService<
       } else {
         ({ query, filter } = await this.applyFilter(query, filter));
       }
-      if (globalKey) {
+      // Re-read: an overridden applyFilter may consume globalKey itself.
+      if (filter.globalKey) {
         query.andWhere('entity.name ILIKE :globalKey', {
-          globalKey: `%${globalKey}%`,
+          globalKey: `%${filter.globalKey}%`,
         });
       }
 

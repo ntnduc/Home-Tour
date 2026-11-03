@@ -8,6 +8,7 @@ import Loading from '@/components/Loading';
 import FormScreen from '@/components/FormScreen';
 import FormSection from '@/components/FormSection';
 import IconSquircle from '@/components/IconSquircle';
+import IconButton from '@/components/IconButton';
 import ScreenHeader from '@/components/ScreenHeader';
 import Status from '@/components/Status';
 import { Switch } from '@/components/Switch';
@@ -31,6 +32,7 @@ import Toast from 'react-native-toast-message';
 type RootStackParamList = {
   UpdateRoom: { roomId: string };
   RoomList: undefined;
+  InvoiceList: { roomId?: string; roomName?: string } | undefined;
 };
 
 type UpdateRoomScreenProps = {
@@ -106,6 +108,18 @@ const UpdateRoomScreen = ({ navigation, route }: UpdateRoomScreenProps) => {
       title="Cập nhật phòng"
       onBack={() => navigation.goBack()}
       insetTop
+      action={
+        <IconButton
+          icon="receipt-outline"
+          accessibilityLabel="Lịch sử hóa đơn"
+          onPress={() =>
+            navigation.navigate("InvoiceList", {
+              roomId,
+              roomName: defaultValues?.name,
+            })
+          }
+        />
+      }
     />
   );
 

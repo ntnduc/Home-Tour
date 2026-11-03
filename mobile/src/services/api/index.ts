@@ -1,4 +1,5 @@
 import { API_URL, PREFIX_URL } from "@/config";
+import { queryClient } from "@/services/queryClient";
 import { storage } from "@/utils/storage";
 import NetInfo from "@react-native-community/netinfo";
 import axios from "axios";
@@ -59,6 +60,17 @@ const networkInterceptor = async (config: any) => {
 };
 
 publicApi.interceptors.request.use(networkInterceptor);
+// Re-issue tokens so the JWT carries the latest per-property roles (e.g. after creating a property)
+export const refreshSessionTokens = async () => {
+  const refreshToken = await storage.getRefreshToken();
+  const response = await publicApi.post("/auth/refresh-token", {
+    refreshToken,
+  });
+  const { accessToken, refreshToken: newRefreshToken } = response.data.data;
+  await storage.setAccessToken(accessToken);
+  await storage.setRefreshToken(newRefreshToken);
+};
+
 privateApi.interceptors.request.use(networkInterceptor);
 filePrivateApi.interceptors.request.use(networkInterceptor);
 
@@ -112,6 +124,7 @@ privateApi.interceptors.response.use(
       } catch (error) {
         // Nếu refresh token thất bại, đăng xuất user
         await storage.removeTokens();
+        queryClient.clear();
         // TODO: Chuyển về màn hình login
         return Promise.reject(error);
       }

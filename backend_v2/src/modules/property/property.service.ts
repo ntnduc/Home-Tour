@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { BaseService } from 'src/common/base/crud/base.service';
 import { IBaseService } from 'src/common/base/crud/IService';
 import { ComboOptionWithExtra } from 'src/common/base/dto/option.dto';
+import { Role } from 'src/common/enums/role.enum';
 import { PropertyRoomsStatus } from 'src/common/enums/property.enum';
 import { RoomStatus } from 'src/common/enums/room.enum';
 import { DataSource, In, Repository, SelectQueryBuilder } from 'typeorm';
@@ -14,6 +15,8 @@ import { CurrentUserService } from '../current.user';
 import { Districts } from '../location/entities/Districts.entity';
 import { Provinces } from '../location/entities/Provinces.entity';
 import { Wards } from '../location/entities/Wards.entity';
+import { RoleEntity } from '../rbac/entities/role.entity';
+import { UserRole } from '../rbac/entities/user-role.entity';
 import { ServicesRepository } from '../services/repositories/services.repository';
 import { PropertyCreateDto } from './dto/properties-dto/property.create.dto';
 import { PropertyDetailDto } from './dto/properties-dto/property.detail.dto';
@@ -75,10 +78,11 @@ export class PropertyService
   }
 
   async getComboProperty() {
-    const userId = this.currentUserService.getCurrentUserId();
-    const properties = await this.propertiesRepository.find({
-      where: { ownerId: userId },
-    });
+    this.currentUserService.getCurrentUserId();
+    // globalQuery scopes to properties the user owns or is a member of
+    const properties = await this.propertiesRepository
+      .createQueryBuilder('p')
+      .getMany();
 
     const result = properties.map((property) => {
       const comboOption = new ComboOptionWithExtra<
@@ -113,6 +117,20 @@ export class PropertyService
         propertyEntity,
       );
 
+      // Creator always becomes OWNER of the new property (per-property role)
+      const ownerRole = await queryRunner.manager.findOne(RoleEntity, {
+        where: { roleName: Role.OWNER },
+      });
+      if (!ownerRole) {
+        throw new Error('Owner role is not initialized');
+      }
+      await queryRunner.manager.save(UserRole, {
+        userId: currentUserId,
+        roleId: ownerRole.id,
+        propertyId: propertySaved.id,
+        assignedDate: new Date(),
+      });
+
       if (propertyCreateDto.services && propertyCreateDto.services.length > 0) {
         await this.propertiesServicesService.createOrUpdate(
           propertyCreateDto.services,
@@ -135,6 +153,7 @@ export class PropertyService
       result.fromEntity(propertySaved);
       return result;
     } catch (err) {
+      console.error('Create property error:', err);
       await queryRunner.rollbackTransaction();
       throw new BadGatewayException('Lỗi khi tạo property!');
     } finally {

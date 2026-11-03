@@ -121,7 +121,7 @@ const DashboardScreen = () => {
         label: "Hóa đơn",
         icon: "receipt-outline",
         color: tokens.palette.amber[500],
-        onPress: () => navigation.navigate("InvoiceHistory"),
+        onPress: () => navigation.navigate("InvoiceList"),
       },
     ],
     [navigation],
@@ -181,7 +181,7 @@ const DashboardScreen = () => {
               summary={summary.data}
               isLoading={summary.isLoading}
               isFetching={summary.isFetching && !isRefreshing}
-              onPress={() => navigation.navigate("InvoiceHistory")}
+              onPress={() => navigation.navigate("InvoiceList")}
             />
             <StatBento
               summary={summary.data}

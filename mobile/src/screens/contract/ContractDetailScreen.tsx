@@ -7,6 +7,7 @@ import FormScreen from "@/components/FormScreen";
 import FormSection from "@/components/FormSection";
 import IconSquircle from "@/components/IconSquircle";
 import ListRow from "@/components/ListRow";
+import IconButton from "@/components/IconButton";
 import Loading from "@/components/Loading";
 import NoticeBanner from "@/components/NoticeBanner";
 import ScreenHeader from "@/components/ScreenHeader";
@@ -129,6 +130,20 @@ const ContractDetailScreen = ({
           title="Chi tiết hợp đồng"
           onBack={() => navigation.goBack()}
           insetTop
+          action={
+            contract?.id ? (
+              <IconButton
+                icon="receipt-outline"
+                accessibilityLabel="Lịch sử hóa đơn"
+                onPress={() =>
+                  navigation.navigate("InvoiceList", {
+                    contractId: contract.id,
+                    contractLabel: contract.code,
+                  })
+                }
+              />
+            ) : undefined
+          }
         />
         {content}
       </SafeAreaView>

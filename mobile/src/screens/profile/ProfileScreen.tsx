@@ -13,10 +13,10 @@
  * States: first load → hero skeleton · error w/o data → SectionError (retry) ·
  * background refetch → content dimmed · avatar upload → spinner on the photo.
  */
-import { logout } from "@/api/auth/api";
 import ListRow from "@/components/ListRow";
 import ScreenHeader from "@/components/ScreenHeader";
 import SectionError from "@/components/SectionError";
+import { useLogout } from "@/hooks/useLogout";
 import { useTabBarInset } from "@/navigation/useTabBarInset";
 import { RootStackParamList } from "@/navigation/types";
 import { shadows, tokens, uiColors, uiRadius, uiSpace, uiType } from "@/theme";
@@ -49,6 +49,7 @@ const ProfileScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const tabInset = useTabBarInset();
   const data = useProfileData();
+  const logout = useLogout();
   const { profile } = data;
   const isAvatarBusy = data.isUploadingAvatar || data.isRemovingAvatar;
 
@@ -88,14 +89,7 @@ const ProfileScreen = () => {
       {
         text: "Đăng xuất",
         style: "destructive",
-        onPress: async () => {
-          try {
-            await logout();
-          } catch {
-            // Local session is cleared regardless.
-          }
-          navigation.reset({ index: 0, routes: [{ name: "Login" }] });
-        },
+        onPress: () => void logout(),
       },
     ]);
 

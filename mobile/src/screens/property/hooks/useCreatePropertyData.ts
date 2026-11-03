@@ -7,6 +7,7 @@ import { createProperty } from "@/api/property/property.api";
 import { getServiceDefault } from "@/api/service/service.api";
 import { ServiceCalculateMethod } from "@/constant/service.constant";
 import { ComboOption } from "@/types/comboOption";
+import { refreshSessionTokens } from "@/services/api";
 import { PropertyCreateRequest } from "@/types/property";
 import { ServiceCreateOrUpdateRequest } from "@/types/service";
 import { useEffect, useState } from "react";
@@ -102,6 +103,8 @@ export const useCreatePropertyData = (
     setIsSubmitting(true);
     try {
       await createProperty(normalizeRequest(data));
+      // Creator is now OWNER server-side; refresh so the JWT includes the new role
+      await refreshSessionTokens().catch(() => undefined);
       Toast.show({
         type: "success",
         text1: "Thành công",

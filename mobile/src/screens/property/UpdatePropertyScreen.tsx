@@ -29,6 +29,7 @@ import { ComboBox } from "@/components/ComboBox";
 import FormScreen from "@/components/FormScreen";
 import FormSection from "@/components/FormSection";
 import InputBase from "@/components/Input";
+import IconButton from "@/components/IconButton";
 import ScreenHeader from "@/components/ScreenHeader";
 import ServiceSearchInput from "@/components/ServiceSearchInput";
 import { ServiceCalculateMethod } from "@/constant/service.constant";
@@ -132,6 +133,18 @@ const UpdatePropertyScreen = ({
       // subtitle="Chỉnh sửa thông tin"
       onBack={() => navigation.goBack()}
       insetTop
+      action={
+        <IconButton
+          icon="people-outline"
+          tone="primary"
+          accessibilityLabel="Quản lý thành viên và phân quyền"
+          onPress={() =>
+            navigation.navigate("PropertyMembers", {
+              propertyId: route.params.propertyId,
+            })
+          }
+        />
+      }
     />
   );
 

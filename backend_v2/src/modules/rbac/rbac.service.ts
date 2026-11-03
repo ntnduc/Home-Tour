@@ -1,7 +1,9 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
+  OnApplicationBootstrap,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Permission, Role } from 'src/common/enums/role.enum';
@@ -9,7 +11,9 @@ import { Repository } from 'typeorm';
 import { PermissionEntity } from './entities/permission.entity';
 import { RolePermission } from './entities/role-permission.entity';
 import { RoleEntity } from './entities/role.entity';
+import { PropertyMemberPermission } from './entities/property-member-permission.entity';
 import { UserRole } from './entities/user-role.entity';
+import { applyPermissionOverrides } from './permission-overrides';
 import { PermissionRepository } from './repositories/permission.repository';
 import { RoleRepository } from './repositories/role.repository';
 import { UserRoleRepository } from './repositories/user-role.repository';
@@ -21,14 +25,37 @@ export interface UserProperty {
 }
 
 @Injectable()
-export class RbacService {
+export class RbacService implements OnApplicationBootstrap {
+  private readonly logger = new Logger(RbacService.name);
+
   constructor(
     private roleRepository: RoleRepository,
     private permissionRepository: PermissionRepository,
     private userRoleRepository: UserRoleRepository,
     @InjectRepository(RolePermission)
     private rolePermissionRepository: Repository<RolePermission>,
+    @InjectRepository(PropertyMemberPermission)
+    private memberPermissionRepository: Repository<PropertyMemberPermission>,
   ) {}
+
+  /**
+   * Seed default roles / permissions on first run (or when role_permissions is empty).
+   * Skipped once everything exists, so later admin edits to role permissions are kept.
+   */
+  async onApplicationBootstrap(): Promise<void> {
+    try {
+      const roles = await Promise.all(
+        Object.values(Role).map((name) => this.roleRepository.findByName(name)),
+      );
+      const rolePermissionCount = await this.rolePermissionRepository.count();
+      if (roles.every(Boolean) && rolePermissionCount > 0) return;
+
+      this.logger.log('Seeding default roles and permissions');
+      await this.initializeDefaultRolesAndPermissions();
+    } catch (error) {
+      this.logger.error('Failed to seed default roles and permissions', error);
+    }
+  }
 
   // Role management
   async createRole(
@@ -216,12 +243,20 @@ export class RbacService {
     const userRoles = await this.userRoleRepository.findByUserId(userId);
 
     const properties: UserProperty[] = [];
+    const overrides = await this.memberPermissionRepository.find({
+      where: { userId },
+    });
 
     for (const userRole of userRoles) {
-      const permissions =
+      const rolePermissions =
         userRole.role?.rolePermissions?.map(
           (rp) => rp.permission.permissionName,
         ) || [];
+      // Per-member switches (grant/revoke) for this property
+      const permissions = applyPermissionOverrides(
+        rolePermissions,
+        overrides.filter((o) => o.propertyId === userRole.propertyId),
+      );
 
       properties.push({
         propertyId: userRole.propertyId,

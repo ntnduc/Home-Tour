@@ -152,6 +152,18 @@ const RoomCardItemComponent = ({ item, navigation }: RoomCardItemProps) => {
 
           <View style={styles.iconCluster}>
             <IconButton
+              icon="receipt-outline"
+              onPress={() =>
+                navigation.navigate("InvoiceList", {
+                  roomId: item.id,
+                  roomName: item.name,
+                })
+              }
+              accessibilityLabel="Lịch sử hóa đơn"
+              size="sm"
+              tone="primary"
+            />
+            <IconButton
               icon={CARD_ACTION_PRESETS.edit.icon}
               onPress={() =>
                 navigation.navigate("UpdateRoom", {

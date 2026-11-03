@@ -239,7 +239,7 @@ const InvoiceDetailScreen = ({
           <IconButton
             icon="time-outline"
             accessibilityLabel="Lịch sử hóa đơn"
-            onPress={() => navigation.navigate("InvoiceHistory")}
+            onPress={() => navigation.navigate("InvoiceList")}
           />
         ) : undefined
       }

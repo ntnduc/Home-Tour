@@ -1,6 +1,7 @@
 import { ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Role } from '../../../common/enums/role.enum';
+import { ALLOW_AUTHENTICATED_KEY } from '../../../common/decorators/allow-anonymous.decorator';
 import { BaseGuard } from '../../../common/guards/base.guard';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 
@@ -13,6 +14,12 @@ export class RolesGuard extends BaseGuard {
   protected async canActivateGuard(
     context: ExecutionContext,
   ): Promise<boolean> {
+    const allowAuthenticated = this.reflector.getAllAndOverride<boolean>(
+      ALLOW_AUTHENTICATED_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+    if (allowAuthenticated) return true;
+
     const requiredRoles = this.reflector?.getAllAndOverride<Role[]>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),

@@ -98,6 +98,12 @@ const ContractListScreen = ({ navigation }: ContractListScreenProps) => {
               onPress={() => navigation.navigate("ContractDetail", { contractId: item.id })}
               showActions={true}
               onViewDetails={() => navigation.navigate("ContractDetail", { contractId: item.id })}
+              onViewInvoices={() =>
+                navigation.navigate("InvoiceList", {
+                  contractId: item.id,
+                  contractLabel: item.code,
+                })
+              }
               onTerminate={() => navigation.navigate("TerminateContract", { contractId: item.id })}
               onRenew={() => {
                 // TODO: Implement renew contract

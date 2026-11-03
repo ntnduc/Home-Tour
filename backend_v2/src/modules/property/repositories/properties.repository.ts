@@ -14,9 +14,11 @@ export class PropertiesRepository extends BaseRepository<Properties> {
     query: SelectQueryBuilder<Properties>,
   ): SelectQueryBuilder<Properties> {
     const currentUserId = RequestContextService.getUserId();
-    query.andWhere(`${query.alias}.ownerId = :currentUserId`, {
-      currentUserId,
-    });
+    // Owner or any member (user_roles) of the property
+    query.andWhere(
+      `(${query.alias}.ownerId = :currentUserId OR ${query.alias}.id IN (SELECT ur."propertyId" FROM user_roles ur WHERE ur."userId" = :currentUserId))`,
+      { currentUserId },
+    );
 
     return query;
   }

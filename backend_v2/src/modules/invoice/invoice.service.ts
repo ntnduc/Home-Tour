@@ -29,6 +29,8 @@ import {
   Repository,
   SelectQueryBuilder,
 } from 'typeorm';
+import { BaseFilterDto } from '../../common/base/dto/filter.dto';
+import { User } from '../users/entities/user.entity';
 import { BaseService } from '../../common/base/crud/base.service';
 import { IBaseService } from '../../common/base/crud/IService';
 import { Contracts } from '../contract/entities/contracts.entity';
@@ -610,13 +612,87 @@ export class InvoiceService
 
   async specQuery(): Promise<SelectQueryBuilder<Invoice>> {
     const query = this.invoiceRepository
-      .createQueryBuilder('invoice')
-      .leftJoinAndSelect('invoice.contract', 'contract')
-      .leftJoinAndSelect('invoice.room', 'room')
-      .leftJoinAndSelect('invoice.invoiceItems', 'invoiceItems')
-      .leftJoinAndSelect('invoiceItems.contractService', 'contractService');
+      .createQueryBuilder('entity')
+      .leftJoinAndSelect('entity.contract', 'contract')
+      .leftJoinAndSelect('contract.contractClient', 'contractClient')
+      .leftJoinAndSelect('entity.room', 'room')
+      .leftJoinAndMapOne(
+        'entity.creator',
+        User,
+        'creator',
+        'creator.id::text = entity.createdBy',
+      );
 
     return query;
+  }
+
+  // Equality filters stay generic; the keys below need custom SQL and are removed
+  // from `filters` so BaseService.getAll does not apply them as plain columns.
+  override async applyFilter(
+    query: SelectQueryBuilder<Invoice>,
+    filter: BaseFilterDto<Invoice>,
+  ) {
+    const filters: Record<string, any> = filter.filters ?? {};
+    const { statuses, createdFrom, createdTo, overdue, ...rest } = filters;
+    for (const key of ['statuses', 'createdFrom', 'createdTo', 'overdue']) {
+      delete filters[key];
+    }
+
+    // Equality on entity columns (contractId, roomId, propertyId, status, ...)
+    ['contractId', 'roomId', 'propertyId', 'status', 'createdBy'].forEach(
+      (key) => {
+        if (rest[key]) {
+          query.andWhere(`entity.${key} = :${key}`, { [key]: rest[key] });
+        }
+      },
+    );
+    // Already applied above; drop so getAll does not apply them twice.
+    ['contractId', 'roomId', 'propertyId', 'status', 'createdBy'].forEach(
+      (key) => delete filters[key],
+    );
+
+    const statusList = ([] as string[])
+      .concat(statuses ?? [])
+      .filter((value) => Object.values(InvoiceStatus).includes(value as any));
+    if (statusList.length) {
+      query.andWhere('entity.status IN (:...statusList)', { statusList });
+    }
+
+    if (createdFrom) {
+      query.andWhere('entity.createdAt >= :createdFrom', {
+        createdFrom: getDateWithoutTime(new Date(createdFrom)),
+      });
+    }
+    if (createdTo) {
+      // Inclusive end day
+      query.andWhere('entity.createdAt < :createdToExclusive', {
+        createdToExclusive: addDays(getDateWithoutTime(new Date(createdTo)), 1),
+      });
+    }
+
+    if (overdue === true || overdue === 'true') {
+      query.andWhere('entity.status = :overdueStatus', {
+        overdueStatus: InvoiceStatus.OVERDUE,
+      });
+    }
+
+    if (filter.globalKey) {
+      query.andWhere(
+        `(entity.code ILIKE :globalKey
+          OR room.name ILIKE :globalKey
+          OR contract.code ILIKE :globalKey
+          OR contractClient.name ILIKE :globalKey)`,
+        { globalKey: `%${filter.globalKey}%` },
+      );
+      // Prevent BaseService from filtering on the non-existent `entity.name`.
+      filter.globalKey = undefined;
+    }
+
+    if (!filter.sort) {
+      query.orderBy('entity.createdAt', 'DESC').addOrderBy('entity.id', 'DESC');
+    }
+
+    return { query, filter };
   }
 
   //#region Support Functions

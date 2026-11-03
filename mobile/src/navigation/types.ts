@@ -16,6 +16,8 @@ export type RootStackParamList = {
   PropertyDetail: { propertyId: string };
   CreateProperty: undefined;
   UpdateProperty: { propertyId: string };
+  PropertyMembers: { propertyId: string };
+  MyInvitations: undefined;
 
   // Room Management
   RoomList: { propertyId?: string };
@@ -42,7 +44,15 @@ export type RootStackParamList = {
     // Set when the invoice is the pre-invoice of a contract awaiting payment confirmation
     confirmContractId?: string;
   };
-  InvoiceHistory: undefined;
+  /** Optional pre-applied quick filters (opened from a room / contract). */
+  InvoiceList:
+    | {
+        roomId?: string;
+        roomName?: string;
+        contractId?: string;
+        contractLabel?: string;
+      }
+    | undefined;
   CreateInvoice: { contractId?: string; roomId?: string };
   ConfirmCreateInvoice: {
     invoice: InvoiceCreateRequest;
