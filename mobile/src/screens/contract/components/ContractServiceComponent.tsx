@@ -185,6 +185,7 @@ const ContractServiceComponent = forwardRef<
               }}
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input
+                  inputComponent={BottomSheetTextInput}
                   label="Số hiện tại"
                   min={0}
                   type="number"
@@ -215,6 +216,7 @@ const ContractServiceComponent = forwardRef<
               }}
               render={({ field: { onChange, value } }) => (
                 <Input
+                  inputComponent={BottomSheetTextInput}
                   label="Số lượng"
                   min={0}
                   type="number"
@@ -237,7 +239,7 @@ const ContractServiceComponent = forwardRef<
       default:
         return null;
     }
-  }, [calculationMethod]);
+  }, [calculationMethod, errors.helperValue?.message]);
 
   const _renderFooter = useCallback(
     (props: BottomSheetFooterProps) => (

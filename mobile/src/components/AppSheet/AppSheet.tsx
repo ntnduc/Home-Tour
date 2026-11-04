@@ -8,6 +8,8 @@ import React, {
   forwardRef,
   ReactNode,
   useCallback,
+  useContext,
+  useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -19,6 +21,7 @@ import { tokens } from "@/theme";
 import AppSheetBackdropComponent from "./AppSheetBackdropComponent";
 import AppSheetHandleComponent from "./AppSheetHandleComponent";
 import AppSheetHeader from "./AppSheetHeader";
+import { SheetOpenTrackerContext } from "./sheetOpenTracker";
 
 export type HeaderConfig = {
   element?: ReactNode;
@@ -79,6 +82,20 @@ const AppSheet = forwardRef<AppSheetRef, AppSheetProps>((props, ref) => {
   const modalRef = useRef<BottomSheetModal>(null);
   const [openState, setOpenState] = useState<OpenState | null>(null);
   const openStateRef = useRef<OpenState | null>(null);
+  const tracker = useContext(SheetOpenTrackerContext);
+  const trackedRef = useRef(false);
+
+  const setTracked = useCallback(
+    (next: boolean) => {
+      if (trackedRef.current === next) return;
+      trackedRef.current = next;
+      if (next) tracker?.increment();
+      else tracker?.decrement();
+    },
+    [tracker],
+  );
+
+  useEffect(() => () => setTracked(false), [setTracked]);
 
   // Open-time config overrides the declarative props.
   const { children: propChildren, ...propConfig } = props;
@@ -106,11 +123,12 @@ const AppSheet = forwardRef<AppSheetRef, AppSheetProps>((props, ref) => {
   const open = useCallback(
     (nextChildren?: ReactNode, nextConfig?: AppSheetProps) => {
       updateOpenState({ children: nextChildren, config: nextConfig });
+      setTracked(true);
       if (!nextConfig?.ignoreBottomSheetInset) {
         modalRef.current?.present();
       }
     },
-    [],
+    [setTracked],
   );
 
   const handleDismiss = useCallback(() => {
@@ -119,7 +137,8 @@ const AppSheet = forwardRef<AppSheetRef, AppSheetProps>((props, ref) => {
     openConfig?.onDismiss?.();
     props.onDismiss?.();
     updateOpenState(null);
-  }, [props.onClose, props.onDismiss]);
+    setTracked(false);
+  }, [props.onClose, props.onDismiss, setTracked]);
 
   const close = useCallback(() => {
     if (openStateRef.current?.config?.ignoreBottomSheetInset) {

@@ -26,17 +26,20 @@ import { roundMoney } from 'src/common/utils/number.utils';
 import {
   DataSource,
   EntityManager,
+  Not,
   Repository,
   SelectQueryBuilder,
 } from 'typeorm';
-import { BaseFilterDto } from '../../common/base/dto/filter.dto';
-import { User } from '../users/entities/user.entity';
 import { BaseService } from '../../common/base/crud/base.service';
 import { IBaseService } from '../../common/base/crud/IService';
+import { BaseFilterDto } from '../../common/base/dto/filter.dto';
+import { resolvePaymentConfirmedOutcome } from '../contract/contract-workflow.util';
 import { Contracts } from '../contract/entities/contracts.entity';
 import { PaymentCreateDto } from '../payment/dto/payment-dto/payment.create.dto';
 import { Payment } from '../payment/entities/payment.entity';
 import { PaymentService } from '../payment/payment.service';
+import { Rooms } from '../property/entities/rooms.entity';
+import { User } from '../users/entities/user.entity';
 import { InvoiceCancelDto } from './dto/invoice-dto/invoice.cancel.dto';
 import { InvoiceCreateDto } from './dto/invoice-dto/invoice.create.dto';
 import { InvoiceDetailDto } from './dto/invoice-dto/invoice.detail.dto';
@@ -47,8 +50,8 @@ import { InvoiceUpdateDto } from './dto/invoice-dto/invoice.update.dto';
 import { InvoiceItemCreateDto } from './dto/invoice-item-dto/invoice-item.create.dto';
 import { Invoice } from './entities/invoice.entity';
 import { InvoiceItem } from './entities/invoice.item.entity';
-import { InvoiceItemRepository } from './repositories/invoice-item.repository';
 import { calculateInvoicePayment } from './invoice-payment.util';
+import { InvoiceItemRepository } from './repositories/invoice-item.repository';
 import { InvoiceRepository } from './repositories/invoice.repository';
 
 @Injectable()
@@ -253,6 +256,12 @@ export class InvoiceService
     await queryRunner.startTransaction();
     try {
       await this.writePayment(queryRunner.manager, invoice, dto, result);
+      if (result.status === InvoiceStatus.PAID) {
+        await this.activateContractAfterFirstPayment(
+          queryRunner.manager,
+          invoice.contractId,
+        );
+      }
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -282,6 +291,53 @@ export class InvoiceService
     const result = this.preparePayment(invoice, dto);
     await this.writePayment(manager, invoice, dto, result);
     return result.status;
+  }
+
+  /**
+   * A fully paid first invoice releases a contract waiting for payment:
+   * started -> ACTIVE (+ room OCCUPIED), otherwise PENDING_START.
+   * Contracts in any other status are left untouched.
+   */
+  private async activateContractAfterFirstPayment(
+    manager: EntityManager,
+    contractId: string,
+  ): Promise<void> {
+    const contract = await manager.findOne(Contracts, {
+      where: { id: contractId },
+      lock: { mode: 'pessimistic_write' },
+    });
+    if (contract?.status !== ContractStatus.WAITING_PAYMENT_INVOICE) {
+      return;
+    }
+
+    const outcome = resolvePaymentConfirmedOutcome({
+      startDate: contract.startDate,
+      now: getCurrentDate(true),
+    });
+
+    if (outcome.contractStatus === ContractStatus.ACTIVE) {
+      const otherActive = await manager.count(Contracts, {
+        where: {
+          roomId: contract.roomId,
+          status: ContractStatus.ACTIVE,
+          id: Not(contract.id),
+        },
+      });
+      if (otherActive > 0) {
+        throw new BadRequestException(
+          'Không thể kích hoạt hợp đồng vì đã có hợp đồng đang hoạt động cho phòng này',
+        );
+      }
+    }
+
+    await manager.update(Contracts, contract.id, {
+      status: outcome.contractStatus,
+    });
+    if (outcome.roomStatus) {
+      await manager.update(Rooms, contract.roomId, {
+        status: outcome.roomStatus,
+      });
+    }
   }
 
   private preparePayment(invoice: Invoice, dto: InvoicePaymentDto) {

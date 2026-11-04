@@ -9,6 +9,7 @@ import React, {
   useState,
 } from "react";
 import AppSheet, { AppSheetProps, AppSheetRef } from "./AppSheet/AppSheet";
+import { SheetOpenTrackerContext } from "./AppSheet/sheetOpenTracker";
 
 interface GlobalAppSheetContextType {
   openAppSheet: (children: React.ReactNode, config?: AppSheetProps) => void;
@@ -72,6 +73,15 @@ export const GlobalAppSheetProvider: React.FC<GlobalAppSheetProviderProps> = ({
   children,
 }) => {
   const [entries, setEntries] = useState<SheetEntry[]>([]);
+  // Counts open sheets (global and local) for useIsAppSheetOpen.
+  const [openCount, setOpenCount] = useState(0);
+  const tracker = useMemo(
+    () => ({
+      increment: () => setOpenCount((count) => count + 1),
+      decrement: () => setOpenCount((count) => Math.max(0, count - 1)),
+    }),
+    [],
+  );
   const entriesRef = useRef<SheetEntry[]>([]);
   const sheetsRef = useRef(new Map<number, AppSheetRef>());
   const closingRef = useRef(new Set<number>());
@@ -129,18 +139,22 @@ export const GlobalAppSheetProvider: React.FC<GlobalAppSheetProviderProps> = ({
   // its portal host) can still call useGlobalAppSheet, e.g. DatePicker.
   return (
     <GlobalAppSheetContext.Provider value={value}>
-      <GlobalAppSheetOpenContext.Provider value={entries.length > 0}>
-        <BottomSheetModalProvider>
-          {children}
-          {entries.map((entry) => (
-            <GlobalSheetItem
-              key={entry.id}
-              entry={entry}
-              register={register}
-              onDismissed={handleDismissed}
-            />
-          ))}
-        </BottomSheetModalProvider>
+      <GlobalAppSheetOpenContext.Provider
+        value={entries.length > 0 || openCount > 0}
+      >
+        <SheetOpenTrackerContext.Provider value={tracker}>
+          <BottomSheetModalProvider>
+            {children}
+            {entries.map((entry) => (
+              <GlobalSheetItem
+                key={entry.id}
+                entry={entry}
+                register={register}
+                onDismissed={handleDismissed}
+              />
+            ))}
+          </BottomSheetModalProvider>
+        </SheetOpenTrackerContext.Provider>
       </GlobalAppSheetOpenContext.Provider>
     </GlobalAppSheetContext.Provider>
   );

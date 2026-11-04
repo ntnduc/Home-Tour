@@ -616,12 +616,11 @@ const CreateContractForm = forwardRef<
             <>
               {contractServices.map((service, index) => (
                 <Controller
-                  key={service.id || generateId()}
+                  key={service.id || service.serviceId || index}
                   control={control}
                   name={`contractServices.${index}`}
                   render={({ field: { value } }) => (
                     <ServiceItem
-                      key={`service-item-${service.fieldId}`}
                       service={service}
                       onDelete={() => {
                         Alert.alert(
