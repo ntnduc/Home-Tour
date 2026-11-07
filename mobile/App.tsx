@@ -1,7 +1,7 @@
+import { queryClient } from "@/services/queryClient";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "@/services/queryClient";
 import React from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Toast from "react-native-toast-message";
@@ -56,7 +56,6 @@ import InvoiceListScreen from "./src/screens/invoice/InvoiceListScreen";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 //Test
-import TestScreen from "@/screens/test/TestScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -264,11 +263,11 @@ export default function App() {
                 />
 
                 {/* Test */}
-                <Stack.Screen
+                {/* <Stack.Screen
                   name="TestScreen"
                   component={TestScreen}
                   options={{ title: "Test Screen" }}
-                />
+                /> */}
               </Stack.Navigator>
             </NavigationContainer>
             <Toast topOffset={60} />

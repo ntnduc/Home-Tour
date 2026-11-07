@@ -93,6 +93,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
           mode="date"
           locale="vi-VN"
           display="spinner"
+          themeVariant="light"
           maximumDate={maxDate}
           minimumDate={minDate}
           onValueChange={(event, date) => {
@@ -158,21 +159,16 @@ const DatePicker: React.FC<DatePickerProps> = ({
         value={value ? new Date(value) : new Date()}
         mode="date"
         locale="vi-VN"
+        themeVariant="light"
         maximumDate={maxDate}
         minimumDate={minDate}
         positiveButton={{ label: "Xác nhận", textColor: tokens.colors.primary }}
         negativeButton={{ label: "Hủy", textColor: uiColors.textMuted }}
-        onChange={(event, date) => {
-          if (event.type === "dismissed") {
-            setIsOpen(false);
-          }
-          if (event.type === "set") {
-            if (date) {
-              onChange?.(date);
-            }
-            setIsOpen(false);
-          }
+        onValueChange={(_event, date) => {
+          onChange?.(date);
+          setIsOpen(false);
         }}
+        onDismiss={() => setIsOpen(false)}
       />
     );
   }, [value, isOpen]);

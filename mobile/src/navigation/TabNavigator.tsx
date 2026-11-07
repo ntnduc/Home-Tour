@@ -1,15 +1,13 @@
+import PlatformTabBar from "@/components/PlatformTabBar";
 import { FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import React from "react";
 import { Platform } from "react-native";
-import PlatformTabBar from "@/components/PlatformTabBar";
 import ContractListScreen from "../screens/contract/ContractListScreen";
 import DashboardScreen from "../screens/dashboard/DashboardScreen";
 import ProfileScreen from "../screens/profile/ProfileScreen";
 import PropertyListScreen from "../screens/property/PropertyListScreen";
-import ReportScreen from "../screens/report/ReportScreen";
 import RoomListScreen from "../screens/room/RoomListScreen";
-import TestScreen from "../screens/test/TestScreen";
 import { TabParamList } from "./types";
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -27,7 +25,13 @@ const TabNavigator = () => {
         tabBarIcon: ({ color, size, focused }) => {
           switch (route.name) {
             case "Dashboard":
-              return <Ionicons name={focused ? "home" : "home-outline"} size={size} color={color} />;
+              return (
+                <Ionicons
+                  name={focused ? "home" : "home-outline"}
+                  size={size}
+                  color={color}
+                />
+              );
             case "Properties":
               return (
                 <MaterialIcons name="apartment" size={size} color={color} />
@@ -88,21 +92,21 @@ const TabNavigator = () => {
         component={ContractListScreen}
         options={{ title: "Hợp đồng" }}
       />
-      <Tab.Screen
+      {/* <Tab.Screen
         name="Reports"
         component={ReportScreen}
         options={{ title: "Báo cáo" }}
-      />
+      /> */}
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
         options={{ title: "Cá nhân" }}
       />
-      <Tab.Screen
+      {/* <Tab.Screen
         name="TestScreen"
         component={TestScreen}
         options={{ title: "Test Screen" }}
-      />
+      /> */}
     </Tab.Navigator>
   );
 };

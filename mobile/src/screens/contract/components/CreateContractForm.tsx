@@ -433,11 +433,12 @@ const CreateContractForm = forwardRef<
                 <Input
                   label="Số lượng người ở cùng"
                   value={value?.toString()}
+                  disabled
                   onChangeText={(text) => {
                     setValue("ignoreAutoUpdatePartnerNumber", true);
                     onChange(text);
                   }}
-                  placeholder="Nhập số lượng người ở cùng"
+                  placeholder="Tự động tính số lượng người ở cùng"
                   type="number"
                   icon="people-outline"
                   keyboardType="numeric"
