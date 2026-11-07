@@ -54,8 +54,18 @@ export const openRoomAction = (
         roomId,
       });
       return;
+    case "CONFIRM_PAYMENT":
+      if (payload.invoiceId) {
+        navigation.navigate("InvoiceDetail", {
+          invoiceId: payload.invoiceId,
+          confirmContractId: payload.contractId,
+        });
+        return;
+      }
+      if (!payload.contractId) break;
+      navigation.navigate("ContractDetail", { contractId: payload.contractId });
+      return;
     case "CONFIRM_CONTRACT":
-    case "CONFIRM_DEPOSIT":
     case "VIEW_CONTRACT":
       if (!payload.contractId) break;
       navigation.navigate("ContractDetail", { contractId: payload.contractId });

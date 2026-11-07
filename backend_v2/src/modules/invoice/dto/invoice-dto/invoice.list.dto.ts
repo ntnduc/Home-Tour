@@ -3,7 +3,11 @@ import { InvoiceStatus } from '../../../../common/enums/invoice.enum';
 import { Invoice } from '../../entities/invoice.entity';
 
 export class InvoiceListDto extends BaseListDto<Invoice> {
+  code?: string;
   contractId: string;
+  contractCode?: string;
+  clientName?: string;
+  createdByName?: string;
   roomId: string;
   propertyId: string;
   roomName: string;
@@ -20,7 +24,13 @@ export class InvoiceListDto extends BaseListDto<Invoice> {
 
   fromEntity(entity: Invoice): void {
     this.id = entity.id;
+    this.code = entity.code;
     this.contractId = entity.contractId;
+    this.contractCode = entity.contract?.code;
+    this.clientName = entity.contract?.contractClient?.findLast(
+      (client) => client.isLandlordClient && client.isActiveInContract,
+    )?.name;
+    this.createdByName = entity.creator?.fullName;
     this.roomId = entity.roomId;
     this.propertyId = entity.propertyId;
     this.roomName = entity.room?.name || '';

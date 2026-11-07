@@ -40,4 +40,13 @@ export class RoomActionSignal {
 
   @ViewColumn()
   currentPeriodInvoiceExists: boolean;
+
+  @ViewColumn()
+  awaitingPaymentContractId?: string | null;
+
+  @ViewColumn()
+  awaitingPaymentInvoiceId?: string | null;
+
+  @ViewColumn()
+  hasAvailableSlot: boolean;
 }

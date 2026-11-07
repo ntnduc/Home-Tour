@@ -18,6 +18,7 @@ import { ContractClientController } from './contract-client.controller';
 import { ContractClientService } from './contract-client.service';
 import { ContractServicesController } from './contract-services.controller';
 import { ContractServicesService } from './contract-services.service';
+import { ContractSchedulerService } from './contract-scheduler.service';
 import { ContractController } from './contract.controller';
 import { ContractService } from './contract.service';
 import { ContractClient } from './entities/contract-client.entity';
@@ -45,6 +46,7 @@ import { ContractsRepository } from './repositories/contracts.repository';
   ],
   providers: [
     ContractService,
+    ContractSchedulerService,
     ContractClientService,
     ContractServicesService,
     RoomsRepository,

@@ -101,9 +101,11 @@ const ConfirmCreateContract = forwardRef<
       [contract, navigation, onNextStep],
     );
 
-    const renderRow = (label: string, value?: string | number, strong?: boolean) => (
-      <DisplayField label={label} value={value} strong={strong} />
-    );
+    const renderRow = (
+      label: string,
+      value?: string | number,
+      strong?: boolean,
+    ) => <DisplayField label={label} value={value} strong={strong} />;
 
     const services = contract.contractServices || [];
 
@@ -113,7 +115,9 @@ const ConfirmCreateContract = forwardRef<
           <IconSquircle icon="checkmark-done" tone="success" />
           <View style={styles.flex}>
             <Text style={styles.summaryTitle}>Xác nhận tạo hợp đồng</Text>
-            <Text style={uiType.caption}>Kiểm tra kỹ các thông tin trước khi xác nhận</Text>
+            <Text style={uiType.caption}>
+              Kiểm tra kỹ các thông tin trước khi xác nhận
+            </Text>
           </View>
         </Card>
 
@@ -133,9 +137,19 @@ const ConfirmCreateContract = forwardRef<
 
         <FormSection title="Người thuê" icon="person-outline">
           <View>
-            {renderRow("Họ và tên", contract.contractClientLandlord.name || "-", true)}
-            {renderRow("Số điện thoại", contract.contractClientLandlord.phoneNumber || "-")}
-            {renderRow("CCCD/CMND", contract.contractClientLandlord.idCardNumber || "-")}
+            {renderRow(
+              "Họ và tên",
+              contract.contractClientLandlord.name || "-",
+              true,
+            )}
+            {renderRow(
+              "Số điện thoại",
+              contract.contractClientLandlord.phoneNumber || "-",
+            )}
+            {renderRow(
+              "CCCD/CMND",
+              contract.contractClientLandlord.idCardNumber || "-",
+            )}
             {renderRow("Số người ở cùng", contract.partnerClientCount ?? 0)}
           </View>
         </FormSection>
@@ -149,13 +163,21 @@ const ConfirmCreateContract = forwardRef<
               value={contract.startDate ? formatDate(contract.startDate) : "-"}
               strong
             />
-            <Ionicons name="arrow-forward" size={18} color={uiColors.textSubtle} />
+            <Ionicons
+              name="arrow-forward"
+              size={18}
+              color={uiColors.textSubtle}
+            />
             <DisplayField
               compact
               direction="vertical"
               align="end"
               label="Ngày kết thúc"
-              value={contract.endDate ? formatDate(contract.endDate) : "Không xác định"}
+              value={
+                contract.endDate
+                  ? formatDate(contract.endDate)
+                  : "Không xác định"
+              }
               strong
             />
           </View>
@@ -189,13 +211,16 @@ const ConfirmCreateContract = forwardRef<
           ) : (
             <View style={styles.bleed}>
               {services.map((service, idx) => {
-                const method = service.calculationMethod as ServiceCalculateMethod;
+                const method =
+                  service.calculationMethod as ServiceCalculateMethod;
                 const methodInfo = SERVICE_CALCULATE_METHOD_WITH_INFO[method];
                 return (
                   <ListRow
                     key={`${service.serviceId || idx}`}
                     divider={idx > 0}
-                    icon={service.isEnabled ? "checkmark-circle" : "close-circle"}
+                    icon={
+                      service.isEnabled ? "checkmark-circle" : "close-circle"
+                    }
                     iconTone={service.isEnabled ? "success" : "error"}
                     title={service.name || "Dịch vụ"}
                     subtitle={`${methodInfo?.label || "Phương thức"}${
@@ -209,7 +234,9 @@ const ConfirmCreateContract = forwardRef<
                           {formatCurrency((service.price || 0).toString())}đ
                         </Text>
                         <Text style={uiType.caption}>
-                          {method === ServiceCalculateMethod.PER_UNIT_SIMPLE ? "/đơn vị" : "/tháng"}
+                          {method === ServiceCalculateMethod.PER_UNIT_SIMPLE
+                            ? "/đơn vị"
+                            : "/tháng"}
                         </Text>
                       </View>
                     }
@@ -221,7 +248,9 @@ const ConfirmCreateContract = forwardRef<
         </FormSection>
 
         <FormSection title="Điều khoản bổ sung" icon="document-text-outline">
-          <Text style={uiType.body}>{contract.notes ?? "Không có điều khoản bổ sung"}</Text>
+          <Text style={uiType.body}>
+            {contract.notes ?? "Không có điều khoản bổ sung"}
+          </Text>
         </FormSection>
       </FormScreen>
     );

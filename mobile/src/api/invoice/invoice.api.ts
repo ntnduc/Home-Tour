@@ -9,7 +9,7 @@ import {
   InvoicePaymentRequest,
   InvoiceUpdateItemsRequest,
 } from "@/types/invoice";
-import { PaymentCreateRequest } from "@/types/payment";
+import { PaymentCreateRequest, PaymentDetailResponse } from "@/types/payment";
 
 // Use mock data - change to false when API is ready
 const USE_MOCK_DATA = true;
@@ -131,6 +131,17 @@ export const confirmInvoice = async (
   return response.data;
 };
 
+export const cancelInvoice = async (
+  id: string,
+  reason: string,
+): Promise<ApiResponse<InvoiceDetailResponse>> => {
+  const response = await privateApi.patch<ApiResponse<InvoiceDetailResponse>>(
+    "/invoice/cancel",
+    { id, reason },
+  );
+  return response.data;
+};
+
 export const paymentInvoice = async (
   data: InvoicePaymentRequest,
 ): Promise<ApiResponse<InvoiceDetailResponse>> => {
@@ -154,8 +165,8 @@ export const updateInvoiceItems = async (
 // Payment APIs
 export const createPayment = async (
   data: PaymentCreateRequest,
-): Promise<ApiResponse<PaymentResponse>> => {
-  // const response = await privateApi.post<ApiResponse<PaymentResponse>>(
+): Promise<ApiResponse<PaymentDetailResponse>> => {
+  // const response = await privateApi.post<ApiResponse<PaymentDetailResponse>>(
   //   "/payment",
   //   data,
   // );
@@ -164,18 +175,18 @@ export const createPayment = async (
 
 export const getPaymentsByInvoice = async (
   invoiceId: string,
-): Promise<ApiResponse<PaymentResponse[]>> => {
-  const response = await privateApi.get<ApiResponse<PaymentResponse[]>>(
-    `/payment/invoice/${invoiceId}`,
-  );
+): Promise<ApiResponse<BasePagingResponse<PaymentDetailResponse>>> => {
+  const response = await privateApi.get<
+    ApiResponse<BasePagingResponse<PaymentDetailResponse>>
+  >(`/payment/invoice/${invoiceId}`);
   return response.data;
 };
 
 export const updatePayment = async (
   id: string,
   data: Partial<PaymentCreateRequest>,
-): Promise<ApiResponse<PaymentResponse>> => {
-  const response = await privateApi.put<ApiResponse<PaymentResponse>>(
+): Promise<ApiResponse<PaymentDetailResponse>> => {
+  const response = await privateApi.put<ApiResponse<PaymentDetailResponse>>(
     `/payment/${id}`,
     data,
   );

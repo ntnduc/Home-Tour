@@ -23,12 +23,24 @@ import {
   getEndOfMonth,
 } from 'src/common/utils';
 import { roundMoney } from 'src/common/utils/number.utils';
-import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
+import {
+  DataSource,
+  EntityManager,
+  Not,
+  Repository,
+  SelectQueryBuilder,
+} from 'typeorm';
 import { BaseService } from '../../common/base/crud/base.service';
 import { IBaseService } from '../../common/base/crud/IService';
+import { BaseFilterDto } from '../../common/base/dto/filter.dto';
+import { resolvePaymentConfirmedOutcome } from '../contract/contract-workflow.util';
 import { Contracts } from '../contract/entities/contracts.entity';
 import { PaymentCreateDto } from '../payment/dto/payment-dto/payment.create.dto';
+import { Payment } from '../payment/entities/payment.entity';
 import { PaymentService } from '../payment/payment.service';
+import { Rooms } from '../property/entities/rooms.entity';
+import { User } from '../users/entities/user.entity';
+import { InvoiceCancelDto } from './dto/invoice-dto/invoice.cancel.dto';
 import { InvoiceCreateDto } from './dto/invoice-dto/invoice.create.dto';
 import { InvoiceDetailDto } from './dto/invoice-dto/invoice.detail.dto';
 import { InvoiceListDto } from './dto/invoice-dto/invoice.list.dto';
@@ -38,6 +50,7 @@ import { InvoiceUpdateDto } from './dto/invoice-dto/invoice.update.dto';
 import { InvoiceItemCreateDto } from './dto/invoice-item-dto/invoice-item.create.dto';
 import { Invoice } from './entities/invoice.entity';
 import { InvoiceItem } from './entities/invoice.item.entity';
+import { calculateInvoicePayment } from './invoice-payment.util';
 import { InvoiceItemRepository } from './repositories/invoice-item.repository';
 import { InvoiceRepository } from './repositories/invoice.repository';
 
@@ -104,8 +117,8 @@ export class InvoiceService
         .where('invoice.contractId = :contractId', {
           contractId: dto.contractId,
         })
-        .where('invoice.roomId = :roomId', { roomId: dto.roomId })
-        .where('invoice.status IN (:...statuses)', {
+        .andWhere('invoice.roomId = :roomId', { roomId: dto.roomId })
+        .andWhere('invoice.status IN (:...statuses)', {
           statuses: [
             InvoiceStatus.PENDING,
             InvoiceStatus.OVERDUE,
@@ -139,7 +152,25 @@ export class InvoiceService
           DEBT_INVOICE_STATUSES.includes(findPreInvoice.status) &&
           preInvoiceRemaining > 0;
 
-        if (findContract.carryDebtToNextInvoice && preInvoiceHasDebt) {
+        // Balance the client explicitly carried forward when paying (isCarryOver)
+        // is always added, regardless of the contract-level flag.
+        const carriedOverAmount = Number(findPreInvoice.carriedOverAmount ?? 0);
+        if (carriedOverAmount > 0) {
+          entity.totalAmount = Number(entity.totalAmount) + carriedOverAmount;
+          entity.remainingAmount =
+            Number(entity.remainingAmount) + carriedOverAmount;
+
+          const carriedItem = new InvoiceItem();
+          carriedItem.amount = carriedOverAmount;
+          carriedItem.type = InvoiceItemType.OTHER;
+          carriedItem.propertyId = entity.propertyId;
+          carriedItem.name = `Nợ hóa đơn: ${findPreInvoice.code}`;
+          carriedItem.metadata = {
+            reason: 'CARRY_OVER_DEBT',
+            preInvoiceId: findPreInvoice.id,
+          };
+          entity.invoiceItems.push(carriedItem);
+        } else if (findContract.carryDebtToNextInvoice && preInvoiceHasDebt) {
           entity.totalAmount = Number(entity.totalAmount) + preInvoiceRemaining;
           entity.remainingAmount =
             Number(entity.remainingAmount) + preInvoiceRemaining;
@@ -216,96 +247,289 @@ export class InvoiceService
     if (!invoice) {
       throw new NotFoundException('Hóa đơn không tồn tại');
     }
+
+    // A DRAFT invoice is published and paid in one transaction: validate it as PENDING
+    const isDraft = invoice.status === InvoiceStatus.DRAFT;
+    if (isDraft) {
+      invoice.status = InvoiceStatus.PENDING;
+    }
+
+    // Validate before opening a transaction: nothing is written on failure
+    const result = this.preparePayment(invoice, dto);
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const invoiceDetailDto = new InvoiceDetailDto();
-      invoiceDetailDto.fromEntity(invoice);
-
-      const validateStatus =
-        this.getValidInvoiceStatusPayment(invoiceDetailDto);
-      if (!validateStatus.status) {
-        throw new BadRequestException(validateStatus.error);
-      }
-
-      const validateAmount = this.getValidInvoiceAmountPayment(
-        invoiceDetailDto,
-        dto,
-      );
-      if (!validateAmount.status) {
-        throw new BadRequestException(validateAmount.error);
-      }
-
-      const entity = dto.getEntity(invoice);
-      await this.invoiceRepository.update(dto.id, {
-        paidAmount: entity.paidAmount,
-        remainingAmount: entity.remainingAmount,
-        status: entity.status,
-      });
-
-      //create payment
-      const paymentCreateDto = new PaymentCreateDto();
-      paymentCreateDto.amount = dto.paidAmount;
-      paymentCreateDto.invoiceId = dto.id;
-      paymentCreateDto.propertyId = invoice.propertyId;
-      paymentCreateDto.paymentMethod = dto.paymentMethod;
-      paymentCreateDto.notes = dto.notes;
-      await this.paymentService.create(paymentCreateDto);
-
-      //update pre-invoice
-      if (invoice.preInvoiceId) {
-        const preInvoice = await this.invoiceRepository.findOne({
-          where: { id: invoice.preInvoiceId },
+      if (isDraft) {
+        // Row lock guards against a concurrent confirm / cancel / double submit
+        const locked = await queryRunner.manager.findOne(Invoice, {
+          where: { id: invoice.id },
+          lock: { mode: 'pessimistic_write' },
         });
-
-        if (preInvoice && DEBT_INVOICE_STATUSES.includes(preInvoice.status)) {
-          preInvoice.remainingAmount = 0;
-          preInvoice.status = InvoiceStatus.PAID;
-          await this.invoiceRepository.update(preInvoice.id, preInvoice);
+        if (locked?.status !== InvoiceStatus.DRAFT) {
+          throw new BadRequestException(
+            'Trạng thái hóa đơn đã thay đổi, vui lòng thử lại',
+          );
         }
       }
-
-      queryRunner.commitTransaction();
-      const detailDto = new InvoiceDetailDto();
-      detailDto.fromEntity(entity);
-      return detailDto;
+      await this.writePayment(queryRunner.manager, invoice, dto, result);
+      if (result.status === InvoiceStatus.PAID) {
+        await this.activateContractAfterFirstPayment(
+          queryRunner.manager,
+          invoice.contractId,
+        );
+      }
+      await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw new BadGatewayException(error.message);
     } finally {
       await queryRunner.release();
     }
+
+    return this.get(invoice.id);
   }
 
-  async confirmInvoice(id: string): Promise<InvoiceDetailDto> {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    const invoice = await this.invoiceRepository.findOne({ where: { id: id } });
-    try {
+  /**
+   * Validate and record a payment inside the caller's transaction (e.g. the
+   * contract's first-invoice payment). Returns the invoice status afterwards.
+   */
+  async applyPayment(
+    dto: InvoicePaymentDto,
+    manager: EntityManager,
+  ): Promise<InvoiceStatus> {
+    const invoice = await manager.findOne(Invoice, {
+      where: { id: dto.id },
+      relations: ['invoiceItems'],
+    });
+    if (!invoice) {
+      throw new NotFoundException('Hóa đơn không tồn tại');
+    }
+    const result = this.preparePayment(invoice, dto);
+    await this.writePayment(manager, invoice, dto, result);
+    return result.status;
+  }
+
+  /**
+   * A fully paid first invoice releases a contract waiting for payment:
+   * started -> ACTIVE (+ room OCCUPIED), otherwise PENDING_START.
+   * Contracts in any other status are left untouched.
+   */
+  private async activateContractAfterFirstPayment(
+    manager: EntityManager,
+    contractId: string,
+  ): Promise<void> {
+    const contract = await manager.findOne(Contracts, {
+      where: { id: contractId },
+      lock: { mode: 'pessimistic_write' },
+    });
+    if (contract?.status !== ContractStatus.WAITING_PAYMENT_INVOICE) {
+      return;
+    }
+
+    const outcome = resolvePaymentConfirmedOutcome({
+      startDate: contract.startDate,
+      now: getCurrentDate(true),
+    });
+
+    if (outcome.contractStatus === ContractStatus.ACTIVE) {
+      const otherActive = await manager.count(Contracts, {
+        where: {
+          roomId: contract.roomId,
+          status: ContractStatus.ACTIVE,
+          id: Not(contract.id),
+        },
+      });
+      if (otherActive > 0) {
+        throw new BadRequestException(
+          'Không thể kích hoạt hợp đồng vì đã có hợp đồng đang hoạt động cho phòng này',
+        );
+      }
+    }
+
+    await manager.update(Contracts, contract.id, {
+      status: outcome.contractStatus,
+    });
+    if (outcome.roomStatus) {
+      await manager.update(Rooms, contract.roomId, {
+        status: outcome.roomStatus,
+      });
+    }
+  }
+
+  private preparePayment(invoice: Invoice, dto: InvoicePaymentDto) {
+    const invoiceDetailDto = new InvoiceDetailDto();
+    invoiceDetailDto.fromEntity(invoice);
+
+    const validateStatus = this.getValidInvoiceStatusPayment(invoiceDetailDto);
+    if (!validateStatus.status) {
+      throw new BadRequestException(validateStatus.error);
+    }
+    const validateAmount = this.getValidInvoiceAmountPayment(
+      invoiceDetailDto,
+      dto,
+    );
+    if (!validateAmount.status) {
+      throw new BadRequestException(validateAmount.error);
+    }
+
+    // A partial payment is only accepted as "settled" when the client carries the balance over
+    return calculateInvoicePayment(
+      {
+        paidAmount: invoiceDetailDto.paidAmount,
+        remainingAmount: invoiceDetailDto.remainingAmount,
+        dueDate: invoice.dueDate,
+      },
+      { amount: dto.paidAmount, isCarryOver: dto.isCarryOver },
+      getCurrentDate(),
+    );
+  }
+
+  private async writePayment(
+    manager: EntityManager,
+    invoice: Invoice,
+    dto: InvoicePaymentDto,
+    result: ReturnType<typeof calculateInvoicePayment>,
+  ): Promise<void> {
+    await manager.update(Invoice, invoice.id, {
+      paidAmount: result.paidAmount,
+      remainingAmount: result.remainingAmount,
+      carriedOverAmount: result.carriedOverAmount,
+      status: result.status,
+    });
+
+    const paymentCreateDto = new PaymentCreateDto();
+    paymentCreateDto.amount = dto.paidAmount;
+    paymentCreateDto.invoiceId = invoice.id;
+    paymentCreateDto.propertyId = invoice.propertyId;
+    paymentCreateDto.paymentMethod = dto.paymentMethod;
+    paymentCreateDto.notes = dto.notes;
+    await manager.save(Payment, paymentCreateDto.getEntity());
+
+    // Close the previous invoice debt that was rolled into this one
+    if (invoice.preInvoiceId) {
+      const preInvoice = await manager.findOne(Invoice, {
+        where: { id: invoice.preInvoiceId },
+      });
+
+      if (preInvoice && DEBT_INVOICE_STATUSES.includes(preInvoice.status)) {
+        await manager.update(Invoice, preInvoice.id, {
+          remainingAmount: 0,
+          status: InvoiceStatus.PAID,
+        });
+      }
+    }
+  }
+
+  /**
+   * Cancel a DRAFT / PENDING invoice that has no payment yet. Pass `manager`
+   * to join the caller's transaction (e.g. contract pre-invoice cancel);
+   * otherwise the cancel runs in its own transaction.
+   */
+  async cancel(
+    dto: InvoiceCancelDto,
+    manager?: EntityManager,
+  ): Promise<InvoiceDetailDto> {
+    const reason = dto.reason?.trim();
+    if (!reason) {
+      throw new BadRequestException('Vui lòng nhập lý do hủy hóa đơn');
+    }
+
+    const run = async (em: EntityManager) => {
+      // Row lock: a duplicate submit waits, then fails the status guard
+      const invoice = await em.findOne(Invoice, {
+        where: { id: dto.id },
+        lock: { mode: 'pessimistic_write' },
+      });
       if (!invoice) {
-        throw new NotFoundException('Không tìm thấy hóa đơn');
+        throw new NotFoundException('Hóa đơn không tồn tại');
       }
       if (
         invoice.status !== InvoiceStatus.DRAFT &&
         invoice.status !== InvoiceStatus.PENDING
       ) {
         throw new BadRequestException(
-          'Chỉ hóa đơn ở trạng thái nháp mới có thể xác nhận',
+          'Chỉ hóa đơn nháp hoặc chờ thanh toán mới có thể hủy',
+        );
+      }
+      if (Number(invoice.paidAmount ?? 0) > 0) {
+        throw new BadRequestException(
+          'Hóa đơn đã có thanh toán, không thể hủy',
         );
       }
 
-      invoice.status = InvoiceStatus.PENDING;
-      this.invoiceRepository.update(invoice.id, invoice);
+      // The first invoice of a waiting contract must go through the contract
+      // flow, which also moves the contract on; a bare cancel would strand it.
+      if (!manager) {
+        const contract = await em.findOne(Contracts, {
+          where: { id: invoice.contractId },
+        });
+        if (contract?.status === ContractStatus.WAITING_PAYMENT_INVOICE) {
+          throw new BadRequestException(
+            'Hóa đơn đầu tiên của hợp đồng đang chờ thanh toán chỉ có thể hủy trong luồng hợp đồng',
+          );
+        }
+      }
 
+      const cancelNote = `Lý do hủy: ${reason}`;
+      await em.update(Invoice, invoice.id, {
+        status: InvoiceStatus.CANCELLED,
+        notes: invoice.notes ? `${invoice.notes}\n${cancelNote}` : cancelNote,
+      });
+    };
+
+    if (manager) {
+      await run(manager);
+    } else {
+      const queryRunner = this.dataSource.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+      try {
+        await run(queryRunner.manager);
+        await queryRunner.commitTransaction();
+      } catch (error) {
+        await queryRunner.rollbackTransaction();
+        throw error;
+      } finally {
+        await queryRunner.release();
+      }
+    }
+
+    return this.get(dto.id);
+  }
+
+  async confirmInvoice(id: string): Promise<InvoiceDetailDto> {
+    const invoice = await this.invoiceRepository.findOne({ where: { id: id } });
+    if (!invoice) {
+      throw new NotFoundException('Không tìm thấy hóa đơn');
+    }
+    // Already published: nothing to write
+    if (invoice.status === InvoiceStatus.PENDING) {
       return this.get(invoice.id);
+    }
+    if (invoice.status !== InvoiceStatus.DRAFT) {
+      throw new BadRequestException(
+        'Chỉ hóa đơn ở trạng thái nháp mới có thể xác nhận',
+      );
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      await queryRunner.manager.update(Invoice, invoice.id, {
+        status: InvoiceStatus.PENDING,
+      });
+      await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw new BadGatewayException(error.message);
     } finally {
       await queryRunner.release();
     }
+
+    return this.get(invoice.id);
   }
 
   async updateInvoiceItems(
@@ -445,27 +669,104 @@ export class InvoiceService
       invoiceItemCreateDtos.push(invoiceItemCreateDto);
     }
 
-    if (invoiceItemCreateDtos.length > 0) {
-      invoiceCreateDto.invoiceItems = invoiceItemCreateDtos;
-      const totalAmount = invoiceItemCreateDtos.reduce(
-        (sum, item) => Number(sum) + Number(item.amount),
-        0,
-      );
-      invoiceCreateDto.totalAmount = roundMoney(totalAmount);
+    // Nothing to collect up front -> contract needs no payment confirmation
+    if (invoiceItemCreateDtos.length === 0) {
+      return null;
     }
+
+    invoiceCreateDto.invoiceItems = invoiceItemCreateDtos;
+    const totalAmount = invoiceItemCreateDtos.reduce(
+      (sum, item) => Number(sum) + Number(item.amount),
+      0,
+    );
+    invoiceCreateDto.totalAmount = roundMoney(totalAmount);
 
     return invoiceCreateDto;
   }
 
   async specQuery(): Promise<SelectQueryBuilder<Invoice>> {
     const query = this.invoiceRepository
-      .createQueryBuilder('invoice')
-      .leftJoinAndSelect('invoice.contract', 'contract')
-      .leftJoinAndSelect('invoice.room', 'room')
-      .leftJoinAndSelect('invoice.invoiceItems', 'invoiceItems')
-      .leftJoinAndSelect('invoiceItems.contractService', 'contractService');
+      .createQueryBuilder('entity')
+      .leftJoinAndSelect('entity.contract', 'contract')
+      .leftJoinAndSelect('contract.contractClient', 'contractClient')
+      .leftJoinAndSelect('entity.room', 'room')
+      .leftJoinAndMapOne(
+        'entity.creator',
+        User,
+        'creator',
+        'creator.id::text = entity.createdBy',
+      );
 
     return query;
+  }
+
+  // Equality filters stay generic; the keys below need custom SQL and are removed
+  // from `filters` so BaseService.getAll does not apply them as plain columns.
+  override async applyFilter(
+    query: SelectQueryBuilder<Invoice>,
+    filter: BaseFilterDto<Invoice>,
+  ) {
+    const filters: Record<string, any> = filter.filters ?? {};
+    const { statuses, createdFrom, createdTo, overdue, ...rest } = filters;
+    for (const key of ['statuses', 'createdFrom', 'createdTo', 'overdue']) {
+      delete filters[key];
+    }
+
+    // Equality on entity columns (contractId, roomId, propertyId, status, ...)
+    ['contractId', 'roomId', 'propertyId', 'status', 'createdBy'].forEach(
+      (key) => {
+        if (rest[key]) {
+          query.andWhere(`entity.${key} = :${key}`, { [key]: rest[key] });
+        }
+      },
+    );
+    // Already applied above; drop so getAll does not apply them twice.
+    ['contractId', 'roomId', 'propertyId', 'status', 'createdBy'].forEach(
+      (key) => delete filters[key],
+    );
+
+    const statusList = ([] as string[])
+      .concat(statuses ?? [])
+      .filter((value) => Object.values(InvoiceStatus).includes(value as any));
+    if (statusList.length) {
+      query.andWhere('entity.status IN (:...statusList)', { statusList });
+    }
+
+    if (createdFrom) {
+      query.andWhere('entity.createdAt >= :createdFrom', {
+        createdFrom: getDateWithoutTime(new Date(createdFrom)),
+      });
+    }
+    if (createdTo) {
+      // Inclusive end day
+      query.andWhere('entity.createdAt < :createdToExclusive', {
+        createdToExclusive: addDays(getDateWithoutTime(new Date(createdTo)), 1),
+      });
+    }
+
+    if (overdue === true || overdue === 'true') {
+      query.andWhere('entity.status = :overdueStatus', {
+        overdueStatus: InvoiceStatus.OVERDUE,
+      });
+    }
+
+    if (filter.globalKey) {
+      query.andWhere(
+        `(entity.code ILIKE :globalKey
+          OR room.name ILIKE :globalKey
+          OR contract.code ILIKE :globalKey
+          OR contractClient.name ILIKE :globalKey)`,
+        { globalKey: `%${filter.globalKey}%` },
+      );
+      // Prevent BaseService from filtering on the non-existent `entity.name`.
+      filter.globalKey = undefined;
+    }
+
+    if (!filter.sort) {
+      query.orderBy('entity.createdAt', 'DESC').addOrderBy('entity.id', 'DESC');
+    }
+
+    return { query, filter };
   }
 
   //#region Support Functions
@@ -576,7 +877,7 @@ export class InvoiceService
     error: string;
     status: boolean;
   } {
-    if (payment.paidAmount < 0) {
+    if (!(payment.paidAmount > 0)) {
       return { error: 'Số tiền thanh toán phải lớn hơn 0', status: false };
     }
 

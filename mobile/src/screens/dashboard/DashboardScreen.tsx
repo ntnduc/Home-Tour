@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AlertFeed from "./components/AlertFeed";
+import { useProfileQuery } from "@/screens/profile/hooks/useProfileData";
 import HomeHeader from "./components/HomeHeader";
 import PropertyFilterChips from "./components/PropertyFilterChips";
 import QuickActionGrid, { QuickAction } from "./components/QuickActionGrid";
@@ -72,6 +73,9 @@ const DashboardScreen = () => {
     getStoreUser().then(setUser);
   }, []);
 
+  // Shares the profile cache entry, so the photo updates right after an upload
+  const { data: profile } = useProfileQuery();
+
   // Giữ danh sách chip từ lần tải thành công gần nhất → chip không biến mất khi đang tải/lỗi.
   const [properties, setProperties] = useState<HomepagePropertyOption[]>([]);
   useEffect(() => {
@@ -117,7 +121,7 @@ const DashboardScreen = () => {
         label: "Hóa đơn",
         icon: "receipt-outline",
         color: tokens.palette.amber[500],
-        onPress: () => navigation.navigate("InvoiceHistory"),
+        onPress: () => navigation.navigate("InvoiceList"),
       },
     ],
     [navigation],
@@ -155,7 +159,8 @@ const DashboardScreen = () => {
         {/* 1. Header cá nhân hóa + chip lọc tài sản */}
         <View style={styles.headerBlock}>
           <HomeHeader
-            fullName={user?.fullName}
+            fullName={profile?.fullName ?? user?.fullName}
+            avatarFileId={profile?.avatarFileId}
             alertCount={alertCount}
             onPressBell={scrollToAlerts}
             onPressAvatar={() => navigation.navigate("Profile")}
@@ -176,7 +181,7 @@ const DashboardScreen = () => {
               summary={summary.data}
               isLoading={summary.isLoading}
               isFetching={summary.isFetching && !isRefreshing}
-              onPress={() => navigation.navigate("InvoiceHistory")}
+              onPress={() => navigation.navigate("InvoiceList")}
             />
             <StatBento
               summary={summary.data}

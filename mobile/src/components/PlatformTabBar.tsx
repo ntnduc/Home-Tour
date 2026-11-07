@@ -218,6 +218,7 @@ const GlassIsland = ({
       <View style={styles.iosShadowLiquid}>
         <GlassView
           glassEffectStyle="regular"
+          isInteractive
           colorScheme="light"
           style={styles.iosIsland}
         >

@@ -1,4 +1,4 @@
-import { tokens } from "@/theme";
+import { cancelContractPreInvoice } from "@/api/contract/contract.api";
 import {
   confirmInvoice,
   getInvoice,
@@ -6,47 +6,136 @@ import {
   updateInvoiceItems,
 } from "@/api/invoice/invoice.api";
 import ActionButtonBottom from "@/components/ActionButtonBottom";
+import DisplayField from "@/components/DisplayField";
+import EmptyState from "@/components/EmptyState";
+import FormScreen from "@/components/FormScreen";
+import FormSection from "@/components/FormSection";
 import { useGlobalAppSheet } from "@/components/GlobalAppSheet";
 import Loading from "@/components/Loading";
-import Status from "@/components/Status";
-import { RootStackParamList } from "@/navigation/types";
-import CardComponent from "@/screens/common/CardComponent";
+import NoticeBanner from "@/components/NoticeBanner";
+import ScreenHeader from "@/components/ScreenHeader";
+import { useNavigator } from "@/navigation/useNavigator";
+import CancelPreInvoiceReason, {
+  CancelPreInvoiceReasonRef,
+} from "@/screens/invoice/components/CancelPreInvoiceReason";
 import ConfirmPaymentInvoice, {
   ConfirmPaymentInvoiceRef,
 } from "@/screens/invoice/components/ConfirmPaymentInvoice";
+import InvoiceDraftItemsSection from "@/screens/invoice/components/create/InvoiceDraftItemsSection";
+import InvoiceDraftSummaryCard from "@/screens/invoice/components/create/InvoiceDraftSummaryCard";
 import UpdateInvoiceItemsPrice, {
   UpdateInvoiceItemsPriceRef,
 } from "@/screens/invoice/components/UpdateInvoiceItemsPrice";
+import { tokens, uiColors, uiSpace, uiType } from "@/theme";
 import {
-  INVOICE_STATUS_OPTIONS,
   InvoiceDetailResponse,
   InvoicePaymentRequest,
   InvoiceStatus,
 } from "@/types/invoice";
-import {
-  InvoiceItemDetailResponse,
-  InvoiceItemType,
-} from "@/types/invoice.item";
+import { InvoiceItemDetailResponse } from "@/types/invoice.item";
 import { formatCurrency } from "@/utils/appUtil";
 import { formatDate } from "@/utils/dateUtil";
-import Ionicons from "@expo/vector-icons/Ionicons";
-import { BottomSheetFooter } from "@gorhom/bottom-sheet";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import {
+  BottomSheetFooter,
+  BottomSheetFooterProps,
+} from "@gorhom/bottom-sheet";
+import { useQueryClient } from "@tanstack/react-query";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Text, View } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { Alert, BackHandler, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
 interface CreateInvoiceProps {
-  navigation: NativeStackNavigationProp<RootStackParamList, "CreateContract">;
+  // navigation: NativeStackNavigationProp<RootStackParamList, "CreateContract">;
   /** Id của hóa đơn được backend tạo ra sau khi tạo hợp đồng. */
   invoiceId: string;
+  /**
+   * Pre-invoice of a just-created contract: while it is still a draft the user
+   * can only confirm it or cancel it (with a reason) - back navigation is blocked.
+   */
+  isPreInvoice?: boolean;
 }
 
 const formatDateSafe = (value?: string | Date) =>
   value ? formatDate(String(value)) : "-";
 
-const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
+type PaymentSheetFooterProps = BottomSheetFooterProps & {
+  loadingRef: React.MutableRefObject<((value: boolean) => void) | null>;
+  onCancel: () => void;
+  onConfirm: () => void;
+};
+
+/** Sheet footer owning its loading state: the sheet content is a snapshot, parent state never re-renders it. */
+const PaymentSheetFooter = ({
+  loadingRef,
+  onCancel,
+  onConfirm,
+  ...footerProps
+}: PaymentSheetFooterProps) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    loadingRef.current = setIsLoading;
+    return () => {
+      loadingRef.current = null;
+    };
+  }, [loadingRef]);
+
+  return (
+    <BottomSheetFooter {...footerProps}>
+      <ActionButtonBottom
+        actions={[
+          [
+            {
+              label: "Hủy",
+              icon: "close-circle",
+              variant: "danger",
+              disabled: isLoading,
+              onPress: onCancel,
+            },
+            {
+              label: "Xác Nhận",
+              icon: "cash",
+              variant: "success",
+              isLoading,
+              onPress: onConfirm,
+            },
+          ],
+        ]}
+      />
+    </BottomSheetFooter>
+  );
+};
+
+/**
+ * Draft invoice step shown right after a contract is created (or from the invoice list).
+ * Keeps the native stack header; the pre-invoice back-lock is driven by the frozen effects.
+ *
+ * ```
+ * FormScreen (canvas · gutter 20 · gap 12)
+ * ╭ NoticeBanner success: contract created with the first invoice ╮
+ * ┌ InvoiceDraftSummaryCard ───────────────────────────────────────┐
+ * │ ▣ Mã hóa đơn                             ● Nháp                 │
+ * │   HD-001 / Chưa cấp mã                                          │
+ * │ ┌ SỐ TIỀN CẦN THANH TOÁN · tile ──────────────────────────────┐ │
+ * └────────────────────────────────────────────────────────────────┘
+ * ┌ FormSection ▣ Thông tin hợp đồng ──────────────────────────────┐
+ * ┌ FormSection ▣ Thông tin thanh toán ────────────────────────────┐  period · due · hairline · totals
+ * ┌ InvoiceDraftItemsSection ▣ Chi tiết hóa đơn  [Cập nhật giá] ───┐  DRAFT only
+ * ┌ FormSection ▣ Ghi chú ─────────────────────────────────────────┐
+ * ├────────────────────────────────────────────────────────────────┤
+ * │ [Ghi nhận thanh toán]                                          │
+ * │ [Hủy hóa đơn / Hủy]  [Xác nhận hóa đơn]                        │ ActionButtonBottom (sticky)
+ * └────────────────────────────────────────────────────────────────┘
+ * ```
+ * Not-found state: centered EmptyState. Loading state: frozen Loading branch.
+ */
+const CreateInvoice = ({
+  // navigation,
+  invoiceId,
+  isPreInvoice = false,
+}: CreateInvoiceProps) => {
+  const { navigation, goBack, goHome } = useNavigator();
   const [loading, setLoading] = useState<boolean>(true);
   const [invoice, setInvoice] = useState<InvoiceDetailResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -54,7 +143,13 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
     useState<boolean>(false);
   const [isConfirming, setIsConfirming] = useState<boolean>(false);
   const refPaymentForm = useRef<ConfirmPaymentInvoiceRef>(null);
+  const paymentLoadingRef = useRef<((value: boolean) => void) | null>(null);
   const refUpdateItemsPriceForm = useRef<UpdateInvoiceItemsPriceRef>(null);
+  const refCancelForm = useRef<CancelPreInvoiceReasonRef>(null);
+  // Synchronous guard against double submit (state is stale inside the sheet footer)
+  const isCancellingRef = useRef(false);
+  const [isCancelling, setIsCancelling] = useState<boolean>(false);
+  const queryClient = useQueryClient();
   const { openAppSheet, closeAppSheet } = useGlobalAppSheet();
 
   const fetchInvoice = useCallback(async () => {
@@ -92,26 +187,113 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
     fetchInvoice();
   }, [fetchInvoice]);
 
+  // Lock back navigation while the pre-invoice is still an unresolved draft
+  const isBackLocked =
+    isPreInvoice && (!invoice || invoice.status === InvoiceStatus.DRAFT);
+
+  useEffect(() => {
+    if (!isPreInvoice) return;
+    navigation.setOptions({
+      gestureEnabled: !isBackLocked,
+      headerBackVisible: !isBackLocked,
+    });
+    if (!isBackLocked) return;
+
+    const removeListener = navigation.addListener("beforeRemove", (event) => {
+      event.preventDefault();
+    });
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => true,
+    );
+    return () => {
+      removeListener();
+      backHandler.remove();
+    };
+  }, [isPreInvoice, isBackLocked, navigation]);
+
+  const handleCancelPreInvoice = async (reason: string) => {
+    if (!invoice || isCancellingRef.current) return;
+    isCancellingRef.current = true;
+    setIsCancelling(true);
+    try {
+      const response = await cancelContractPreInvoice(
+        invoice.contractId,
+        reason,
+      );
+      if (!response.success) {
+        throw new Error(response.message || "Không thể hủy hóa đơn");
+      }
+      // queryClient.invalidateQueries({ queryKey: ["rooms"] });
+      // queryClient.invalidateQueries({ queryKey: ["homepage"] });
+      Toast.show({
+        type: "success",
+        text1: "Thành công",
+        text2: "Đã hủy hóa đơn đầu tiên",
+      });
+      closeAppSheet();
+      goHome();
+      // Contract is settled: unlock, then leave this step
+      // setInvoice({ ...invoice, status: InvoiceStatus.CANCELLED });
+    } catch (error: any) {
+      // Backend rolled back: invoice stays DRAFT, the sheet stays open for a retry
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2:
+          error?.response?.data?.message ??
+          error?.message ??
+          "Không thể hủy hóa đơn",
+      });
+    } finally {
+      isCancellingRef.current = false;
+      setIsCancelling(false);
+    }
+  };
+
+  const handleOpenCancelPreInvoice = () => {
+    if (!invoice) return;
+
+    openAppSheet(
+      <CancelPreInvoiceReason
+        ref={refCancelForm}
+        onSubmit={handleCancelPreInvoice}
+      />,
+      {
+        snapPoints: ["50%"],
+        detached: false,
+        header: {
+          title: "Hủy hóa đơn đầu tiên",
+          onClose: () => {
+            closeAppSheet();
+          },
+        },
+        renderFooter: (props) => (
+          <BottomSheetFooter {...props}>
+            <ActionButtonBottom
+              actions={[
+                {
+                  label: "Xác nhận hủy",
+                  icon: "close-circle",
+                  variant: "danger",
+                  isLoading: isCancelling,
+                  onPress: () => {
+                    refCancelForm.current?.submit();
+                  },
+                },
+              ]}
+            />
+          </BottomSheetFooter>
+        ),
+      },
+    );
+  };
+
   const handleSavePayment = async (formData: InvoicePaymentRequest) => {
     if (!invoice) return;
     setIsSubmitting(true);
-    if (invoice.status === InvoiceStatus.DRAFT) {
-      try {
-        const responseConfirm = await confirmInvoice(invoiceId);
-        if (!responseConfirm.success || !responseConfirm.data) {
-          return;
-        }
-      } catch (error: any) {
-        Toast.show({
-          type: "error",
-          text1: "Lỗi",
-          text2: error?.response?.data?.message ?? "Không thể xác nhận hóa đơn",
-        });
-        setIsSubmitting(false);
-        return;
-      }
-    }
-
+    paymentLoadingRef.current?.(true);
+    // The backend publishes a DRAFT invoice and records the payment atomically
     try {
       const paymentData: InvoicePaymentRequest = {
         id: formData.id,
@@ -129,7 +311,12 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
           text1: "Thành công",
           text2: "Đã ghi nhận thanh toán thành công",
         });
-        await fetchInvoice();
+        closeAppSheet();
+        queryClient.invalidateQueries({ queryKey: ["rooms"] });
+        queryClient.invalidateQueries({ queryKey: ["homepage"] });
+        setInvoice(response.data);
+        // Let the sheet start closing before the stack is reset
+        requestAnimationFrame(goHome);
       } else {
         throw new Error(response.message || "Không thể ghi nhận thanh toán");
       }
@@ -137,12 +324,16 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
       Toast.show({
         type: "error",
         text1: "Lỗi",
-        text2: error?.data?.message || "Không thể ghi nhận thanh toán",
+        text2:
+          error?.response?.data?.message ??
+          error?.data?.message ??
+          error?.message ??
+          "Không thể ghi nhận thanh toán",
       });
       return;
     } finally {
       setIsSubmitting(false);
-      // closeAppSheet();
+      paymentLoadingRef.current?.(false);
     }
   };
 
@@ -165,31 +356,12 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
           },
         },
         renderFooter: (props) => (
-          <BottomSheetFooter {...props}>
-            <ActionButtonBottom
-              actions={[
-                [
-                  {
-                    label: "Hủy",
-                    icon: "close-circle",
-                    variant: "danger",
-                    onPress: () => {
-                      closeAppSheet();
-                    },
-                  },
-                  {
-                    label: "Xác Nhận",
-                    icon: "cash",
-                    variant: "success",
-                    isLoading: isSubmitting,
-                    onPress: () => {
-                      refPaymentForm.current?.submit();
-                    },
-                  },
-                ],
-              ]}
-            />
-          </BottomSheetFooter>
+          <PaymentSheetFooter
+            {...props}
+            loadingRef={paymentLoadingRef}
+            onCancel={closeAppSheet}
+            onConfirm={() => refPaymentForm.current?.submit()}
+          />
         ),
       },
     );
@@ -287,7 +459,7 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
 
     Alert.alert(
       "Xác nhận hóa đơn",
-      "Bạn có chắc chắn muốn xác nhận hóa đơn này?",
+      "Sau khi xác nhận, hóa đơn sẽ được phát hành và không thể chỉnh sửa giá khoản mục.",
       [
         { text: "Hủy", style: "cancel" },
         {
@@ -302,7 +474,11 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
                   text1: "Thành công",
                   text2: "Đã xác nhận hóa đơn",
                 });
-                await fetchInvoice();
+                queryClient.invalidateQueries({ queryKey: ["rooms"] });
+                queryClient.invalidateQueries({ queryKey: ["homepage"] });
+                // Unlock the pre-invoice back-lock, then reset to the room list
+                setInvoice({ ...invoice, status: InvoiceStatus.PENDING });
+                requestAnimationFrame(goHome);
               } else {
                 throw new Error(
                   response.message || "Không thể xác nhận hóa đơn",
@@ -325,240 +501,190 @@ const CreateInvoice = ({ navigation, invoiceId }: CreateInvoiceProps) => {
     );
   };
 
-  const renderRow = (
-    label: string,
-    value?: string | number,
-    strong?: boolean,
-  ) => (
-    <View className="flex-row justify-between items-center mb-2">
-      <Text className="text-base text-gray-600">{label}</Text>
-      <Text
-        className={`text-base ${strong ? "font-semibold text-gray-900" : "text-gray-900"}`}
-      >
-        {value ?? "-"}
-      </Text>
-    </View>
+  // Custom header (native header hidden); back is hidden while the pre-invoice is locked
+  const header = (
+    <ScreenHeader
+      title="Xác nhận hóa đơn nháp"
+      onBack={isBackLocked ? undefined : goBack}
+      insetTop
+    />
   );
 
   if (loading) {
-    return <Loading />;
+    return (
+      <SafeAreaView edges={[]} style={styles.screen}>
+        {header}
+        <Loading />
+      </SafeAreaView>
+    );
   }
 
   if (!invoice) {
     return (
-      <View className="flex-1 items-center justify-center px-6">
-        <View className="w-16 h-16 bg-gray-100 rounded-full items-center justify-center mb-3">
-          <Ionicons name="receipt-outline" size={26} color={tokens.colors.subtle} />
+      <SafeAreaView edges={[]} style={styles.screen}>
+        {header}
+        <View style={styles.emptyWrap}>
+          <EmptyState
+            icon="receipt-outline"
+            title="Không tìm thấy hóa đơn"
+            description="Hóa đơn của hợp đồng chưa được tạo hoặc đã xảy ra lỗi khi tải dữ liệu."
+          />
         </View>
-        <Text className="text-base font-semibold text-gray-900 mb-1">
-          Không tìm thấy hóa đơn
-        </Text>
-        <Text className="text-sm text-gray-500 text-center">
-          Hóa đơn của hợp đồng chưa được tạo hoặc đã xảy ra lỗi khi tải dữ liệu.
-        </Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   const status = invoice.status ?? InvoiceStatus.DRAFT;
-  // const statusColor = INVOICE_STATUS_COLOR[status];
   const invoiceItems = (invoice.invoiceItems ??
     []) as InvoiceItemDetailResponse[];
 
+  // Display-only value derived from the fields above
+  const remainingText = `${formatCurrency((Number(invoice.remainingAmount) || 0).toString())}đ`;
+
   return (
-    <>
-      <KeyboardAwareScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          flexGrow: 1,
-          paddingVertical: 16,
-          paddingHorizontal: 16,
-          display: "flex",
-          flexDirection: "column",
-          gap: 16,
-        }}
-        enableOnAndroid={true}
-        extraScrollHeight={30}
-        keyboardOpeningTime={0}
-        enableAutomaticScroll={true}
-        enableResetScrollToCoords={false}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Thông báo tạo thành công */}
-        <CardComponent>
-          <View className="flex-row items-center w-full bg-green-50 border border-green-200 p-3 rounded-lg">
-            <Ionicons name="checkmark-circle" size={20} color={tokens.colors.success} />
-            <Text className="text-sm text-green-700 ml-2 flex-1">
-              Hợp đồng đã được tạo cùng hóa đơn đầu tiên. Kiểm tra lại thông tin
-              bên dưới.
-            </Text>
-          </View>
-        </CardComponent>
-
-        {/* Tổng quan hóa đơn */}
-        <CardComponent>
-          <View className="flex-row items-start justify-between">
-            <View className="flex-1">
-              <Text className="text-sm text-gray-600 mb-1">Mã hóa đơn</Text>
-              <Text className="text-xl font-bold text-gray-900">
-                {invoice.code || "Chưa cấp mã"}
-              </Text>
-            </View>
-            <Status value={status} options={INVOICE_STATUS_OPTIONS} />
-            {/* <View
-              className="px-3 py-1 rounded-full"
-              style={{ backgroundColor: statusColor.bg }}
-            >
-              <Text
-                className="text-xs font-semibold"
-                style={{ color: statusColor.color }}
-              >
-                {INVOICE_STATUS_LABEL[status]}
-              </Text>
-            </View> */}
-          </View>
-
-          <View className="h-[1px] bg-gray-200 my-3" />
-
-          <Text className="text-sm text-gray-600 mb-1">
-            Số tiền cần thanh toán
-          </Text>
-          <Text className="text-3xl font-extrabold text-info text-center">
-            {formatCurrency((Number(invoice.remainingAmount) || 0).toString())}đ
-          </Text>
-        </CardComponent>
-
-        {/* Thông tin hợp đồng */}
-        <CardComponent title="Thông tin hợp đồng">
-          {renderRow("Phòng", invoice.roomName || "-", true)}
-          {renderRow("Người thuê", invoice.clientName || "-")}
-          {invoice.propertyName
-            ? renderRow("Tòa nhà", invoice.propertyName)
-            : null}
-        </CardComponent>
-
-        {/* Thông tin thanh toán */}
-        <CardComponent title="Thông tin thanh toán">
-          {/* {renderRow(
-            "Hóa đơn tháng",
-            invoice.paymentMonth ? `Tháng ${invoice.paymentMonth}` : "-",
-          )} */}
-          {renderRow(
-            "Kỳ thanh toán",
-            `${formatDateSafe(invoice.billingPeriodStart)} - ${formatDateSafe(
-              invoice.billingPeriodEnd,
-            )}`,
-          )}
-          {renderRow("Hạn thanh toán", formatDateSafe(invoice.dueDate))}
-          <View className="h-[1px] bg-gray-200 my-2" />
-          {renderRow(
-            "Tổng tiền",
-            `${formatCurrency((invoice.totalAmount || 0).toString())}đ`,
-            true,
-          )}
-          {renderRow(
-            "Đã thanh toán",
-            `${formatCurrency((invoice.paidAmount || 0).toString())}đ`,
-          )}
-          {renderRow(
-            "Còn lại",
-            `${formatCurrency((invoice.remainingAmount || 0).toString())}đ`,
-            true,
-          )}
-        </CardComponent>
-
-        {/* Chi tiết hóa đơn */}
-        <CardComponent
-          title="Chi tiết hóa đơn"
-          description="Các khoản mục được tính trong hóa đơn"
-          actions={[
-            {
-              key: "edit",
-              label: "Cập nhật giá",
-              disabled: status !== InvoiceStatus.DRAFT,
-              onPress: handleOpenUpdateItemsPrice,
-            },
-          ]}
-        >
-          {invoiceItems.length === 0 ? (
-            <View className="flex-1 items-center justify-center py-8">
-              <View className="w-14 h-14 bg-gray-100 rounded-full items-center justify-center mb-2">
-                <Ionicons name="list-outline" size={22} color={tokens.colors.subtle} />
-              </View>
-              <Text className="text-gray-500">Chưa có khoản mục nào</Text>
-            </View>
-          ) : (
-            <View className="flex flex-col">
-              {invoiceItems.map((item, idx) => {
-                const amount = item.totalAmount ?? item.amount ?? 0;
-                return (
-                  <View
-                    key={item.id || `${item.type}-${idx}`}
-                    className="flex-row items-center justify-between py-3 border-b border-gray-100"
-                  >
-                    <View className="flex-row items-center flex-1">
-                      <Ionicons
-                        name={
-                          item.type === InvoiceItemType.ROOM_RENT
-                            ? "home-outline"
-                            : "construct-outline"
-                        }
-                        size={18}
-                        color={tokens.colors.muted}
-                      />
-                      <View className="ml-2 flex-1">
-                        <Text className="text-base font-medium text-gray-900">
-                          {item.name || "Khoản mục"}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text className="text-sm font-semibold text-gray-900">
-                      {formatCurrency(amount.toString())}đ
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
-          )}
-        </CardComponent>
-
-        {/* Ghi chú */}
-        <CardComponent title="Ghi chú">
-          <Text className="text-sm text-gray-800">
-            {invoice.notes || "Không có ghi chú"}
-          </Text>
-        </CardComponent>
-      </KeyboardAwareScrollView>
-      <ActionButtonBottom
-        actions={[
-          {
-            label: "Ghi nhận thanh toán",
-            icon: "card",
-            variant: "success",
-            isLoading: isSubmitting,
-            onPress: handleOpenPaymentForm,
-          },
-          [
-            {
-              label: "Hủy",
-              icon: "close-circle",
-              variant: "danger",
-              onPress: () => {
-                navigation.goBack();
+    <SafeAreaView edges={[]} style={styles.screen}>
+      {header}
+      <FormScreen
+        footer={
+          <ActionButtonBottom
+            actions={[
+              {
+                label: "Ghi nhận thanh toán",
+                icon: "card",
+                variant: "success",
+                isLoading: isSubmitting,
+                hidden:
+                  status === InvoiceStatus.PAID ||
+                  status === InvoiceStatus.CANCELLED,
+                onPress: handleOpenPaymentForm,
               },
-            },
-            {
-              label: "Xác nhận hóa đơn",
-              icon: "checkmark-circle",
-              isLoading: isConfirming,
-              onPress: handleConfirmInvoice,
-            },
-          ],
-        ]}
-      />
-    </>
+              [
+                isPreInvoice
+                  ? {
+                      label: "Hủy hóa đơn",
+                      icon: "close-circle",
+                      variant: "danger",
+                      isLoading: isCancelling,
+                      hidden: status !== InvoiceStatus.DRAFT,
+                      onPress: handleOpenCancelPreInvoice,
+                    }
+                  : {
+                      label: "Hủy",
+                      icon: "close-circle",
+                      variant: "danger",
+                      onPress: goBack,
+                    },
+                {
+                  label: "Xác nhận hóa đơn",
+                  icon: "checkmark-circle",
+                  isLoading: isConfirming,
+                  hidden: status !== InvoiceStatus.DRAFT,
+                  onPress: handleConfirmInvoice,
+                },
+              ],
+            ]}
+          />
+        }
+      >
+        <NoticeBanner
+          tone="success"
+          icon="checkmark-circle"
+          message="Hợp đồng đã được tạo cùng hóa đơn đầu tiên. Kiểm tra lại thông tin bên dưới."
+        />
+
+        <InvoiceDraftSummaryCard
+          code={invoice.code}
+          status={status}
+          remainingText={remainingText}
+        />
+
+        <FormSection title="Thông tin hợp đồng" icon="reader-outline">
+          <DisplayField
+            label="Phòng"
+            value={invoice.roomName || "-"}
+            strong
+            compact
+          />
+          <DisplayField
+            label="Người thuê"
+            value={invoice.clientName || "-"}
+            compact
+          />
+          {invoice.propertyName ? (
+            <DisplayField
+              label="Tòa nhà"
+              value={invoice.propertyName}
+              compact
+            />
+          ) : null}
+        </FormSection>
+
+        <FormSection title="Thông tin thanh toán" icon="calendar-outline">
+          <DisplayField
+            label="Kỳ thanh toán"
+            value={`${formatDateSafe(invoice.billingPeriodStart)} - ${formatDateSafe(
+              invoice.billingPeriodEnd,
+            )}`}
+            compact
+          />
+          <DisplayField
+            label="Hạn thanh toán"
+            value={formatDateSafe(invoice.dueDate)}
+            compact
+          />
+          <View style={styles.divider} />
+          <DisplayField
+            label="Tổng tiền"
+            value={`${formatCurrency((invoice.totalAmount || 0).toString())}đ`}
+            strong
+            compact
+          />
+          <DisplayField
+            label="Đã thanh toán"
+            value={`${formatCurrency((invoice.paidAmount || 0).toString())}đ`}
+            valueStyle={styles.successValue}
+            compact
+          />
+          <DisplayField
+            label="Còn lại"
+            value={`${formatCurrency((invoice.remainingAmount || 0).toString())}đ`}
+            strong
+            compact
+          />
+        </FormSection>
+
+        <InvoiceDraftItemsSection
+          items={invoiceItems}
+          canEditPrice={status === InvoiceStatus.DRAFT}
+          onEditPrice={handleOpenUpdateItemsPrice}
+        />
+
+        <FormSection title="Ghi chú" icon="document-text-outline">
+          <Text style={uiType.body}>{invoice.notes || "Không có ghi chú"}</Text>
+        </FormSection>
+      </FormScreen>
+    </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: uiColors.canvas,
+  },
+  emptyWrap: {
+    flex: 1,
+    justifyContent: "center",
+    padding: uiSpace.screen,
+    backgroundColor: uiColors.canvas,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: uiColors.hairline,
+  },
+  successValue: {
+    color: tokens.colors.success,
+  },
+});
 
 export default CreateInvoice;

@@ -22,10 +22,13 @@
  * ```
  */
 import Card from "@/components/Card";
+import { CARD_ACTION_PRESETS } from "@/components/CardActionsPresets";
 import CountBadge from "@/components/CountBadge";
 import IconButton from "@/components/IconButton";
 import NoticeBanner from "@/components/NoticeBanner";
 import StatusBadge from "@/components/StatusBadge";
+import { ROOM_STATUS_BADGE } from "@/constant/room.constant";
+import { RootStackParamList } from "@/navigation/types";
 import { tokens, uiColors, uiType, uiWeight } from "@/theme";
 import { ContractStatus } from "@/types/contract";
 import { RoomAction, RoomListResponse } from "@/types/room";
@@ -34,9 +37,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { RootStackParamList } from "@/navigation/types";
-import { ROOM_STATUS_BADGE } from "@/constant/room.constant";
-import { CARD_ACTION_PRESETS } from "@/components/CardActionsPresets";
 import RoomCardActions from "./RoomCardActions";
 import RoomContractTile from "./RoomContractTile";
 
@@ -76,11 +76,25 @@ const RoomCardItemComponent = ({ item, navigation }: RoomCardItemProps) => {
           roomId: payload.roomId,
         });
         return;
+      case "CONFIRM_PAYMENT":
+        if (payload.invoiceId) {
+          navigation.navigate("InvoiceDetail", {
+            invoiceId: payload.invoiceId,
+            confirmContractId: payload.contractId,
+          });
+          return;
+        }
+        if (!payload.contractId) return;
+        navigation.navigate("ContractDetail", {
+          contractId: payload.contractId,
+        });
+        return;
       case "CONFIRM_CONTRACT":
-      case "CONFIRM_DEPOSIT":
       case "VIEW_CONTRACT":
         if (!payload.contractId) return;
-        navigation.navigate("ContractDetail", { contractId: payload.contractId });
+        navigation.navigate("ContractDetail", {
+          contractId: payload.contractId,
+        });
         return;
       case "RENEW_CONTRACT":
       case "CREATE_CONTRACT":
@@ -98,7 +112,8 @@ const RoomCardItemComponent = ({ item, navigation }: RoomCardItemProps) => {
     }
   };
 
-  const statusBadge = ROOM_STATUS_BADGE[item.status] ?? ROOM_STATUS_BADGE.UNAVAILABLE;
+  const statusBadge =
+    ROOM_STATUS_BADGE[item.status] ?? ROOM_STATUS_BADGE.UNAVAILABLE;
 
   return (
     <Card
@@ -137,9 +152,24 @@ const RoomCardItemComponent = ({ item, navigation }: RoomCardItemProps) => {
 
           <View style={styles.iconCluster}>
             <IconButton
+              icon="receipt-outline"
+              onPress={() =>
+                navigation.navigate("InvoiceList", {
+                  roomId: item.id,
+                  roomName: item.name,
+                })
+              }
+              accessibilityLabel="Lịch sử hóa đơn"
+              size="sm"
+              tone="primary"
+            />
+            <IconButton
               icon={CARD_ACTION_PRESETS.edit.icon}
               onPress={() =>
-                navigation.navigate("UpdateRoom", { roomId: item.id, room: item })
+                navigation.navigate("UpdateRoom", {
+                  roomId: item.id,
+                  room: item,
+                })
               }
               accessibilityLabel="Sửa phòng"
               size="sm"
@@ -167,8 +197,15 @@ const RoomCardItemComponent = ({ item, navigation }: RoomCardItemProps) => {
           {/* Building name with icon (if present) */}
           {item.property?.name ? (
             <View style={styles.buildingRow}>
-              <Ionicons name="business-outline" size={12} color={uiColors.textSubtle} />
-              <Text style={[uiType.caption, styles.buildingText]} numberOfLines={1}>
+              <Ionicons
+                name="business-outline"
+                size={12}
+                color={uiColors.textSubtle}
+              />
+              <Text
+                style={[uiType.caption, styles.buildingText]}
+                numberOfLines={1}
+              >
                 {item.property.name}
               </Text>
             </View>
@@ -200,9 +237,7 @@ const RoomCardItemComponent = ({ item, navigation }: RoomCardItemProps) => {
       </View>
 
       {/* Divider (only if actions exist) */}
-      {(item.actions ?? []).length > 0 && (
-        <View style={styles.divider} />
-      )}
+      {(item.actions ?? []).length > 0 && <View style={styles.divider} />}
 
       {/* Actions section (moved to RoomCardActions component) */}
       <RoomCardActions

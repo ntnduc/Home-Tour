@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { InvoiceStatus } from 'src/common/enums/invoice.enum';
-import { RoomStatus } from 'src/common/enums/room.enum';
 import { getCurrentDate } from 'src/common/utils';
 import {
   ROOM_ACTION_CONFIG,
@@ -37,8 +36,34 @@ export class RoomActionService {
   ): RoomActionComputationResult {
     const actions: RoomActionDto[] = [];
     const invoiceCreationInfo = this.getInvoiceCreationInfo(signal, now);
+    const awaitingPayment = !!signal.awaitingPaymentContractId;
 
-    if (signal.actionableInvoiceId) {
+    if (awaitingPayment) {
+      actions.push(
+        this.createAction(RoomActionType.CONFIRM_PAYMENT, {
+          payload: {
+            contractId: signal.awaitingPaymentContractId ?? undefined,
+            invoiceId: signal.awaitingPaymentInvoiceId ?? undefined,
+            roomId: signal.roomId,
+          },
+        }),
+      );
+
+      // Contract waits for payment confirmation and nothing else is running in
+      // the room: Confirm Payment is the only action offered.
+      if (!signal.activeContractId) {
+        return this.buildResult(actions, signal, invoiceCreationInfo);
+      }
+    }
+
+    // The pre-invoice of a waiting contract is settled by CONFIRM_PAYMENT
+    if (
+      signal.actionableInvoiceId &&
+      !(
+        awaitingPayment &&
+        signal.actionableInvoiceId === signal.awaitingPaymentInvoiceId
+      )
+    ) {
       actions.push(
         this.createAction(RoomActionType.INVOICE_PAYMENT, {
           severity:
@@ -68,28 +93,14 @@ export class RoomActionService {
       );
     }
 
-    if (signal.pendingContractId) {
+    if (
+      signal.pendingContractId &&
+      signal.pendingContractId !== signal.awaitingPaymentContractId
+    ) {
       actions.push(
         this.createAction(RoomActionType.CONFIRM_CONTRACT, {
           payload: {
             contractId: signal.pendingContractId,
-            roomId: signal.roomId,
-          },
-        }),
-      );
-    }
-
-    if (
-      signal.roomStatus === RoomStatus.PENDING_DEPOSIT ||
-      signal.awaitingDepositContractId
-    ) {
-      actions.push(
-        this.createAction(RoomActionType.CONFIRM_DEPOSIT, {
-          payload: {
-            contractId:
-              signal.awaitingDepositContractId ??
-              signal.pendingContractId ??
-              undefined,
             roomId: signal.roomId,
           },
         }),
@@ -107,7 +118,8 @@ export class RoomActionService {
       );
     }
 
-    if (signal.hasIndefiniteActiveContract === false) {
+    // Room has at least one free time slot (no open-ended reserving contract)
+    if (signal.hasAvailableSlot === true) {
       actions.push(
         this.createAction(RoomActionType.CREATE_CONTRACT, {
           payload: { roomId: signal.roomId },
@@ -134,6 +146,14 @@ export class RoomActionService {
       );
     }
 
+    return this.buildResult(actions, signal, invoiceCreationInfo);
+  }
+
+  private buildResult(
+    actions: RoomActionDto[],
+    signal: RoomActionSignalInput,
+    invoiceCreationInfo: InvoiceCreationInfo,
+  ): RoomActionComputationResult {
     actions.sort((a, b) => a.priority - b.priority);
 
     const overdueInvoiceCount = Number(signal.overdueInvoiceCount ?? 0);

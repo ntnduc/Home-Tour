@@ -10,6 +10,7 @@ import { PaymentDetailDto } from './dto/payment-dto/payment.detail.dto';
 import { PaymentListDto } from './dto/payment-dto/payment.list.dto';
 import { PaymentUpdateDto } from './dto/payment-dto/payment.update.dto';
 import { Payment } from './entities/payment.entity';
+import { PaymentRepository } from './repositories/payment.repository';
 
 /**
  * Xác định lại trạng thái hóa đơn dựa trên số tiền đã thu và hạn thanh toán.
@@ -62,14 +63,13 @@ export class PaymentService
     >
 {
   constructor(
-    @InjectRepository(Payment)
-    private readonly paymentRepository: Repository<Payment>,
+    private readonly paymentRepository: PaymentRepository,
     @InjectRepository(Invoice)
     private readonly invoiceRepository: Repository<Invoice>,
     private readonly dataSource: DataSource,
   ) {
     super(
-      paymentRepository as any,
+      paymentRepository,
       PaymentDetailDto,
       PaymentListDto,
       PaymentCreateDto,
@@ -79,9 +79,8 @@ export class PaymentService
 
   async specQuery(): Promise<SelectQueryBuilder<Payment>> {
     const query = this.paymentRepository
-      .createQueryBuilder('payment')
-      .leftJoinAndSelect('payment.invoice', 'invoice')
-      .leftJoinAndSelect('payment.property', 'property');
+      .createQueryBuilder('entity')
+      .leftJoinAndSelect('entity.invoice', 'invoice');
 
     return query;
   }

@@ -6,7 +6,6 @@ import {
   Min,
 } from 'class-validator';
 import { BaseUpdateDto } from 'src/common/base/dto/update.dto';
-import { InvoiceStatus } from 'src/common/enums/invoice.enum';
 import { Invoice } from '../../entities/invoice.entity';
 
 export class InvoicePaymentDto extends BaseUpdateDto<Invoice> {
@@ -41,35 +40,9 @@ export class InvoicePaymentDto extends BaseUpdateDto<Invoice> {
   @IsString()
   paymentMethod: string;
 
+  // Amounts and status are calculated in calculateInvoicePayment (invoice-payment.util.ts);
+  // the client-sent remainingAmount is only informational.
   getEntity(entity: Invoice): Invoice {
-    // entity.paidAmount = this.calculatorPaidAmount(entity);
-    entity.paidAmount = this.paidAmount;
-    entity.remainingAmount = this.calculatorRemainingAmount(entity);
-    // entity.dueDate = new Date(this.dueDate);
-    // entity.status = InvoiceStatus.PAID;
-    this.setStatus(entity);
     return entity;
-  }
-
-  setStatus(invoice: Invoice) {
-    if (!this.isCarryOver) {
-      return;
-    }
-    if (this.paidAmount < invoice.remainingAmount) {
-      invoice.status = InvoiceStatus.PARTIALLY_PAID;
-    }
-    invoice.status = InvoiceStatus.PAID;
-  }
-
-  calculatorPaidAmount(invoice: Invoice): number {
-    let paidAmountCurrent = invoice.paidAmount ?? 0;
-    paidAmountCurrent += this.remainingAmount;
-    return paidAmountCurrent;
-  }
-
-  calculatorRemainingAmount(invoice: Invoice): number {
-    let remainingAmountCurrent = invoice.remainingAmount ?? 0;
-    remainingAmountCurrent -= this.remainingAmount;
-    return remainingAmountCurrent;
   }
 }

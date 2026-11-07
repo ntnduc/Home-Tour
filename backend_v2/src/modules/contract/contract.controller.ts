@@ -20,6 +20,8 @@ import { Role } from '../../common/enums/role.enum';
 import { Roles } from '../rbac/decorators/roles.decorator';
 import { ContractService } from './contract.service';
 import { ContractChangeStatusDto } from './dto/contract-dto/contract.change.status.dto';
+import { ContractCancelPreInvoiceDto } from './dto/contract-dto/contract.cancel-pre-invoice.dto';
+import { ContractConfirmPaymentDto } from './dto/contract-dto/contract.confirm-payment.dto';
 import { ContractCreateDto } from './dto/contract-dto/contract.create.dto';
 import { ContractDetailDto } from './dto/contract-dto/contract.detail.dto';
 import { ContractListDto } from './dto/contract-dto/contract.list.dto';
@@ -125,6 +127,33 @@ export class ContractController extends BaseController<
       updateDto.reason = body.reason;
     }
     return await this.contractService.active(updateDto);
+  }
+
+  @Post(':id/cancel-pre-invoice')
+  @ApiOperation({
+    summary:
+      'Cancel the draft pre-invoice (reason required) and move the contract on',
+  })
+  @ApiResponse({ status: 200, description: 'Đã hủy hóa đơn đầu tiên.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy hợp đồng.' })
+  async cancelPreInvoice(
+    @Param('id') id: string,
+    @Body() body: ContractCancelPreInvoiceDto,
+  ): Promise<ContractDetailDto> {
+    return await this.contractService.cancelPreInvoice(id, body);
+  }
+
+  @Post(':id/confirm-payment')
+  @ApiOperation({
+    summary: 'Confirm the first invoice as paid and activate the contract',
+  })
+  @ApiResponse({ status: 200, description: 'Đã xác nhận thanh toán.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy hợp đồng.' })
+  async confirmPayment(
+    @Param('id') id: string,
+    @Body() body: ContractConfirmPaymentDto,
+  ) {
+    return await this.contractService.confirmPayment(id, body);
   }
 
   @Post(':id/deactivate')

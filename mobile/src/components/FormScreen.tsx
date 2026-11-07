@@ -1,13 +1,22 @@
 import { uiColors, uiSpace } from "@/theme";
 import React, { ReactNode } from "react";
-import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
+import {
+  RefreshControlProps,
+  StyleProp,
+  StyleSheet,
+  View,
+  ViewStyle,
+} from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { useIsAppSheetOpen } from "./GlobalAppSheet";
 
 export interface FormScreenProps {
   children: ReactNode;
   /** Sticky element under the scroll area (usually `ActionButtonBottom`). */
   footer?: ReactNode;
   contentStyle?: StyleProp<ViewStyle>;
+  /** Forwarded to KeyboardAwareScrollView (pull-to-refresh on detail screens). */
+  refreshControl?: React.ReactElement<RefreshControlProps>;
 }
 
 /**
@@ -23,24 +32,36 @@ export interface FormScreenProps {
  * └──────────────────────────────┘
  * ```
  */
-const FormScreen = ({ children, footer, contentStyle }: FormScreenProps) => (
-  <View style={styles.container}>
-    <KeyboardAwareScrollView
-      style={styles.scroll}
-      contentContainerStyle={[styles.content, contentStyle]}
-      enableOnAndroid
-      extraScrollHeight={30}
-      keyboardOpeningTime={0}
-      enableAutomaticScroll
-      enableResetScrollToCoords={false}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-    >
-      {children}
-    </KeyboardAwareScrollView>
-    {footer}
-  </View>
-);
+const FormScreen = ({
+  children,
+  footer,
+  contentStyle,
+  refreshControl,
+}: FormScreenProps) => {
+  // Sheet inputs live in a portal outside this scroll view; while a sheet is
+  // open, auto-scroll would try to measure a view it does not own.
+  const isSheetOpen = useIsAppSheetOpen();
+
+  return (
+    <View style={styles.container}>
+      <KeyboardAwareScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.content, contentStyle]}
+        enableOnAndroid
+        extraScrollHeight={30}
+        keyboardOpeningTime={0}
+        enableAutomaticScroll={!isSheetOpen}
+        enableResetScrollToCoords={false}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        refreshControl={refreshControl}
+      >
+        {children}
+      </KeyboardAwareScrollView>
+      {footer}
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {

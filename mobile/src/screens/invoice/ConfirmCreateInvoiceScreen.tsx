@@ -1,19 +1,20 @@
 import { createInvoice } from "@/api/invoice/invoice.api";
-import { tokens } from "@/theme";
 import ActionButtonBottom from "@/components/ActionButtonBottom";
+import DisplayField from "@/components/DisplayField";
+import FormScreen from "@/components/FormScreen";
+import FormSection from "@/components/FormSection";
 import Loading from "@/components/Loading";
 import { ServiceCalculateMethod } from "@/constant/service.constant";
 import { RootStackParamList } from "@/navigation/types";
-import CardComponent from "@/screens/common/CardComponent";
+import ConfirmCreateSummaryCard from "@/screens/invoice/components/create/ConfirmCreateSummaryCard";
 import ServiceDetailInvoiceItemComponent from "@/screens/invoice/components/ServiceDetailInvoiceItemComponent";
+import { tokens, uiColors, uiType } from "@/theme";
 import { InvoiceItemType } from "@/types/invoice.item";
 import { formatCurrency } from "@/utils/appUtil";
 import { formatDate } from "@/utils/dateUtil";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useMemo } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { StyleSheet, Text, View } from "react-native";
 import Toast from "react-native-toast-message";
 
 type ConfirmCreateInvoiceScreenProps = {
@@ -24,11 +25,28 @@ type ConfirmCreateInvoiceScreenProps = {
   route: { params: RootStackParamList["ConfirmCreateInvoice"] };
 };
 
-// type ServiceCalculation = {
-//   item: InvoiceItemCreateRequest;
-//   amount: number;
-// };
-
+/**
+ * Review step for a manually built invoice before it is created.
+ * Keeps the native stack header ("Xác Nhận Tạo Hóa Đơn"); the body scrolls inside FormScreen.
+ *
+ * ```
+ * FormScreen (canvas · gutter 20 · gap 12 · keyboard-aware)
+ * ┌ ConfirmCreateSummaryCard ───────────────────────┐
+ * │ ▣ Xác nhận tạo hóa đơn          [Chỉnh sửa]     │
+ * │ ┌ amount tile · TỔNG TIỀN CẦN THU ───────────┐  │
+ * │ └────────────────────────────────────────────┘  │
+ * │ Tiền thuê / Dịch vụ                             │
+ * └─────────────────────────────────────────────────┘
+ * ┌ FormSection ▣ Thông tin hợp đồng ───────────────┐
+ * ┌ FormSection ▣ Thông tin thanh toán ─────────────┐  note block only when notes
+ * ┌ FormSection ▣ Chi tiết dịch vụ ─────────────────┐  rows or empty caption
+ * ┌ FormSection ▣ Tóm tắt thanh toán ───────────────┐  hairline · Tổng cộng (primary)
+ * ├──────────────────────────────────────────────────┤
+ * │ [Xác nhận tạo hóa đơn]  [Chỉnh sửa thông tin]    │ ActionButtonBottom (sticky footer)
+ * └──────────────────────────────────────────────────┘
+ * ```
+ * Display-only derived values are built after the frozen submitting branch.
+ */
 const ConfirmCreateInvoiceScreen = ({
   navigation,
   route,
@@ -157,228 +175,141 @@ const ConfirmCreateInvoiceScreen = ({
     }
   };
 
-  const renderRow = (
-    label: string,
-    value?: string | number,
-    strong?: boolean,
-  ) => (
-    <View className="flex-row justify-between items-center mb-2">
-      <Text className="text-base text-gray-600">{label}</Text>
-      <Text
-        className={`text-base ${strong ? "font-semibold text-gray-900" : "text-gray-900"}`}
-      >
-        {value}
-      </Text>
-    </View>
-  );
-
   if (isSubmitting) {
     return <Loading />;
   }
 
+  // Display-only values derived from the frozen calculations above
+  const roomRentText = `${formatCurrency((invoice.invoiceItems?.find((item) => item.type === InvoiceItemType.ROOM_RENT)?.amount || 0).toString())}đ`;
+  const serviceText = `${formatCurrency(totalServiceAmount.toString())}đ`;
+  const totalText = `${formatCurrency(calculatedInvoiceData.totalAmount.toString())}đ`;
+  const serviceItems = calculatedInvoiceData.invoiceItemsWithTotal.filter(
+    (item) => item.type === InvoiceItemType.SERVICE_FEE,
+  );
+
   return (
-    <>
-      <KeyboardAwareScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          flexGrow: 1,
-          padding: 16,
-          paddingBottom: 16,
-          display: "flex",
-          flexDirection: "column",
-          gap: 16,
-        }}
-        enableOnAndroid={true}
-        extraScrollHeight={30}
-        keyboardOpeningTime={0}
-        enableAutomaticScroll={true}
-        enableResetScrollToCoords={false}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header tổng quan */}
-        <CardComponent>
-          <View className="flex-row justify-between items-start">
-            <View className="flex-1">
-              <Text className="text-xl font-bold text-gray-900 mb-1">
-                Xác nhận tạo hóa đơn
-              </Text>
-              <Text className="text-sm text-gray-600">
-                Kiểm tra kỹ các thông tin trước khi xác nhận
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={onEdit}
-              className="px-3 py-2 rounded-lg bg-white border border-gray-200"
-            >
-              <View className="flex-row items-center">
-                <Ionicons name="create-outline" size={16} color={tokens.colors.foreground} />
-                <Text className="text-gray-700 text-sm font-medium ml-1">
-                  Chỉnh sửa
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-        </CardComponent>
-
-        {/* Tổng tiền cần thu - nhấn mạnh */}
-        <CardComponent>
-          <View className="bg-info-surface border border-info rounded-xl p-4">
-            <View className="flex-row items-center justify-between mb-2">
-              <View className="flex-row items-center">
-                <Ionicons name="receipt-outline" size={20} color={tokens.colors.info} />
-                <Text className="ml-2 text-sm font-semibold text-info">
-                  Tổng tiền cần thu
-                </Text>
-              </View>
-            </View>
-            <Text className="text-3xl font-extrabold text-info text-center">
-              {formatCurrency(calculatedInvoiceData.totalAmount.toString())}đ
-            </Text>
-            <View className="mt-3 pt-3 border-t border-info">
-              <View className="flex-row justify-between items-center mb-1">
-                <Text className="text-xs text-info">Tiền thuê</Text>
-                <Text className="text-sm font-semibold text-info">
-                  {formatCurrency(
-                    (
-                      invoice.invoiceItems?.find(
-                        (item) => item.type === InvoiceItemType.ROOM_RENT,
-                      )?.amount || 0
-                    ).toString(),
-                  )}
-                  đ
-                </Text>
-              </View>
-              <View className="flex-row justify-between items-center">
-                <Text className="text-xs text-info">Dịch vụ</Text>
-                <Text className="text-sm font-semibold text-info">
-                  {formatCurrency(totalServiceAmount.toString())}đ
-                </Text>
-              </View>
-            </View>
-          </View>
-        </CardComponent>
-
-        {/* Thông tin hợp đồng */}
-        <CardComponent title="Thông tin hợp đồng">
-          <View>
-            {renderRow("Phòng", invoice.roomName || "-", true)}
-            {renderRow("Người thuê", invoice.clientName || "-")}
-          </View>
-        </CardComponent>
-
-        {/* Thông tin thanh toán */}
-        <CardComponent title="Thông tin thanh toán">
-          <View>
-            {renderRow(
-              "Hóa đơn tháng",
-              invoice.paymentMonth ? `Tháng ${invoice.paymentMonth}` : "-",
-            )}
-            {renderRow(
-              "Hạn thanh toán",
-              invoice.dueDate ? formatDate(invoice.dueDate.toString()) : "-",
-            )}
-            {invoice.notes && (
-              <>
-                <View className="h-[1px] bg-gray-200 my-2" />
-                <View>
-                  <Text className="text-sm text-gray-600 mb-1">Ghi chú</Text>
-                  <Text className="text-base text-gray-900">
-                    {invoice.notes}
-                  </Text>
-                </View>
-              </>
-            )}
-          </View>
-        </CardComponent>
-
-        {/* Chi tiết dịch vụ */}
-        <CardComponent
-          title="Chi tiết dịch vụ"
-          description="Các dịch vụ được tính trong hóa đơn này"
-        >
-          {calculatedInvoiceData.invoiceItemsWithTotal.filter(
-            (item) => item.type === InvoiceItemType.SERVICE_FEE,
-          )?.length === 0 ? (
-            <View className="flex-1 items-center justify-center py-8">
-              <View className="w-14 h-14 bg-gray-100 rounded-full items-center justify-center mb-2">
-                <Ionicons name="construct-outline" size={22} color={tokens.colors.subtle} />
-              </View>
-              <Text className="text-gray-500">Không có dịch vụ nào</Text>
-            </View>
-          ) : (
-            <View className="flex flex-col">
-              {calculatedInvoiceData.invoiceItemsWithTotal
-                .filter((item) => item.type === InvoiceItemType.SERVICE_FEE)
-                ?.map((calc, idx) => (
-                  <ServiceDetailInvoiceItemComponent
-                    key={`${calc.contractServiceId || idx + 1}`}
-                    data={calc}
-                    isLast={
-                      idx ===
-                      (calculatedInvoiceData.invoiceItemsWithTotal.filter(
-                        (item) => item.type === InvoiceItemType.SERVICE_FEE,
-                      )?.length || 0) -
-                        1
-                    }
-                  />
-                ))}
-            </View>
-          )}
-        </CardComponent>
-
-        {/* Tóm tắt thanh toán */}
-        <CardComponent title="Tóm tắt thanh toán">
-          <View>
-            <View className="flex-row justify-between items-center mb-2">
-              <Text className="text-base text-gray-600">Tiền thuê</Text>
-              <Text className="text-base font-semibold text-gray-900">
-                {formatCurrency(
-                  (
-                    invoice?.invoiceItems?.find(
-                      (item) => item.type === InvoiceItemType.ROOM_RENT,
-                    )?.amount || 0
-                  ).toString(),
-                )}
-                đ
-              </Text>
-            </View>
-            <View className="flex-row justify-between items-center mb-2">
-              <Text className="text-base text-gray-600">Dịch vụ</Text>
-              <Text className="text-base font-semibold text-gray-900">
-                {formatCurrency(totalServiceAmount.toString())}đ
-              </Text>
-            </View>
-            <View className="h-[1px] bg-gray-200 my-2" />
-            <View className="flex-row justify-between items-center pt-2">
-              <Text className="text-lg font-bold text-gray-900">Tổng cộng</Text>
-              <Text className="text-xl font-extrabold text-info">
-                {formatCurrency(calculatedInvoiceData.totalAmount.toString())}đ
-              </Text>
-            </View>
-          </View>
-        </CardComponent>
-      </KeyboardAwareScrollView>
-
-      <ActionButtonBottom
-        actions={[
-          {
-            label: "Xác nhận tạo hóa đơn",
-            icon: "checkmark-circle",
-            variant: "success",
-            isLoading: isSubmitting,
-            onPress: onSubmit,
-          },
-          {
-            label: "Chỉnh sửa thông tin",
-            icon: "create-outline",
-            variant: "secondary",
-            onPress: onEdit,
-          },
-        ]}
+    <FormScreen
+      footer={
+        <ActionButtonBottom
+          actions={[
+            {
+              label: "Xác nhận tạo hóa đơn",
+              icon: "checkmark-circle",
+              variant: "success",
+              isLoading: isSubmitting,
+              onPress: onSubmit,
+            },
+            {
+              label: "Chỉnh sửa thông tin",
+              icon: "create-outline",
+              variant: "secondary",
+              onPress: onEdit,
+            },
+          ]}
+        />
+      }
+    >
+      <ConfirmCreateSummaryCard
+        totalText={totalText}
+        roomRentText={roomRentText}
+        serviceText={serviceText}
+        onEdit={onEdit}
       />
-    </>
+
+      <FormSection title="Thông tin hợp đồng" icon="reader-outline">
+        <DisplayField
+          label="Phòng"
+          value={invoice.roomName || "-"}
+          strong
+          compact
+        />
+        <DisplayField
+          label="Người thuê"
+          value={invoice.clientName || "-"}
+          compact
+        />
+      </FormSection>
+
+      <FormSection title="Thông tin thanh toán" icon="calendar-outline">
+        <DisplayField
+          label="Hóa đơn tháng"
+          value={invoice.paymentMonth ? `Tháng ${invoice.paymentMonth}` : "-"}
+          compact
+        />
+        <DisplayField
+          label="Hạn thanh toán"
+          value={invoice.dueDate ? formatDate(invoice.dueDate.toString()) : "-"}
+          compact
+        />
+        {invoice.notes ? (
+          <>
+            <View style={styles.divider} />
+            <DisplayField
+              direction="vertical"
+              label="Ghi chú"
+              value={invoice.notes}
+              compact
+            />
+          </>
+        ) : null}
+      </FormSection>
+
+      <FormSection
+        title="Chi tiết dịch vụ"
+        icon="flash-outline"
+        caption="Các dịch vụ được tính trong hóa đơn này"
+      >
+        {serviceItems.length === 0 ? (
+          <Text style={uiType.caption}>Không có dịch vụ nào</Text>
+        ) : (
+          <View>
+            {serviceItems.map((calc, idx) => (
+              <ServiceDetailInvoiceItemComponent
+                key={`${calc.contractServiceId || idx + 1}`}
+                data={calc}
+                isLast={idx === serviceItems.length - 1}
+              />
+            ))}
+          </View>
+        )}
+      </FormSection>
+
+      <FormSection title="Tóm tắt thanh toán" icon="calculator-outline">
+        <View style={styles.row}>
+          <Text style={uiType.body}>Tiền thuê</Text>
+          <Text style={uiType.bodyStrong}>{roomRentText}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={uiType.body}>Dịch vụ</Text>
+          <Text style={uiType.bodyStrong}>{serviceText}</Text>
+        </View>
+        <View style={[styles.row, styles.totalRow]}>
+          <Text style={uiType.bodyStrong}>Tổng cộng</Text>
+          <Text style={[uiType.section, styles.total]}>{totalText}</Text>
+        </View>
+      </FormSection>
+    </FormScreen>
   );
 };
+
+const styles = StyleSheet.create({
+  divider: {
+    height: 1,
+    backgroundColor: uiColors.hairline,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  totalRow: {
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: uiColors.hairline,
+  },
+  total: {
+    color: tokens.colors.primary,
+  },
+});
 
 export default ConfirmCreateInvoiceScreen;

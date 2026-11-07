@@ -21,6 +21,7 @@ interface ContractCardProps {
   onViewDetails?: () => void;
   onTerminate?: () => void;
   onRenew?: () => void;
+  onViewInvoices?: () => void;
 }
 
 const ContractCard = ({
@@ -30,6 +31,7 @@ const ContractCard = ({
   onViewDetails,
   onTerminate,
   onRenew,
+  onViewInvoices,
 }: ContractCardProps) => {
 
   const getDaysRemaining = () => {
@@ -57,12 +59,14 @@ const ContractCard = ({
   return (
     <CardComponent
       onPress={onPress}
-      actions={showActions ? ["view", { key: "renew", disabled: !canRenew }, { key: "terminate", disabled: !canTerminate }] : undefined}
+      actions={showActions ? ["view", { key: "history", icon: "receipt-outline", label: "Lịch sử hóa đơn" }, { key: "renew", disabled: !canRenew }, { key: "terminate", disabled: !canTerminate }] : undefined}
       title={contract.code}
       description={`${contract.roomName} - ${contract.propertyName}`}
       onActionPress={(key) => {
         if (key === "view") {
           onViewDetails?.();
+        } else if (key === "history") {
+          onViewInvoices?.();
         } else if (key === "renew" && canRenew) {
           onRenew?.();
         } else if (key === "terminate" && canTerminate) {

@@ -3,6 +3,7 @@ import { Contracts } from 'src/modules/contract/entities/contracts.entity';
 import { Payment } from 'src/modules/payment/entities/payment.entity';
 import { Properties } from 'src/modules/property/entities/properties.entity';
 import { Rooms } from 'src/modules/property/entities/rooms.entity';
+import { User } from 'src/modules/users/entities/user.entity';
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../../common/base/Entity/base.entity';
 import { InvoiceItem } from './invoice.item.entity';
@@ -64,6 +65,10 @@ export class Invoice extends BaseEntity {
   @Column({ type: 'decimal', precision: 15, scale: 2 })
   remainingAmount: number;
 
+  // Số tiền chưa thanh toán được ghi nợ sang hóa đơn kỳ sau (khi thanh toán với isCarryOver).
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
+  carriedOverAmount: number;
+
   // Trạng thái hiện tại của hóa đơn: nháp, chờ thanh toán, quá hạn, đã thanh toán...
   @Column({ type: 'enum', enum: InvoiceStatus, default: InvoiceStatus.DRAFT })
   status: InvoiceStatus;
@@ -85,6 +90,9 @@ export class Invoice extends BaseEntity {
   // Danh sách các lần thanh toán đã ghi nhận cho hóa đơn.
   @OneToMany(() => Payment, (payment) => payment.invoice)
   payments: Payment[];
+
+  // Creator resolved by InvoiceService.specQuery (createdBy has no FK); not a column.
+  creator?: User;
 
   calculatorTotalAmount(): number {
     return this.invoiceItems.reduce(

@@ -23,14 +23,15 @@ export class BaseService<
   TListDto extends BaseListDto<TEntity>,
   TCreateDto extends BaseCreateDto<TEntity>,
   TUpdateDto extends BaseUpdateDto<TEntity>,
-> implements IBaseService<TEntity, TDetailDto, TListDto, TCreateDto, TUpdateDto> {
+> implements IBaseService<TEntity, TDetailDto, TListDto, TCreateDto, TUpdateDto>
+{
   constructor(
     protected readonly genericRepository: BaseRepository<TEntity>,
     protected readonly detailDto: new () => TDetailDto,
     protected readonly listDto: new () => TListDto,
     protected readonly createDto: new () => TCreateDto,
     protected readonly updateDto: new () => TUpdateDto,
-  ) { }
+  ) {}
 
   protected getServiceName(): string {
     return this.constructor.name;
@@ -74,7 +75,7 @@ export class BaseService<
     filter: BaseFilterDto<TEntity>,
   ): Promise<PaginateResult<TListDto>> {
     try {
-      const { globalKey, filters: filterDto, sort, limit, offset } = filter;
+      const { filters: filterDto, sort, limit, offset } = filter;
       let query = await this.specQuery();
 
       query.skip(offset);
@@ -91,9 +92,10 @@ export class BaseService<
       } else {
         ({ query, filter } = await this.applyFilter(query, filter));
       }
-      if (globalKey) {
+      // Re-read: an overridden applyFilter may consume globalKey itself.
+      if (filter.globalKey) {
         query.andWhere('entity.name ILIKE :globalKey', {
-          globalKey: `%${globalKey}%`,
+          globalKey: `%${filter.globalKey}%`,
         });
       }
 

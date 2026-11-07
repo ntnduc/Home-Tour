@@ -1,6 +1,7 @@
 import { ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Permission, Role } from '../../../common/enums/role.enum';
+import { ALLOW_AUTHENTICATED_KEY } from '../../../common/decorators/allow-anonymous.decorator';
 import { BaseGuard } from '../../../common/guards/base.guard';
 import { PermissionTreeService } from '../../../common/services/permission-tree.service';
 import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
@@ -17,6 +18,12 @@ export class PermissionsGuard extends BaseGuard {
   protected async canActivateGuard(
     context: ExecutionContext,
   ): Promise<boolean> {
+    const allowAuthenticated = this.reflector.getAllAndOverride<boolean>(
+      ALLOW_AUTHENTICATED_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+    if (allowAuthenticated) return true;
+
     const requiredPermissions = this.reflector.getAllAndOverride<Permission[]>(
       PERMISSIONS_KEY,
       [context.getHandler(), context.getClass()],

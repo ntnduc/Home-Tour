@@ -3,6 +3,7 @@ import ActionButtonBottom from '@/components/ActionButtonBottom';
 import { ComboBox } from '@/components/ComboBox';
 import DatePicker from '@/components/DatePicker';
 import DisplayField from '@/components/DisplayField';
+import { useIsAppSheetOpen } from '@/components/GlobalAppSheet';
 import Input from '@/components/Input';
 import Loading from '@/components/Loading';
 import { ServiceCalculateMethod } from '@/constant/service.constant';
@@ -34,6 +35,8 @@ const CreateInvoiceScreen = ({
   route,
 }: CreateInvoiceScreenProps) => {
   const { contractId, roomId } = route.params || {};
+  // Sheet inputs live outside this scroll view; skip auto-scroll while one is open
+  const isSheetOpen = useIsAppSheetOpen();
 
   const methods = useForm<InvoiceCreateRequest>({
     defaultValues: async () => {
@@ -148,7 +151,7 @@ const CreateInvoiceScreen = ({
         enableOnAndroid={true}
         extraScrollHeight={30}
         keyboardOpeningTime={0}
-        enableAutomaticScroll={true}
+        enableAutomaticScroll={!isSheetOpen}
         enableResetScrollToCoords={false}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}

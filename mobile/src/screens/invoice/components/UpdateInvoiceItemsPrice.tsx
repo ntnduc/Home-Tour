@@ -1,5 +1,6 @@
+import IconSquircle from "@/components/IconSquircle";
 import Input from "@/components/Input";
-import { tokens } from "@/theme";
+import { uiColors, uiSpace, uiType } from "@/theme";
 import { InvoiceDetailResponse } from "@/types/invoice";
 import {
   InvoiceItemDetailResponse,
@@ -7,11 +8,13 @@ import {
   ITEM_TYPE_LABEL,
 } from "@/types/invoice.item";
 import { formatCurrency } from "@/utils/appUtil";
-import Ionicons from "@expo/vector-icons/Ionicons";
-import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
+import AppSheetScrollView, {
+  SHEET_FOOTER_CLEARANCE,
+} from "@/components/AppSheet/AppSheetScrollView";
 import React, { forwardRef, useImperativeHandle } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-import { Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 export interface InvoiceItemPriceFormValues {
   invoiceItems: {
@@ -29,6 +32,19 @@ export interface UpdateInvoiceItemsPriceRef {
   submit: () => void;
 }
 
+/**
+ * Edit-item-prices bottom sheet (opened from the draft invoice).
+ *
+ * ```
+ * AppSheetScrollView · padding 16 · paddingBottom 120
+ * ▣  Tiền thuê phòng                 IconSquircle sm + name (bodyStrong)
+ *    [ 💵 2.500.000 ]                Input (number)
+ * ───────────────────────────────    hairline between rows
+ * ▣  Điện
+ *    [ 💵 350.000 ]
+ * ```
+ * Empty → centered caption.
+ */
 const UpdateInvoiceItemsPrice = forwardRef<UpdateInvoiceItemsPriceRef, Props>(
   (props: Props, ref) => {
     const { invoice, onSubmit } = props;
@@ -68,83 +84,97 @@ const UpdateInvoiceItemsPrice = forwardRef<UpdateInvoiceItemsPriceRef, Props>(
 
     if (invoiceItems.length === 0) {
       return (
-        <View className="flex-1 items-center justify-center py-8">
-          <Text className="text-gray-500">
-            Chưa có khoản mục nào để cập nhật
-          </Text>
+        <View style={styles.empty}>
+          <Text style={uiType.caption}>Chưa có khoản mục nào để cập nhật</Text>
         </View>
       );
     }
 
     return (
-      <BottomSheetScrollView
-        className="p-4"
-        nestedScrollEnabled={true}
-        showsVerticalScrollIndicator={true}
-      >
-        <View className="gap-4">
-          {fields.map((field, index) => {
-            const item = invoiceItems[index];
-            return (
-              <View
-                key={field.fieldId}
-                className="flex-row items-start gap-3 pb-4 border-b border-gray-100"
-              >
-                <View className="w-8 h-8 rounded-full bg-gray-100 items-center justify-center mt-1">
-                  <Ionicons
-                    name={
-                      item.type === InvoiceItemType.ROOM_RENT
-                        ? "home-outline"
-                        : "construct-outline"
-                    }
-                    size={16}
-                    color={tokens.colors.muted}
-                  />
-                </View>
-                <View className="flex-1">
-                  <Text
-                    className="text-sm font-medium text-gray-900 mb-1"
-                    numberOfLines={1}
-                  >
-                    {item.name || ITEM_TYPE_LABEL[item.type]}
-                  </Text>
-                  <Controller
-                    control={control}
-                    name={`invoiceItems.${index}.totalAmount`}
-                    rules={{
-                      required: "Vui lòng nhập giá",
-                      min: { value: 0, message: "Giá không được nhỏ hơn 0" },
-                    }}
-                    render={({
-                      field: { onChange, value },
-                      fieldState: { error },
-                    }) => (
-                      <Input
-                        value={
-                          value != null ? formatCurrency(value.toString()) : ""
-                        }
-                        onChangeText={(text) => {
-                          const numValue = parseFloat(
-                            text.replace(/[.,]/g, "") || "0",
-                          );
-                          onChange(numValue);
-                        }}
-                        placeholder="Nhập giá"
-                        type="number"
-                        keyboardType="numeric"
-                        icon="cash"
-                        error={error?.message}
-                      />
-                    )}
-                  />
-                </View>
+      <AppSheetScrollView contentContainerStyle={styles.content}>
+        {fields.map((field, index) => {
+          const item = invoiceItems[index];
+          return (
+            <View
+              key={field.fieldId}
+              style={[styles.row, index > 0 && styles.divider]}
+            >
+              <IconSquircle
+                icon={
+                  item.type === InvoiceItemType.ROOM_RENT
+                    ? "home-outline"
+                    : "construct-outline"
+                }
+                tone="neutral"
+                size="sm"
+              />
+              <View style={styles.main}>
+                <Text style={uiType.bodyStrong} numberOfLines={1}>
+                  {item.name || ITEM_TYPE_LABEL[item.type]}
+                </Text>
+                <Controller
+                  control={control}
+                  name={`invoiceItems.${index}.totalAmount`}
+                  rules={{
+                    required: "Vui lòng nhập giá",
+                    min: { value: 0, message: "Giá không được nhỏ hơn 0" },
+                  }}
+                  render={({
+                    field: { onChange, value },
+                    fieldState: { error },
+                  }) => (
+                    <Input
+                      inputComponent={BottomSheetTextInput}
+                      value={
+                        value != null ? formatCurrency(value.toString()) : ""
+                      }
+                      onChangeText={(text) => {
+                        const numValue = parseFloat(
+                          text.replace(/[.,]/g, "") || "0",
+                        );
+                        onChange(numValue);
+                      }}
+                      placeholder="Nhập giá"
+                      type="number"
+                      keyboardType="numeric"
+                      icon="cash"
+                      error={error?.message}
+                    />
+                  )}
+                />
               </View>
-            );
-          })}
-        </View>
-      </BottomSheetScrollView>
+            </View>
+          );
+        })}
+      </AppSheetScrollView>
     );
   },
 );
+
+const styles = StyleSheet.create({
+  content: {
+    padding: uiSpace.card,
+    paddingBottom: SHEET_FOOTER_CLEARANCE,
+  },
+  empty: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: uiSpace.section,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: uiSpace.gap,
+    paddingVertical: uiSpace.gap,
+  },
+  divider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: uiColors.hairline,
+  },
+  main: {
+    flex: 1,
+    gap: 6,
+  },
+});
 
 export default UpdateInvoiceItemsPrice;

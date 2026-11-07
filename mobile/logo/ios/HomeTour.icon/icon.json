@@ -1,0 +1,40 @@
+{
+  "fill" : {
+    "linear-gradient" : [
+      "srgb:1.00000,1.00000,1.00000,1.00000",
+      "srgb:0.93333,0.94510,0.99216,1.00000"
+    ],
+    "orientation" : {
+      "start" : { "x" : 0.5, "y" : 0 },
+      "stop" : { "x" : 0.5, "y" : 1 }
+    }
+  },
+  "fill-specializations" : [
+    {
+      "appearance" : "dark",
+      "value" : { "solid" : "srgb:0.16863,0.14510,0.50196,1.00000" }
+    }
+  ],
+  "groups" : [
+    {
+      "name" : "Front arch",
+      "layers" : [
+        { "name" : "arch-front", "image-name" : "arch-front.svg", "glass" : true, "opacity" : 0.85 }
+      ],
+      "shadow" : { "kind" : "neutral", "opacity" : 0.5 },
+      "translucency" : { "enabled" : true, "value" : 0.5 },
+      "specular" : true
+    },
+    {
+      "name" : "Back arch",
+      "layers" : [
+        { "name" : "arch-back", "image-name" : "arch-back.svg", "glass" : true }
+      ],
+      "shadow" : { "kind" : "layer-color", "opacity" : 0.5 },
+      "translucency" : { "enabled" : false, "value" : 0 }
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : "shared"
+  }
+}

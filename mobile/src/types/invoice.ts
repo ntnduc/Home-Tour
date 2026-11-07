@@ -19,6 +19,8 @@ export interface Invoice {
   totalAmount: number;
   paidAmount: number;
   remainingAmount: number;
+  /** Unpaid balance carried forward to the next invoice (isCarryOver). */
+  carriedOverAmount?: number;
   status: InvoiceStatus;
   createdAt?: string;
   updatedAt?: string;
@@ -39,7 +41,25 @@ export interface InvoiceDetailResponse extends Omit<Invoice, "id"> {
   invoiceItems?: InvoiceItemDetailResponse[];
 }
 
-export interface InvoiceListResponse extends Invoice {}
+export interface InvoiceListResponse extends Invoice {
+  roomName?: string;
+  propertyName?: string;
+  contractCode?: string;
+  clientName?: string;
+  createdByName?: string;
+}
+
+/** Server-side filters for `GET /invoice` (keys match `InvoiceService.applyFilter`). */
+export interface InvoiceListFilters {
+  contractId?: string;
+  roomId?: string;
+  propertyId?: string;
+  statuses?: InvoiceStatus[];
+  /** ISO date (yyyy-MM-dd), inclusive. */
+  createdFrom?: string;
+  /** ISO date (yyyy-MM-dd), inclusive. */
+  createdTo?: string;
+}
 
 export interface InvoiceCreateRequest extends Omit<
   Invoice,

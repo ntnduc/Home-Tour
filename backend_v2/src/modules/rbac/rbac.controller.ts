@@ -5,8 +5,9 @@ import {
   Get,
   Param,
   Post,
+  Put,
   Query,
-  UseGuards,
+  Request,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -14,9 +15,9 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { AllowAuthenticated } from 'src/common/decorators/allow-anonymous.decorator';
 import { Permission, Role } from 'src/common/enums/role.enum';
 import { PermissionTreeService } from '../../common/services/permission-tree.service';
-import { StickAuthGaurd } from '../auth/jwt-auth.guard';
 import { RequirePermissions } from './decorators/permissions.decorator';
 import { Roles } from './decorators/roles.decorator';
 import { AssignPermissionDto } from './dto/assign-permission.dto';
@@ -24,17 +25,19 @@ import { AssignRoleDto } from './dto/assign-role.dto';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UserPermissionsDto, UserRoleDto } from './dto/user-permissions.dto';
-import { PermissionsGuard } from './guards/permissions.guard';
-import { RolesGuard } from './guards/roles.guard';
+import { SetMemberPermissionDto } from './dto/set-member-permission.dto';
+import { InviteMemberDto } from './dto/invite-member.dto';
+import { PropertyMemberService } from './property-member.service';
 import { RbacService } from './rbac.service';
 
 @ApiTags('RBAC Management')
 @ApiBearerAuth()
 @Controller('api/rbac')
-@UseGuards(StickAuthGaurd, RolesGuard, PermissionsGuard)
+// Auth/roles/permissions run as global guards (main.ts); do not re-add UseGuards here
 export class RbacController {
   constructor(
     private readonly rbacService: RbacService,
+    private readonly propertyMemberService: PropertyMemberService,
     private readonly permissionTreeService: PermissionTreeService,
   ) {}
 
@@ -130,18 +133,138 @@ export class RbacController {
     status: 200,
     description: 'Role assigned to user successfully',
   })
-  @Roles(Role.ADMIN, Role.OWNER)
-  @RequirePermissions(Permission.ASSIGN_ROLE)
-  async assignUserRole(@Body() assignRoleDto: AssignRoleDto) {
-    const userRole = await this.rbacService.assignUserRole(
+  // Authorization is the DB ownership check in PropertyMemberService (not the JWT)
+  @AllowAuthenticated()
+  async assignUserRole(
+    @Request() req: { user: { userId: string } },
+    @Body() assignRoleDto: AssignRoleDto,
+  ) {
+    // Caller must own the target property; role is scoped to that property only
+    const userRole = await this.propertyMemberService.setRole(
+      req.user.userId,
+      assignRoleDto.propertyId,
       assignRoleDto.userId,
       assignRoleDto.roleId,
-      assignRoleDto.propertyId,
     );
     return {
       message: 'Role assigned to user successfully',
       userRole,
     };
+  }
+
+  @Post('properties/:propertyId/members')
+  @ApiOperation({
+    summary:
+      'Invite a registered user (by phone); stays PENDING until accepted',
+  })
+  // Authorization is the DB ownership check in PropertyMemberService (not the JWT)
+  @AllowAuthenticated()
+  async inviteMember(
+    @Request() req: { user: { userId: string } },
+    @Param('propertyId') propertyId: string,
+    @Body() dto: InviteMemberDto,
+  ) {
+    const invitation = await this.propertyMemberService.invite(
+      req.user.userId,
+      propertyId,
+      dto.phone,
+      dto.roleId,
+    );
+    return { message: 'Đã gửi lời mời', invitation };
+  }
+
+  @Put('properties/:propertyId/members/:userId/permissions')
+  @ApiOperation({
+    summary: 'Enable/disable one permission of an active member',
+  })
+  // Authorization is the DB ownership check in PropertyMemberService (not the JWT)
+  @AllowAuthenticated()
+  async setMemberPermission(
+    @Request() req: { user: { userId: string } },
+    @Param('propertyId') propertyId: string,
+    @Param('userId') userId: string,
+    @Body() dto: SetMemberPermissionDto,
+  ) {
+    const permissions = await this.propertyMemberService.setMemberPermission(
+      req.user.userId,
+      propertyId,
+      userId,
+      dto.permission,
+      dto.granted,
+    );
+    return { permissions };
+  }
+
+  @Delete('properties/:propertyId/invitations/:invitationId')
+  @ApiOperation({ summary: 'Cancel a pending invitation' })
+  // Authorization is the DB ownership check in PropertyMemberService (not the JWT)
+  @AllowAuthenticated()
+  async cancelInvitation(
+    @Request() req: { user: { userId: string } },
+    @Param('propertyId') propertyId: string,
+    @Param('invitationId') invitationId: string,
+  ) {
+    await this.propertyMemberService.cancelInvitation(
+      req.user.userId,
+      propertyId,
+      invitationId,
+    );
+    return { message: 'Đã hủy lời mời' };
+  }
+
+  @Get('permissions/catalog')
+  @ApiOperation({ summary: 'Delegable permissions grouped by functional area' })
+  // Authorization is the DB ownership check in PropertyMemberService (not the JWT)
+  @AllowAuthenticated()
+  getPermissionCatalog() {
+    return this.propertyMemberService.getPermissionCatalog();
+  }
+
+  // Invitee side: any authenticated user (usually has no property yet)
+  @Get('invitations/mine')
+  @AllowAuthenticated()
+  @ApiOperation({ summary: 'My pending property invitations' })
+  async myInvitations(@Request() req: { user: { userId: string } }) {
+    return this.propertyMemberService.listMyInvitations(req.user.userId);
+  }
+
+  @Post('invitations/:invitationId/accept')
+  @AllowAuthenticated()
+  @ApiOperation({ summary: 'Accept a property invitation' })
+  async acceptInvitation(
+    @Request() req: { user: { userId: string } },
+    @Param('invitationId') invitationId: string,
+  ) {
+    await this.propertyMemberService.acceptInvitation(
+      req.user.userId,
+      invitationId,
+    );
+    return { message: 'Đã chấp nhận lời mời' };
+  }
+
+  @Post('invitations/:invitationId/decline')
+  @AllowAuthenticated()
+  @ApiOperation({ summary: 'Decline a property invitation' })
+  async declineInvitation(
+    @Request() req: { user: { userId: string } },
+    @Param('invitationId') invitationId: string,
+  ) {
+    await this.propertyMemberService.declineInvitation(
+      req.user.userId,
+      invitationId,
+    );
+    return { message: 'Đã từ chối lời mời' };
+  }
+
+  @Get('properties/:propertyId/members')
+  @ApiOperation({ summary: 'List members and roles of a property' })
+  // Authorization is the DB ownership check in PropertyMemberService (not the JWT)
+  @AllowAuthenticated()
+  async listMembers(
+    @Request() req: { user: { userId: string } },
+    @Param('propertyId') propertyId: string,
+  ) {
+    return this.propertyMemberService.listMembers(req.user.userId, propertyId);
   }
 
   @Delete('users/:userId/roles/:roleId/properties/:propertyId')
@@ -150,14 +273,20 @@ export class RbacController {
     status: 200,
     description: 'Role removed from user successfully',
   })
-  @Roles(Role.ADMIN, Role.OWNER)
-  @RequirePermissions(Permission.ASSIGN_ROLE)
+  // Authorization is the DB ownership check in PropertyMemberService (not the JWT)
+  @AllowAuthenticated()
   async removeUserRole(
+    @Request() req: { user: { userId: string } },
     @Param('userId') userId: string,
     @Param('roleId') roleId: string,
     @Param('propertyId') propertyId: string,
   ) {
-    await this.rbacService.removeUserRole(userId, roleId, propertyId);
+    await this.propertyMemberService.removeMember(
+      req.user.userId,
+      propertyId,
+      userId,
+      roleId,
+    );
     return { message: 'Role removed from user successfully' };
   }
 

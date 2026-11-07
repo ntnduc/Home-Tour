@@ -2,7 +2,7 @@ export enum RoomActionType {
   INVOICE_PAYMENT = 'INVOICE_PAYMENT',
   CREATE_INVOICE = 'CREATE_INVOICE',
   CONFIRM_CONTRACT = 'CONFIRM_CONTRACT',
-  CONFIRM_DEPOSIT = 'CONFIRM_DEPOSIT',
+  CONFIRM_PAYMENT = 'CONFIRM_PAYMENT',
   RENEW_CONTRACT = 'RENEW_CONTRACT',
   CREATE_CONTRACT = 'CREATE_CONTRACT',
   VIEW_CONTRACT = 'VIEW_CONTRACT',
@@ -22,7 +22,7 @@ export type RoomActionPayload = {
   invoiceStatus?: string;
 };
 
-export class RoomActionDto {
+export type RoomActionDto = {
   type: RoomActionType;
   label: string;
   priority: number;
@@ -30,7 +30,7 @@ export class RoomActionDto {
   primary: boolean;
   severity: RoomActionSeverity;
   payload: RoomActionPayload;
-}
+};
 
 export const ROOM_ACTION_CONFIG: Record<
   RoomActionType,
@@ -54,8 +54,8 @@ export const ROOM_ACTION_CONFIG: Record<
     urgent: true,
     primary: true,
   },
-  [RoomActionType.CONFIRM_DEPOSIT]: {
-    label: 'Xác nhận đặt cọc',
+  [RoomActionType.CONFIRM_PAYMENT]: {
+    label: 'Xác nhận thanh toán',
     priority: 40,
     urgent: true,
     primary: true,

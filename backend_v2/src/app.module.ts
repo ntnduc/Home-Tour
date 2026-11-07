@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { RequestContextInterceptor } from './common/interceptors/request-context.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -20,10 +21,12 @@ import { ReportModule } from './modules/report/report.module';
 import { ServicesModule } from './modules/services/services.module';
 import { TestModule } from './modules/test/test.module';
 import { UploadFileModule } from './modules/upload.file/upload-file.module';
+import { ProfileModule } from './modules/profile/profile.module';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       load: [databaseConfig],
@@ -50,6 +53,7 @@ import { UsersModule } from './modules/users/users.module';
       inject: [ConfigService],
     }),
     UsersModule,
+    ProfileModule,
     ClientModule,
     AuthModule,
     CurrentUserModule,

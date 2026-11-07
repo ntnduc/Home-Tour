@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Body, Controller, Get, Post, Request } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -6,6 +6,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { BaseController } from 'src/common/base/crud/base.controller';
+import { AllowAuthenticated } from 'src/common/decorators/allow-anonymous.decorator';
 import { AutoCrudPermissions } from 'src/common/decorators/crud-permissions.decorator';
 import { Role } from 'src/common/enums/role.enum';
 import { Roles } from '../rbac/decorators/roles.decorator';
@@ -43,6 +44,17 @@ export class PropertyController extends BaseController<
       PropertyCreateDto,
       PropertyUpdateDto,
     );
+  }
+
+  // Any authenticated user may create a property; the creator becomes its OWNER
+  @Post()
+  @AllowAuthenticated()
+  @ApiOperation({ summary: 'Create a new property (creator becomes OWNER)' })
+  override async create(
+    @Request() req: Request,
+    @Body() dto: PropertyCreateDto,
+  ) {
+    return await super.create(req, dto);
   }
 
   @Get('combo')

@@ -1,11 +1,10 @@
-import { Ionicons } from "@expo/vector-icons";
+import { queryClient } from "@/services/queryClient";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Toast from "react-native-toast-message";
-import "./global.css";
 
 // Components
 import { GlobalAppSheetProvider } from "./src/components/GlobalAppSheet";
@@ -20,10 +19,13 @@ import OTPVerificationScreen from "./src/screens/auth/OTPVerificationScreen";
 import RegisterScreen from "./src/screens/auth/RegisterScreen";
 
 // Property Screens
+import EditProfileScreen from "./src/screens/profile/EditProfileScreen";
 import CreatePropertyScreen from "./src/screens/property/CreatePropertyScreen";
 import PropertyDetailScreen from "./src/screens/property/PropertyDetailScreen";
 import PropertyListScreen from "./src/screens/property/PropertyListScreen";
 import UpdatePropertyScreen from "./src/screens/property/UpdatePropertyScreen";
+import MyInvitationsScreen from "./src/screens/propertyMember/MyInvitationsScreen";
+import PropertyMembersScreen from "./src/screens/propertyMember/PropertyMembersScreen";
 
 // Room Screens
 import CreateRoomScreen from "./src/screens/room/CreateRoomScreen";
@@ -48,20 +50,16 @@ import ConfirmCreateInvoiceScreen from "./src/screens/invoice/ConfirmCreateInvoi
 import ConfirmDraftInvoiceScreen from "./src/screens/invoice/ConfirmDraftInvoiceScreen";
 import CreateInvoiceScreen from "./src/screens/invoice/CreateInvoiceScreen";
 import InvoiceDetailScreen from "./src/screens/invoice/InvoiceDetailScreen";
-import InvoiceHistoryScreen from "./src/screens/invoice/InvoiceHistoryScreen";
+import InvoiceListScreen from "./src/screens/invoice/InvoiceListScreen";
 
 // Config
-import { Pressable } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 //Test
-import TestScreen from "@/screens/test/TestScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
-  const queryClient = new QueryClient();
-
   // Polyfill for web compatibility
   if (typeof window !== "undefined" && !window.matchMedia) {
     window.matchMedia = () => ({
@@ -120,6 +118,13 @@ export default function App() {
                   }}
                 />
 
+                {/* Profile */}
+                <Stack.Screen
+                  name="EditProfile"
+                  component={EditProfileScreen}
+                  options={{ title: "Chỉnh sửa thông tin" }}
+                />
+
                 {/* Property Management */}
                 <Stack.Screen
                   name="PropertyList"
@@ -139,6 +144,16 @@ export default function App() {
                 <Stack.Screen
                   name="UpdateProperty"
                   component={UpdatePropertyScreen}
+                  options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                  name="PropertyMembers"
+                  component={PropertyMembersScreen}
+                  options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                  name="MyInvitations"
+                  component={MyInvitationsScreen}
                   options={{ headerShown: false }}
                 />
 
@@ -214,45 +229,12 @@ export default function App() {
                 <Stack.Screen
                   name="InvoiceDetail"
                   component={InvoiceDetailScreen}
-                  options={({ navigation, route }) => {
-                    const isFromHistory = route.params?.fromHistory;
-                    return {
-                      title: "Chi Tiết Hóa Đơn",
-                      headerRight: () =>
-                        !isFromHistory ? (
-                          <Pressable
-                            style={{ marginRight: 16 }}
-                            onPress={() =>
-                              navigation.navigate("InvoiceHistory")
-                            }
-                          >
-                            <Ionicons
-                              name="time-outline"
-                              size={24}
-                              color="#007AFF"
-                            />
-                          </Pressable>
-                        ) : null,
-                    };
-                  }}
+                  options={{ headerShown: false }}
                 />
                 <Stack.Screen
-                  name="InvoiceHistory"
-                  component={InvoiceHistoryScreen}
-                  options={({ navigation }) => ({
-                    title: "Lịch Sử Hóa Đơn",
-                    headerRight: () => (
-                      <Pressable
-                        style={{ marginRight: 16 }}
-                        onPress={() => {
-                          // TODO: Implement filter modal
-                          console.log("Open filter modal");
-                        }}
-                      >
-                        <Ionicons name="filter" size={24} color="#007AFF" />
-                      </Pressable>
-                    ),
-                  })}
+                  name="InvoiceList"
+                  component={InvoiceListScreen}
+                  options={{ headerShown: false }}
                 />
                 <Stack.Screen
                   name="CreateInvoice"
@@ -271,7 +253,7 @@ export default function App() {
                 <Stack.Screen
                   name="ConfirmDraftInvoice"
                   component={ConfirmDraftInvoiceScreen}
-                  options={{ title: "Xác Nhận Hóa Đơn Nháp" }}
+                  options={{ headerShown: false }}
                 />
 
                 <Stack.Screen
@@ -281,11 +263,11 @@ export default function App() {
                 />
 
                 {/* Test */}
-                <Stack.Screen
+                {/* <Stack.Screen
                   name="TestScreen"
                   component={TestScreen}
                   options={{ title: "Test Screen" }}
-                />
+                /> */}
               </Stack.Navigator>
             </NavigationContainer>
             <Toast topOffset={60} />
