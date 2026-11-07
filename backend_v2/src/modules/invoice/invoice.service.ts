@@ -248,6 +248,12 @@ export class InvoiceService
       throw new NotFoundException('Hóa đơn không tồn tại');
     }
 
+    // A DRAFT invoice is published and paid in one transaction: validate it as PENDING
+    const isDraft = invoice.status === InvoiceStatus.DRAFT;
+    if (isDraft) {
+      invoice.status = InvoiceStatus.PENDING;
+    }
+
     // Validate before opening a transaction: nothing is written on failure
     const result = this.preparePayment(invoice, dto);
 
@@ -255,6 +261,18 @@ export class InvoiceService
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
+      if (isDraft) {
+        // Row lock guards against a concurrent confirm / cancel / double submit
+        const locked = await queryRunner.manager.findOne(Invoice, {
+          where: { id: invoice.id },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (locked?.status !== InvoiceStatus.DRAFT) {
+          throw new BadRequestException(
+            'Trạng thái hóa đơn đã thay đổi, vui lòng thử lại',
+          );
+        }
+      }
       await this.writePayment(queryRunner.manager, invoice, dto, result);
       if (result.status === InvoiceStatus.PAID) {
         await this.activateContractAfterFirstPayment(

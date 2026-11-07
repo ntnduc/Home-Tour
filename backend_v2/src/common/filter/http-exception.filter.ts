@@ -29,7 +29,7 @@ export class AllExceptionFilter extends BaseExceptionFilter {
       if (typeof response === 'object') {
         const resObj = response as any;
         message = resObj.message || message;
-        errors = resObj.message || resObj.errors || null;
+        errors = resObj.errors || resObj.message || null;
 
         if (status === HttpStatus.BAD_REQUEST)
           code = ResponseCode.VALIDATION_ERROR;

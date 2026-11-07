@@ -1,8 +1,10 @@
+import axios from "axios";
 import { privateApi } from "@/services/api";
 import { ApiResponse } from "@/types/api";
 import { BasePagingRequest } from "@/types/base.request";
 import { BasePagingResponse } from "@/types/base.response";
 import {
+  BlockingInvoice,
   ContractCreateRequest,
   ContractDetailResponse,
   ContractListResponse,
@@ -75,6 +77,17 @@ export const deactivateContract = async (id: string, reason: string) => {
     { reason: reason }
   );
   return response.data;
+};
+
+/**
+ * Read the unpaid invoices that blocked a deactivation from a failed request.
+ * Returns null for any other error.
+ */
+export const getBlockingInvoices = (error: unknown): BlockingInvoice[] | null => {
+  if (!axios.isAxiosError(error)) return null;
+  const errors = (error.response?.data as { errors?: any } | undefined)?.errors;
+  if (errors?.code !== "CONTRACT_HAS_UNPAID_INVOICES") return null;
+  return Array.isArray(errors.invoices) ? errors.invoices : null;
 };
 
 /** Record the first-invoice payment (payment-form data) and move the contract on. */

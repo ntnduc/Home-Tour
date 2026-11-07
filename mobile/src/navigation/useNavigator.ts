@@ -16,10 +16,9 @@ type RouteArgs<R extends keyof RootStackParamList> =
     ? [params?: RootStackParamList[R]]
     : [params: RootStackParamList[R]];
 
-type TabArgs<T extends keyof TabParamList> =
-  undefined extends TabParamList[T]
-    ? [params?: TabParamList[T]]
-    : [params: TabParamList[T]];
+type TabArgs<T extends keyof TabParamList> = undefined extends TabParamList[T]
+  ? [params?: TabParamList[T]]
+  : [params: TabParamList[T]];
 
 /**
  * Shared navigation actions so screens stop re-typing `useNavigation` unions.

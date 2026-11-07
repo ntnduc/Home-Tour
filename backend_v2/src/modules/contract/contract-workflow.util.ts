@@ -100,3 +100,31 @@ export function hasStarted(startDate: DateLike, now: Date): boolean {
   const start = toDay(startDate);
   return !!start && start.getTime() <= startOfDay(now).getTime();
 }
+
+/** Contract statuses that can be deactivated by the user. */
+export const DEACTIVATABLE_CONTRACT_STATUSES: ContractStatus[] = [
+  ContractStatus.ACTIVE,
+  ContractStatus.PENDING_START,
+  ContractStatus.WAITING_PAYMENT_INVOICE,
+];
+
+/**
+ * Room status to apply when a contract is deactivated, or undefined to leave
+ * the room untouched. The room is only freed when this contract has already
+ * started (so it may hold the room), the room is still held by a contract
+ * (OCCUPIED / PENDING_DEPOSIT, never MAINTENANCE etc.) and no other ACTIVE
+ * contract keeps using it.
+ */
+export function resolveDeactivationRoomStatus(params: {
+  startDate: DateLike;
+  now: Date;
+  roomStatus: string | null | undefined;
+  hasOtherActiveContract: boolean;
+}): RoomStatus | undefined {
+  if (!hasStarted(params.startDate, params.now)) return undefined;
+  if (params.hasOtherActiveContract) return undefined;
+  const holdsRoom =
+    params.roomStatus === RoomStatus.OCCUPIED ||
+    params.roomStatus === RoomStatus.PENDING_DEPOSIT;
+  return holdsRoom ? RoomStatus.AVAILABLE : undefined;
+}

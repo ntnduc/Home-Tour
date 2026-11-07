@@ -35,7 +35,10 @@ import {
 import { InvoiceItemDetailResponse } from "@/types/invoice.item";
 import { formatCurrency } from "@/utils/appUtil";
 import { formatDate } from "@/utils/dateUtil";
-import { BottomSheetFooter } from "@gorhom/bottom-sheet";
+import {
+  BottomSheetFooter,
+  BottomSheetFooterProps,
+} from "@gorhom/bottom-sheet";
 import { useQueryClient } from "@tanstack/react-query";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, BackHandler, StyleSheet, Text, View } from "react-native";
@@ -55,6 +58,54 @@ interface CreateInvoiceProps {
 
 const formatDateSafe = (value?: string | Date) =>
   value ? formatDate(String(value)) : "-";
+
+type PaymentSheetFooterProps = BottomSheetFooterProps & {
+  loadingRef: React.MutableRefObject<((value: boolean) => void) | null>;
+  onCancel: () => void;
+  onConfirm: () => void;
+};
+
+/** Sheet footer owning its loading state: the sheet content is a snapshot, parent state never re-renders it. */
+const PaymentSheetFooter = ({
+  loadingRef,
+  onCancel,
+  onConfirm,
+  ...footerProps
+}: PaymentSheetFooterProps) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    loadingRef.current = setIsLoading;
+    return () => {
+      loadingRef.current = null;
+    };
+  }, [loadingRef]);
+
+  return (
+    <BottomSheetFooter {...footerProps}>
+      <ActionButtonBottom
+        actions={[
+          [
+            {
+              label: "Hủy",
+              icon: "close-circle",
+              variant: "danger",
+              disabled: isLoading,
+              onPress: onCancel,
+            },
+            {
+              label: "Xác Nhận",
+              icon: "cash",
+              variant: "success",
+              isLoading,
+              onPress: onConfirm,
+            },
+          ],
+        ]}
+      />
+    </BottomSheetFooter>
+  );
+};
 
 /**
  * Draft invoice step shown right after a contract is created (or from the invoice list).
@@ -92,6 +143,7 @@ const CreateInvoice = ({
     useState<boolean>(false);
   const [isConfirming, setIsConfirming] = useState<boolean>(false);
   const refPaymentForm = useRef<ConfirmPaymentInvoiceRef>(null);
+  const paymentLoadingRef = useRef<((value: boolean) => void) | null>(null);
   const refUpdateItemsPriceForm = useRef<UpdateInvoiceItemsPriceRef>(null);
   const refCancelForm = useRef<CancelPreInvoiceReasonRef>(null);
   // Synchronous guard against double submit (state is stale inside the sheet footer)
@@ -172,19 +224,18 @@ const CreateInvoice = ({
       if (!response.success) {
         throw new Error(response.message || "Không thể hủy hóa đơn");
       }
-      queryClient.invalidateQueries({ queryKey: ["rooms"] });
-      queryClient.invalidateQueries({ queryKey: ["homepage"] });
+      // queryClient.invalidateQueries({ queryKey: ["rooms"] });
+      // queryClient.invalidateQueries({ queryKey: ["homepage"] });
       Toast.show({
         type: "success",
         text1: "Thành công",
         text2: "Đã hủy hóa đơn đầu tiên",
       });
       closeAppSheet();
+      goHome();
       // Contract is settled: unlock, then leave this step
-      setInvoice({ ...invoice, status: InvoiceStatus.CANCELLED });
-      requestAnimationFrame(goBack);
+      // setInvoice({ ...invoice, status: InvoiceStatus.CANCELLED });
     } catch (error: any) {
-      console.log("💞💓💗💞💓💗 ~ handleCancelPreInvoice ~ error:", error);
       // Backend rolled back: invoice stays DRAFT, the sheet stays open for a retry
       Toast.show({
         type: "error",
@@ -241,28 +292,8 @@ const CreateInvoice = ({
   const handleSavePayment = async (formData: InvoicePaymentRequest) => {
     if (!invoice) return;
     setIsSubmitting(true);
-    if (invoice.status === InvoiceStatus.DRAFT) {
-      try {
-        const responseConfirm = await confirmInvoice(invoiceId);
-        if (!responseConfirm.success || !responseConfirm.data) {
-          throw new Error(
-            responseConfirm.message || "Không thể xác nhận hóa đơn",
-          );
-        }
-      } catch (error: any) {
-        Toast.show({
-          type: "error",
-          text1: "Lỗi",
-          text2:
-            error?.response?.data?.message ??
-            error?.message ??
-            "Không thể xác nhận hóa đơn",
-        });
-        setIsSubmitting(false);
-        return;
-      }
-    }
-
+    paymentLoadingRef.current?.(true);
+    // The backend publishes a DRAFT invoice and records the payment atomically
     try {
       const paymentData: InvoicePaymentRequest = {
         id: formData.id,
@@ -283,7 +314,9 @@ const CreateInvoice = ({
         closeAppSheet();
         queryClient.invalidateQueries({ queryKey: ["rooms"] });
         queryClient.invalidateQueries({ queryKey: ["homepage"] });
-        await fetchInvoice();
+        setInvoice(response.data);
+        // Let the sheet start closing before the stack is reset
+        requestAnimationFrame(goHome);
       } else {
         throw new Error(response.message || "Không thể ghi nhận thanh toán");
       }
@@ -291,12 +324,16 @@ const CreateInvoice = ({
       Toast.show({
         type: "error",
         text1: "Lỗi",
-        text2: error?.data?.message || "Không thể ghi nhận thanh toán",
+        text2:
+          error?.response?.data?.message ??
+          error?.data?.message ??
+          error?.message ??
+          "Không thể ghi nhận thanh toán",
       });
       return;
     } finally {
       setIsSubmitting(false);
-      // closeAppSheet();
+      paymentLoadingRef.current?.(false);
     }
   };
 
@@ -319,31 +356,12 @@ const CreateInvoice = ({
           },
         },
         renderFooter: (props) => (
-          <BottomSheetFooter {...props}>
-            <ActionButtonBottom
-              actions={[
-                [
-                  {
-                    label: "Hủy",
-                    icon: "close-circle",
-                    variant: "danger",
-                    onPress: () => {
-                      closeAppSheet();
-                    },
-                  },
-                  {
-                    label: "Xác Nhận",
-                    icon: "cash",
-                    variant: "success",
-                    isLoading: isSubmitting,
-                    onPress: () => {
-                      refPaymentForm.current?.submit();
-                    },
-                  },
-                ],
-              ]}
-            />
-          </BottomSheetFooter>
+          <PaymentSheetFooter
+            {...props}
+            loadingRef={paymentLoadingRef}
+            onCancel={closeAppSheet}
+            onConfirm={() => refPaymentForm.current?.submit()}
+          />
         ),
       },
     );
@@ -535,6 +553,9 @@ const CreateInvoice = ({
                 icon: "card",
                 variant: "success",
                 isLoading: isSubmitting,
+                hidden:
+                  status === InvoiceStatus.PAID ||
+                  status === InvoiceStatus.CANCELLED,
                 onPress: handleOpenPaymentForm,
               },
               [

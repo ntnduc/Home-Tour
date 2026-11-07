@@ -184,19 +184,59 @@ describe('InvoiceService payment / confirm workflows', () => {
       );
     });
 
-    it('rejects overpayment, zero amount and DRAFT invoices before any write', async () => {
+    it('DRAFT: publishes and pays in one locked transaction', async () => {
+      invoiceRepo.findOne.mockResolvedValue(
+        invoice({ status: InvoiceStatus.DRAFT }),
+      );
+      manager.findOne.mockResolvedValueOnce(
+        invoice({ status: InvoiceStatus.DRAFT }),
+      );
+      await service.paymentInvoice(payDto());
+
+      expect(manager.findOne).toHaveBeenCalledWith(
+        Invoice,
+        expect.objectContaining({ lock: { mode: 'pessimistic_write' } }),
+      );
+      expect(manager.update).toHaveBeenCalledWith(
+        Invoice,
+        'inv-1',
+        expect.objectContaining({ status: InvoiceStatus.PARTIALLY_PAID }),
+      );
+      expect(queryRunner.commitTransaction).toHaveBeenCalledTimes(1);
+    });
+
+    it('DRAFT: invalid amount leaves the invoice untouched (no transaction)', async () => {
+      invoiceRepo.findOne.mockResolvedValue(
+        invoice({ status: InvoiceStatus.DRAFT }),
+      );
+      await expect(
+        service.paymentInvoice(payDto({ paidAmount: 3_000_000 })),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(queryRunner.connect).not.toHaveBeenCalled();
+      expect(manager.update).not.toHaveBeenCalled();
+    });
+
+    it('DRAFT: rolls back when status changed concurrently', async () => {
+      invoiceRepo.findOne.mockResolvedValue(
+        invoice({ status: InvoiceStatus.DRAFT }),
+      );
+      manager.findOne.mockResolvedValueOnce(
+        invoice({ status: InvoiceStatus.CANCELLED }),
+      );
+      await expect(service.paymentInvoice(payDto())).rejects.toThrow(
+        'Trạng thái hóa đơn đã thay đổi',
+      );
+      expect(queryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(manager.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects overpayment and zero amount before any write', async () => {
       await expect(
         service.paymentInvoice(payDto({ paidAmount: 3_000_000 })),
       ).rejects.toBeInstanceOf(BadRequestException);
       await expect(
         service.paymentInvoice(payDto({ paidAmount: 0 })),
       ).rejects.toBeInstanceOf(BadRequestException);
-      invoiceRepo.findOne.mockResolvedValue(
-        invoice({ status: InvoiceStatus.DRAFT }),
-      );
-      await expect(service.paymentInvoice(payDto())).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
       expect(queryRunner.connect).not.toHaveBeenCalled();
       expect(manager.update).not.toHaveBeenCalled();
     });

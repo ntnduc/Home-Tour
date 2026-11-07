@@ -1,6 +1,6 @@
-import { NavigatorScreenParams } from "@react-navigation/native";
 import { InvoiceCreateRequest } from "@/types/invoice";
 import { Room } from "@/types/room";
+import { NavigatorScreenParams } from "@react-navigation/native";
 
 export type RootStackParamList = {
   // Auth Flow
@@ -43,6 +43,12 @@ export type RootStackParamList = {
     fromHistory?: boolean;
     // Set when the invoice is the pre-invoice of a contract awaiting payment confirmation
     confirmContractId?: string;
+    // Set when opened from another flow (e.g. contract deactivation): go back to that
+    // origin screen after the invoice is paid / cancelled. Omit for the default behavior.
+    returnToOrigin?: boolean;
+    // Header back button navigates to this root screen (with goBackParams); null/undefined = default back
+    goBackScreen?: keyof RootStackParamList | null;
+    goBackParams?: Record<string, unknown> | null;
   };
   /** Optional pre-applied quick filters (opened from a room / contract). */
   InvoiceList:

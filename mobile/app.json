@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "light",
     "icon": "./logo/ios/AppIcon.appiconset/AppIcon-1024-dark.png",    
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "platforms": ["ios", "android"],
     "plugins": [
       "./plugins/withSceneLifecycle",

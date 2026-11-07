@@ -62,6 +62,15 @@ export interface ContractUpdateRequest {
   notes?: string;
 }
 
+/** Invoice that blocks deactivating a contract (returned by POST /contract/:id/deactivate). */
+export interface BlockingInvoice {
+  id: string;
+  code: string | null;
+  status: string;
+  dueDate: string;
+  totalAmount?: number;
+}
+
 export interface ContractTerminateRequest extends ContractDetailResponse {
   reason?: string;
 }

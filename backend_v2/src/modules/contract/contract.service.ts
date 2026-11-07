@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -47,8 +48,10 @@ import { ContractsRepository } from './repositories/contracts.repository';
 import {
   ContractCreationOutcome,
   isDateRangeOverlapping,
+  DEACTIVATABLE_CONTRACT_STATUSES,
   isRoomRentable,
   resolveCreationOutcome,
+  resolveDeactivationRoomStatus,
   resolvePaymentConfirmedOutcome,
   SLOT_BLOCKING_CONTRACT_STATUSES,
 } from './contract-workflow.util';
@@ -56,6 +59,13 @@ import {
 // Invoice statuses that can still be settled by a payment confirmation
 const PAYABLE_INVOICE_STATUSES = [
   InvoiceStatus.DRAFT,
+  InvoiceStatus.PENDING,
+  InvoiceStatus.PARTIALLY_PAID,
+  InvoiceStatus.OVERDUE,
+];
+
+// Invoice statuses that block deactivating a contract (still waiting for payment)
+const DEACTIVATE_BLOCKING_INVOICE_STATUSES = [
   InvoiceStatus.PENDING,
   InvoiceStatus.PARTIALLY_PAID,
   InvoiceStatus.OVERDUE,
@@ -529,12 +539,6 @@ export class ContractService
     if (updateDto.reason === undefined || updateDto.reason.trim() === '') {
       throw new BadRequestException('Lý do hủy hợp đồng không được để trống');
     }
-    const contract = await this.contractsRepository.findOne({
-      where: { id: updateDto.id, status: ContractStatus.ACTIVE },
-    });
-    if (contract === null) {
-      throw new NotFoundException('Hợp đồng không tồn tại');
-    }
     const allowContractUpdate = [
       ContractStatus.TERMINATED_EARLY,
       ContractStatus.EXPIRED,
@@ -543,15 +547,79 @@ export class ContractService
     if (allowContractUpdate.indexOf(updateDto.status) === -1) {
       throw new BadRequestException('Trạng thái hợp đồng không hợp lệ');
     }
-    const newEntity = this.handleStatusChange(
-      contract,
-      updateDto.status,
-      updateDto.reason,
-      this.dataSource.manager,
-    );
-    const dto = new ContractDetailDto();
-    dto.fromEntity(await newEntity);
-    return dto;
+
+    // Contract status, room status and change log must change together
+    await this.dataSource.transaction(async (manager) => {
+      const contract = await manager.findOne(Contracts, {
+        where: {
+          id: updateDto.id,
+          status: In(DEACTIVATABLE_CONTRACT_STATUSES),
+        },
+        relations: ['room'],
+      });
+      if (contract === null) {
+        throw new NotFoundException('Hợp đồng không tồn tại');
+      }
+
+      // Block while any invoice of the contract still waits for payment
+      const blockingInvoices = await manager.find(Invoice, {
+        where: {
+          contractId: contract.id,
+          status: In(
+            contract.status === ContractStatus.WAITING_PAYMENT_INVOICE
+              ? [...DEACTIVATE_BLOCKING_INVOICE_STATUSES, InvoiceStatus.DRAFT]
+              : DEACTIVATE_BLOCKING_INVOICE_STATUSES,
+          ),
+        },
+        order: { dueDate: 'ASC' },
+      });
+      if (blockingInvoices.length > 0) {
+        throw new ConflictException({
+          message:
+            'Hợp đồng còn hóa đơn chưa thanh toán, vui lòng xử lý trước khi kết thúc',
+          errors: {
+            code: 'CONTRACT_HAS_UNPAID_INVOICES',
+            contractId: contract.id,
+            invoices: blockingInvoices.map((invoice) => ({
+              id: invoice.id,
+              code: invoice.code ?? null,
+              status: invoice.status,
+              dueDate: invoice.dueDate,
+              totalAmount: invoice.totalAmount,
+            })),
+          },
+        });
+      }
+
+      const otherActiveContracts = await manager.count(Contracts, {
+        where: {
+          roomId: contract.roomId,
+          status: ContractStatus.ACTIVE,
+          id: Not(contract.id),
+        },
+      });
+      const newRoomStatus = resolveDeactivationRoomStatus({
+        startDate: contract.startDate,
+        now: getCurrentDate(),
+        roomStatus: contract.room?.status,
+        hasOtherActiveContract: otherActiveContracts > 0,
+      });
+
+      await manager.update(Contracts, contract.id, {
+        status: updateDto.status,
+      });
+      if (newRoomStatus) {
+        await manager.update(Rooms, contract.roomId, { status: newRoomStatus });
+      }
+      await this.recordChange(
+        { ...contract, status: updateDto.status } as Contracts,
+        contract,
+        'STATUS_CHANGE',
+        updateDto.reason,
+        manager,
+      );
+    });
+    return await this.get(updateDto.id);
   }
 
   async get(id: string): Promise<ContractDetailDto> {

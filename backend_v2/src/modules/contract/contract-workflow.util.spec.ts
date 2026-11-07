@@ -4,6 +4,7 @@ import {
   isDateRangeOverlapping,
   isRoomRentable,
   resolveCreationOutcome,
+  resolveDeactivationRoomStatus,
   resolvePaymentConfirmedOutcome,
 } from './contract-workflow.util';
 
@@ -132,5 +133,52 @@ describe('contract-workflow.util', () => {
         resolvePaymentConfirmedOutcome({ startDate: '2026-11-01', now }),
       ).toEqual({ contractStatus: ContractStatus.PENDING_START });
     });
+  });
+});
+
+describe('resolveDeactivationRoomStatus', () => {
+  const now = new Date(2026, 10, 7);
+  const base = {
+    startDate: '2026-11-01',
+    now,
+    roomStatus: RoomStatus.OCCUPIED as string,
+    hasOtherActiveContract: false,
+  };
+
+  it('frees the room when the started contract holds it', () => {
+    expect(resolveDeactivationRoomStatus(base)).toBe(RoomStatus.AVAILABLE);
+    expect(
+      resolveDeactivationRoomStatus({
+        ...base,
+        roomStatus: RoomStatus.PENDING_DEPOSIT,
+      }),
+    ).toBe(RoomStatus.AVAILABLE);
+  });
+
+  it('leaves the room untouched for a future contract', () => {
+    expect(
+      resolveDeactivationRoomStatus({ ...base, startDate: '2026-12-01' }),
+    ).toBeUndefined();
+  });
+
+  it('leaves the room untouched when another active contract uses it', () => {
+    expect(
+      resolveDeactivationRoomStatus({ ...base, hasOtherActiveContract: true }),
+    ).toBeUndefined();
+  });
+
+  it('never overrides MAINTENANCE or AVAILABLE rooms', () => {
+    expect(
+      resolveDeactivationRoomStatus({
+        ...base,
+        roomStatus: RoomStatus.MAINTENANCE,
+      }),
+    ).toBeUndefined();
+    expect(
+      resolveDeactivationRoomStatus({
+        ...base,
+        roomStatus: RoomStatus.AVAILABLE,
+      }),
+    ).toBeUndefined();
   });
 });
