@@ -43,6 +43,7 @@ import { ContractServiceCreateDto } from './dto/contract-services-dto/contract-s
 import { ContractChangeDetail } from './entities/contract-change-detail.entity';
 import { ContractChangeLog } from './entities/contract-change-log.entity';
 import { ContractServices } from './entities/contract-services.entity';
+import { BaseFilterDto } from '../../common/base/dto/filter.dto';
 import { Contracts } from './entities/contracts.entity';
 import { ContractsRepository } from './repositories/contracts.repository';
 import {
@@ -120,6 +121,22 @@ export class ContractService
       .leftJoinAndSelect('contract.contractServices', 'contractServices');
     query.orderBy('contract.createdAt', 'DESC');
     return query;
+  }
+
+  // specQuery aliases the table as `contract` (base assumes `entity`), so apply
+  // equality filters here and strip them to stop BaseService reusing `entity.`.
+  override async applyFilter(
+    query: SelectQueryBuilder<Contracts>,
+    filter: BaseFilterDto<Contracts>,
+  ) {
+    const filters: Record<string, any> = filter.filters ?? {};
+    ['roomId', 'status'].forEach((key) => {
+      if (filters[key]) {
+        query.andWhere(`contract.${key} = :${key}`, { [key]: filters[key] });
+      }
+      delete filters[key];
+    });
+    return { query, filter };
   }
 
   async create(createDto: ContractCreateDto): Promise<ContractDetailDto> {

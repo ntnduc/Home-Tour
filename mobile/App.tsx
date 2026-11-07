@@ -168,7 +168,7 @@ export default function App() {
                 <Stack.Screen
                   name="RoomDetail"
                   component={RoomDetailScreen}
-                  options={{ title: "Chi Tiết Phòng" }}
+                  options={{ headerShown: false }}
                 />
                 <Stack.Screen
                   name="CreateRoom"

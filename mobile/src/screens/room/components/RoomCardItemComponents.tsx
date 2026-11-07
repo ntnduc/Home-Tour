@@ -119,6 +119,8 @@ const RoomCardItemComponent = ({ item, navigation }: RoomCardItemProps) => {
     <Card
       padding="none"
       elevation="soft"
+      onPress={() => navigation.navigate("RoomDetail", { roomId: item.id })}
+      accessibilityLabel={`Xem chi tiết ${item.name}`}
       style={hasOverdueAlert ? styles.cardOverdue : undefined}
     >
       {/* Card body */}
@@ -232,6 +234,11 @@ const RoomCardItemComponent = ({ item, navigation }: RoomCardItemProps) => {
           <RoomContractTile
             contract={contractActive}
             tenantName={item.landlordClient || "N/A"}
+            onPress={() =>
+              navigation.navigate("ContractDetail", {
+                contractId: contractActive.id,
+              })
+            }
           />
         )}
       </View>
