@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Get,
   NotFoundException,
   Param,
   Patch,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -11,6 +13,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { BaseFilterDto } from 'src/common/base/dto/filter.dto';
 import { BaseController } from '../../common/base/crud/base.controller';
 import { AutoCrudPermissions } from '../../common/decorators/crud-permissions.decorator';
 import { Role } from '../../common/enums/role.enum';
@@ -20,8 +23,8 @@ import { InvoiceCreateDto } from './dto/invoice-dto/invoice.create.dto';
 import { InvoiceDetailDto } from './dto/invoice-dto/invoice.detail.dto';
 import { InvoiceListDto } from './dto/invoice-dto/invoice.list.dto';
 import { InvoicePaymentDto } from './dto/invoice-dto/invoice.payment.dto';
-import { InvoiceUpdateDto } from './dto/invoice-dto/invoice.update.dto';
 import { InvoiceUpdateItemsDto } from './dto/invoice-dto/invoice.update-items.dto';
+import { InvoiceUpdateDto } from './dto/invoice-dto/invoice.update.dto';
 import { Invoice } from './entities/invoice.entity';
 import { InvoiceService } from './invoice.service';
 
@@ -82,7 +85,21 @@ export class InvoiceController extends BaseController<
   //   updateDto.id = id;
   //   updateDto.status = body.status;
   //   return new NotFoundException('Method not implemented yet');
-  // }
+  // }'
+
+  @Get('room/:roomId')
+  @ApiOperation({ summary: 'Get invoices by room ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of invoices with specified status.',
+  })
+  async getInvoicesByStatus(
+    @Param('roomId') roomId: string,
+    @Query() query: BaseFilterDto<Invoice>,
+  ) {
+    query.filters = { ...query.filters, roomId } as any;
+    return super.getAll(query);
+  }
 
   @Patch('payment')
   @ApiOperation({ summary: 'Update invoice payment' })

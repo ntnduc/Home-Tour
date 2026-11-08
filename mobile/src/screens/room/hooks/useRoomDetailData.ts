@@ -2,14 +2,15 @@ import { getContractsByRoom } from "@/api/contract/contract.api";
 import { getRoom } from "@/api/room/room.api";
 import { getFilesCollection } from "@/components/Uploadfile/uploadfile.api";
 import { ApiResponse } from "@/types/api";
-import { ContractListResponse } from "@/types/contract";
+import { ContractListResponse, ContractStatus } from "@/types/contract";
 import { RoomDetailResponse } from "@/types/room";
 import { useFocusEffect } from "@react-navigation/native";
-import { keepPreviousData, useQueries } from "@tanstack/react-query";
+import { keepPreviousData, useQueries, useQueryClient } from "@tanstack/react-query";
+import { ROOM_HISTORY_KEY, ROOM_INVOICES_KEY } from "./useRoomLazyLists";
 import { useCallback, useRef, useState } from "react";
 
 const STALE_TIME = 30_000;
-const CONTRACT_LIMIT = 50;
+const CONTRACT_LIMIT = 1;
 
 export type RoomDetailSection<T> = {
   data: T | undefined;
@@ -32,6 +33,7 @@ const unwrap = <T>(response: ApiResponse<T>): T => {
  * fetched in parallel so one failing section never blocks the others.
  */
 export const useRoomDetailData = (roomId: string) => {
+  const queryClient = useQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isFirstFocus = useRef(true);
 
@@ -50,6 +52,8 @@ export const useRoomDetailData = (roomId: string) => {
             await getContractsByRoom(roomId, {
               limit: CONTRACT_LIMIT,
               offset: 0,
+              // Only the active contract here; history loads lazily
+              filters: { status: ContractStatus.ACTIVE },
             }),
           ).items,
         placeholderData: keepPreviousData,
@@ -78,8 +82,11 @@ export const useRoomDetailData = (roomId: string) => {
       roomQuery.refetch(),
       contractsQuery.refetch(),
       imagesQuery.refetch(),
+      // Refetches only lazy sections already opened (inactive ones just go stale)
+      queryClient.invalidateQueries({ queryKey: [ROOM_HISTORY_KEY, roomId] }),
+      queryClient.invalidateQueries({ queryKey: [ROOM_INVOICES_KEY, roomId] }),
     ]);
-  }, [roomQuery, contractsQuery, imagesQuery]);
+  }, [roomQuery, contractsQuery, imagesQuery, queryClient, roomId]);
 
   useFocusEffect(
     useCallback(() => {

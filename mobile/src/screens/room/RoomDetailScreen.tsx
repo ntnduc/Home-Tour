@@ -10,7 +10,8 @@
  * │  Room card: images · name · rent · chips · QR│
  * │  Hợp đồng hiện tại (ACTIVE only, tappable)   │
  * │  Người ở hiện tại (active contract clients)  │
- * │  Lịch sử hợp đồng (other contracts, tappable)│
+ * │  Lịch sử hợp đồng (collapsible, lazy-loaded) │
+ * │  Hóa đơn (collapsible, lazy-loaded)          │
  * └──────────────────────────────────────────────┘
  * ```
  *
@@ -19,6 +20,7 @@
  */
 import Card from "@/components/Card";
 import Chip from "@/components/Chip";
+import CollapsibleSection from "@/components/CollapsibleSection";
 import FormSection from "@/components/FormSection";
 import IconButton from "@/components/IconButton";
 import ListBody from "@/components/ListBody";
@@ -37,12 +39,13 @@ import {
   ContractListResponse,
   ContractStatus,
 } from "@/types/contract";
+import { INVOICE_STATUS_BADGE, InvoiceListResponse } from "@/types/invoice";
 import { RoomDetailResponse } from "@/types/room";
 import { formatCurrency } from "@/utils/appUtil";
 import { formatDate } from "@/utils/dateUtil";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import React from "react";
+import React, { useState } from "react";
 import {
   FlatList,
   Image,
@@ -55,6 +58,7 @@ import {
 import QRCode from "react-native-qrcode-svg";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRoomDetailData } from "./hooks/useRoomDetailData";
+import { useRoomHistoryContracts, useRoomInvoices } from "./hooks/useRoomLazyLists";
 
 type RoomDetailScreenProps = NativeStackScreenProps<
   RootStackParamList,
@@ -234,46 +238,129 @@ const CurrentResidentsCard = ({
   );
 };
 
-/** Past / non-active contracts of the room. */
-const ContractHistoryList = ({
-  contracts,
-  onPressItem,
-  scroll,
-  maxHeight,
-}: {
-  contracts: ContractListResponse[];
-  onPressItem: (contract: ContractListResponse) => void;
-  scroll?: boolean;
-  maxHeight?: number;
-}) => (
-  <FormSection title="Lịch sử hợp đồng" icon="time-outline">
-    {contracts.length === 0 ? (
-      <Text style={uiType.caption}>Chưa có hợp đồng nào trong quá khứ.</Text>
-    ) : (
-      <ListBody scroll={scroll} maxHeight={maxHeight}>
-        {contracts.map((contract, idx) => (
-          <ListRow
-            key={contract.id}
-            divider={idx > 0}
-            title={getTenantName(contract)}
-            subtitle={dateRange(contract)}
-            trailing={
-              <View style={styles.historyTrailing}>
-                <ContractBadge status={contract.status} />
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={uiColors.textSubtle}
-                />
-              </View>
-            }
-            onPress={() => onPressItem(contract)}
-          />
-        ))}
-      </ListBody>
-    )}
-  </FormSection>
+/** Skeleton rows shown while a lazy section loads. */
+const ListSkeleton = () => (
+  <View style={styles.sections}>
+    {[0, 1, 2].map((i) => (
+      <SkeletonBlock key={i} height={52} radius={uiRadius.icon} />
+    ))}
+  </View>
 );
+
+/** Collapsible past contracts; the API is called only after the tab is opened. */
+const ContractHistoryList = ({
+  roomId,
+  onPressItem,
+}: {
+  roomId: string;
+  onPressItem: (contract: ContractListResponse) => void;
+}) => {
+  // Latch: once opened, keep the data enabled even after the section closes
+  const [opened, setOpened] = useState(false);
+  const query = useRoomHistoryContracts(roomId, opened);
+  const contracts = query.data ?? [];
+
+  return (
+    <CollapsibleSection
+      title="Lịch sử hợp đồng"
+      icon="time-outline"
+      onToggle={(expanded) => expanded && setOpened(true)}
+    >
+      {query.isLoading ? (
+        <ListSkeleton />
+      ) : query.isError ? (
+        <SectionError
+          message="Không tải được lịch sử hợp đồng"
+          onRetry={() => query.refetch()}
+        />
+      ) : contracts.length === 0 ? (
+        <Text style={uiType.caption}>Chưa có hợp đồng nào trong quá khứ.</Text>
+      ) : (
+        <ListBody scroll maxHeight={300}>
+          {contracts.map((contract, idx) => (
+            <ListRow
+              key={contract.id}
+              divider={idx > 0}
+              title={getTenantName(contract)}
+              subtitle={dateRange(contract)}
+              trailing={
+                <View style={styles.historyTrailing}>
+                  <ContractBadge status={contract.status} />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={18}
+                    color={uiColors.textSubtle}
+                  />
+                </View>
+              }
+              onPress={() => onPressItem(contract)}
+            />
+          ))}
+        </ListBody>
+      )}
+    </CollapsibleSection>
+  );
+};
+
+/** Collapsible invoices of the room; the API is called only after the tab is opened. */
+const RoomInvoiceList = ({
+  roomId,
+  onPressItem,
+}: {
+  roomId: string;
+  onPressItem: (invoice: InvoiceListResponse) => void;
+}) => {
+  const [opened, setOpened] = useState(false);
+  const query = useRoomInvoices(roomId, opened);
+  const invoices = query.data ?? [];
+
+  return (
+    <CollapsibleSection
+      title="Hóa đơn"
+      icon="receipt-outline"
+      onToggle={(expanded) => expanded && setOpened(true)}
+    >
+      {query.isLoading ? (
+        <ListSkeleton />
+      ) : query.isError ? (
+        <SectionError
+          message="Không tải được hóa đơn"
+          onRetry={() => query.refetch()}
+        />
+      ) : invoices.length === 0 ? (
+        <Text style={uiType.caption}>Chưa có hóa đơn nào.</Text>
+      ) : (
+        <ListBody scroll maxHeight={300}>
+          {invoices.map((invoice, idx) => {
+            const badge = INVOICE_STATUS_BADGE[invoice.status] ?? {
+              label: String(invoice.status),
+              tone: "neutral" as const,
+            };
+            return (
+              <ListRow
+                key={invoice.id}
+                divider={idx > 0}
+                title={`${invoice.code ?? "Hóa đơn"} · ${formatCurrency(invoice.totalAmount ?? 0)}đ`}
+                subtitle={`${formatDate(String(invoice.billingPeriodStart))} - ${formatDate(String(invoice.billingPeriodEnd))}`}
+                trailing={
+                  <View style={styles.historyTrailing}>
+                    <StatusBadge size="sm" label={badge.label} tone={badge.tone} />
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color={uiColors.textSubtle}
+                    />
+                  </View>
+                }
+                onPress={() => onPressItem(invoice)}
+              />
+            );
+          })}
+        </ListBody>
+      )}
+    </CollapsibleSection>
+  );
+};
 
 /** Shaped skeleton shown on the first load. */
 const RoomDetailSkeleton = () => (
@@ -297,9 +384,6 @@ const RoomDetailScreen = ({ navigation, route }: RoomDetailScreenProps) => {
   const allContracts = contracts.data ?? [];
   const activeContract = allContracts.find(
     (c) => c.status === ContractStatus.ACTIVE,
-  );
-  const historyContracts = allContracts.filter(
-    (c) => c.id !== activeContract?.id,
   );
   const fileIds = (images.data ?? []).map((file) => file.id);
 
@@ -357,13 +441,17 @@ const RoomDetailScreen = ({ navigation, route }: RoomDetailScreenProps) => {
                 </>
               )}
               <ContractHistoryList
-                contracts={historyContracts}
+                roomId={roomId}
                 onPressItem={handlePressContract}
-                scroll
-                maxHeight={300}
               />
             </>
           )}
+          <RoomInvoiceList
+            roomId={roomId}
+            onPressItem={(invoice) =>
+              navigation.navigate("InvoiceDetail", { invoiceId: invoice.id })
+            }
+          />
         </View>
       </ScrollView>
     );
