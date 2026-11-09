@@ -30,7 +30,7 @@ interface ComboBoxProps<T> {
     | ((
         value: T | string | null | undefined | number,
         options: T[],
-        visible?: boolean
+        visible?: boolean,
       ) => React.ReactElement | null)
     | keyof typeof Ionicons.glyphMap;
   iconProps?: InputIconProps;
@@ -79,18 +79,14 @@ export const ComboBox = <T,>({
         <SkeletonBlock width="70%" height={16} radius={6} />
       </View>
     ),
-    []
+    [],
   );
 
   const _renderSearch = useCallback(
     (onSearch: (text: string) => void) => {
       return (
         <View style={styles.searchInputContainer}>
-          <Ionicons
-            name="search"
-            size={18}
-            color={fieldColors.icon}
-          />
+          <Ionicons name="search" size={18} color={fieldColors.icon} />
           <TextInput
             style={styles.searchInput}
             placeholder="Tìm kiếm..."
@@ -101,7 +97,7 @@ export const ComboBox = <T,>({
         </View>
       );
     },
-    [searchText, value, options]
+    [searchText, value, options],
   );
 
   const _renderLeftIcons = useCallback(
@@ -141,10 +137,10 @@ export const ComboBox = <T,>({
           color: fieldColors.icon,
           style: styles.leftIcon,
           ...iconProps,
-        } as any
+        } as any,
       );
     },
-    [icon, value, options, iconProps, disabled, isLoading]
+    [icon, value, options, iconProps, disabled, isLoading],
   );
 
   const _renderRightIcons = useCallback(
@@ -152,22 +148,14 @@ export const ComboBox = <T,>({
       if (disabled) return null;
       if (visible) {
         return (
-          <Ionicons
-            name="chevron-up"
-            size={18}
-            color={fieldColors.icon}
-          />
+          <Ionicons name="chevron-up" size={18} color={fieldColors.icon} />
         );
       }
       return (
-        <Ionicons
-          name="chevron-down"
-          size={18}
-          color={fieldColors.icon}
-        />
+        <Ionicons name="chevron-down" size={18} color={fieldColors.icon} />
       );
     },
-    [open, disabled]
+    [open, disabled],
   );
 
   const _renderEmpty = useCallback(() => {
@@ -250,10 +238,17 @@ const styles = StyleSheet.create({
   dropdownContainer: {
     backgroundColor: uiColors.card,
     borderRadius: uiRadius.field,
-    borderWidth: 0,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: uiColors.hairline,
     marginTop: 6,
-    overflow: "hidden",
+    paddingVertical: 4,
+    // No overflow: "hidden" here — it clips the iOS shadow
     ...shadows.medium,
+    // Deeper, softer shadow so the list lifts clearly off the form
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.28,
+    shadowRadius: 24,
+    elevation: 16,
   },
   itemText: {
     ...fieldStyles.text,

@@ -22,7 +22,7 @@ const TenantDetailScreen = ({ navigation, route }: TenantDetailScreenProps) => {
   };
 
   const handleCreateContract = () => {
-    navigation.navigate("CreateContract", { roomId: "", tenantId });
+    navigation.navigate("CreateContract", { tenantId });
   };
 
   return (

@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -34,6 +34,13 @@ export class RoomsController extends BaseController<
       RoomCreateDto,
       RoomUpdateDto,
     );
+  }
+
+  @Get('combo-contractable')
+  @ApiOperation({ summary: 'Get rooms that can receive a new contract' })
+  @ApiResponse({ status: 200, description: 'Room options' })
+  async getContractableRoomOptions(@Query('propertyId') propertyId?: string) {
+    return await this.roomsService.getContractableRoomOptions(propertyId);
   }
 
   @Get(':id/services')

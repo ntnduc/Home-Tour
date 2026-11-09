@@ -1,13 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BaseService } from 'src/common/base/crud/base.service';
+import { ComboOptionWithExtra } from 'src/common/base/dto/option.dto';
 import { ContractStatus } from 'src/common/enums/contract.enum';
 import { RoomStatus } from 'src/common/enums/room.enum';
 import { In, Repository, SelectQueryBuilder } from 'typeorm';
 import { ContractServiceDetailDto } from '../contract/dto/contract-services-dto/contract-service.detail.dto';
+import {
+  RENTABLE_ROOM_STATUSES,
+  SLOT_BLOCKING_CONTRACT_STATUSES,
+} from '../contract/contract-workflow.util';
 import { ContractsRepository } from '../contract/repositories/contracts.repository';
 import { PropertyCreateDto } from './dto/properties-dto/property.create.dto';
 import { PropertyDetailDto } from './dto/properties-dto/property.detail.dto';
+import { RoomOptionExtraDto } from './dto/room-dto/room-option.dto';
 import { RoomServiceDetailDto } from './dto/room-dto/room-service.detail.dto';
 import { RoomDetailDto } from './dto/room-dto/room.detail.dto';
 import { RoomListDto } from './dto/room-dto/room.list.dto';
@@ -168,6 +174,58 @@ export class RoomsService extends BaseService<
     }
 
     return dto;
+  }
+
+  /**
+   * Rooms that can still receive a new contract: rentable status and no
+   * open-ended (no endDate) contract that reserves the room, since such a
+   * contract blocks every later date. Mirrors the checks in ContractService.create.
+   */
+  public async getContractableRoomOptions(
+    propertyId?: string,
+  ): Promise<ComboOptionWithExtra<string, string, RoomOptionExtraDto>[]> {
+    const query = this.roomsRepository
+      .createQueryBuilder('entity')
+      .andWhere('entity.status IN (:...rentableStatuses)', {
+        rentableStatuses: RENTABLE_ROOM_STATUSES,
+      })
+      .andWhere(
+        `NOT EXISTS (
+          SELECT 1 FROM contracts c
+          WHERE c."roomId" = entity.id
+            AND c.status IN (:...blockingStatuses)
+            AND c."endDate" IS NULL
+        )`,
+        { blockingStatuses: SLOT_BLOCKING_CONTRACT_STATUSES },
+      );
+    if (propertyId) {
+      query.andWhere('entity.propertyId = :propertyId', { propertyId });
+    }
+    const rooms = await query.getMany();
+
+    rooms.sort((a, b) => {
+      const propCompare = (a.property?.name ?? '').localeCompare(
+        b.property?.name ?? '',
+      );
+      return propCompare !== 0 ? propCompare : a.name.localeCompare(b.name);
+    });
+
+    return rooms.map((room) => {
+      const option = new ComboOptionWithExtra<
+        string,
+        string,
+        RoomOptionExtraDto
+      >();
+      option.label = room.name;
+      option.value = room.id;
+      option.extra = {
+        propertyId: room.propertyId,
+        propertyName: room.property?.name ?? '',
+        rentAmount: room.rentAmount,
+        status: room.status,
+      };
+      return option;
+    });
   }
 
   public getRoomsDefaultFromTotalNumberRooms(

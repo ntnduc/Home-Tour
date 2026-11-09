@@ -1,7 +1,9 @@
 import ActionButtonBottom from "@/components/ActionButtonBottom";
 import AddButton from "@/components/AddButton";
 import Card from "@/components/Card";
+import { ComboBox } from "@/components/ComboBox";
 import DatePicker from "@/components/DatePicker";
+import { fieldStyles } from "@/components/FormField";
 import FormScreen from "@/components/FormScreen";
 import FormSection from "@/components/FormSection";
 import IconSquircle from "@/components/IconSquircle";
@@ -25,9 +27,17 @@ import React, {
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { Alert, StyleSheet, Text, View } from "react-native";
 import Toast from "react-native-toast-message";
-import { getRoomWitcService } from "../../../api/room/room.api";
+import {
+  getContractableRoomOptions,
+  getRoomWitcService,
+} from "../../../api/room/room.api";
+import { ComboOptionWithExtra } from "../../../types/comboOption";
 import { ContractCreateRequest } from "../../../types/contract";
-import { RoomServiceDetailResponse, RoomStatus } from "../../../types/room";
+import {
+  RoomOptionExtra,
+  RoomServiceDetailResponse,
+  RoomStatus,
+} from "../../../types/room";
 import CompanionClientComponent, {
   CompanionClientComponentRef,
 } from "./CompanionClientComponent";
@@ -84,7 +94,14 @@ const CreateContractForm = forwardRef<
     },
     ref,
   ) => {
-    const { roomId } = route.params;
+    // Selected room: preset by the caller (RoomList) or empty (ContractList)
+    const [roomId, setRoomId] = useState<string | null>(
+      route.params.roomId || null,
+    );
+    const [roomOptions, setRoomOptions] = useState<
+      ComboOptionWithExtra<string, string, RoomOptionExtra>[]
+    >([]);
+    const [isLoadingOptions, setIsLoadingOptions] = useState(true);
 
     const {
       control,
@@ -107,7 +124,7 @@ const CreateContractForm = forwardRef<
       },
     });
 
-    const [isLoading, setIsLoading] = useState(!roomData);
+    const [isLoading, setIsLoading] = useState(false);
 
     const {
       fields: contractServices,
@@ -134,19 +151,41 @@ const CreateContractForm = forwardRef<
     const companionClientRef = useRef<CompanionClientComponentRef>(null);
 
     useEffect(() => {
-      // Đã có dữ liệu phòng (ví dụ quay lại bước này) -> không fetch lại để giữ nguyên dữ liệu đã nhập.
-      if (roomData) {
-        setIsLoading(false);
-        return;
-      }
+      const fetchRoomOptions = async () => {
+        try {
+          const response = await getContractableRoomOptions();
+          if (response.success && response.data) {
+            setRoomOptions(response.data);
+          }
+        } catch (error) {
+          console.error("Error fetching room options:", error);
+          Toast.show({
+            type: "error",
+            text1: "Lỗi",
+            text2: "Không thể tải danh sách phòng",
+          });
+        } finally {
+          setIsLoadingOptions(false);
+        }
+      };
+      fetchRoomOptions();
+    }, []);
 
+    useEffect(() => {
+      if (!roomId) return;
+      // Room already loaded (e.g. coming back from the confirm step) -> keep the entered data.
+      if (roomData?.id === roomId) return;
+
+      let cancelled = false;
       const fetchRoomData = async () => {
         try {
           setIsLoading(true);
           const roomServiceResponse = await getRoomWitcService(roomId);
+          if (cancelled) return;
           if (roomServiceResponse.success && roomServiceResponse.data) {
             const room = roomServiceResponse.data;
             onRoomLoaded(room);
+            // Switching room resets the whole form with the new room defaults
             reset({
               isPrepaidRoom: true,
               roomId: room.id,
@@ -155,6 +194,7 @@ const CreateContractForm = forwardRef<
               depositAmountPaid: room.defaultDepositAmount,
               paymentDueDay: room.defaultPaymentDueDay,
               ignoreAutoUpdatePartnerNumber: false,
+              partnerClientCount: 0,
               contractClient: [],
               contractServices: room.contractServices.map((item) => {
                 return { ...item, fieldId: generateId() };
@@ -162,19 +202,19 @@ const CreateContractForm = forwardRef<
             });
           }
         } catch (error) {
+          if (cancelled) return;
           console.error("Error fetching room data:", error);
           Alert.alert("Lỗi", "Không thể tải thông tin phòng và dịch vụ");
-          setTimeout(() => {
-            navigation.goBack();
-          }, 500);
+          setRoomId(null);
         } finally {
-          setIsLoading(false);
+          if (!cancelled) setIsLoading(false);
         }
       };
 
-      if (roomId) {
-        fetchRoomData();
-      }
+      fetchRoomData();
+      return () => {
+        cancelled = true;
+      };
     }, [roomId]);
 
     const openContractServiceForm = (
@@ -309,371 +349,430 @@ const CreateContractForm = forwardRef<
       [handleSubmit, setError, roomData],
     );
 
+    // Only rentable rooms are allowed (backend also rejects the rest)
     const isRoomInvalid =
-      !isLoading && (!roomData || roomData.status !== RoomStatus.AVAILABLE);
+      !isLoading &&
+      !!roomData &&
+      (roomData.status === RoomStatus.MAINTENANCE ||
+        roomData.status === RoomStatus.UNAVAILABLE);
 
-    // Toast / goBack phải chạy trong effect, không được gọi trong lúc render.
     useEffect(() => {
       if (!isRoomInvalid) return;
       Toast.show({
         type: "error",
         text1: "Lỗi",
-        text2: !roomData ? "Không tìm thấy phòng!" : "Phòng không khả dụng!",
+        text2: "Phòng không khả dụng!",
       });
-      navigation.goBack();
+      setRoomId(null);
     }, [isRoomInvalid]);
 
-    if (isLoading) {
-      return <Loading />;
-    }
-
-    if (!roomData || isRoomInvalid) {
-      return null;
-    }
+    const hasRoom = !!roomId && roomData?.id === roomId && !isRoomInvalid;
 
     return (
       <FormScreen
         footer={
-          <ActionButtonBottom
-            actions={[
-              {
-                label: "Xác nhận hợp đồng",
-                icon: "checkmark-circle",
-                onPress: handleSubmit(handelSave, () => {
-                  Toast.show({
-                    type: "error",
-                    text1: "Lỗi",
-                    text2: "Vui lòng nhập đầy đủ thông tin!",
-                  });
-                }),
-                isLoading: isLoading,
-              },
-            ]}
-          />
+          !hasRoom ? undefined : (
+            <ActionButtonBottom
+              actions={[
+                {
+                  label: "Xác nhận hợp đồng",
+                  icon: "checkmark-circle",
+                  onPress: handleSubmit(handelSave, () => {
+                    Toast.show({
+                      type: "error",
+                      text1: "Lỗi",
+                      text2: "Vui lòng nhập đầy đủ thông tin!",
+                    });
+                  }),
+                  isLoading: isLoading,
+                },
+              ]}
+            />
+          )
         }
       >
-        {/* Phòng được chọn */}
-        <Card style={styles.summary}>
-          <IconSquircle icon="bed" />
-          <View style={styles.flex}>
-            <Text style={styles.summaryTitle} numberOfLines={1}>
-              {roomData?.name || "Tên phòng"}
-            </Text>
-            <Text style={uiType.caption} numberOfLines={1}>
-              {roomData?.property?.name || "Tên tòa nhà"}
-            </Text>
-          </View>
-          <View style={styles.priceCol}>
-            <Text style={uiType.caption}>Giá thuê</Text>
-            <Text style={styles.price}>
-              {formatCurrency(roomData?.rentAmount?.toString() || "0")}đ/tháng
-            </Text>
-          </View>
-        </Card>
-
-        <FormSection title="Thông tin người thuê" icon="person-outline">
-          <Controller
-            control={control}
-            name="contractClientLandlord.name"
-            rules={{ required: "Vui lòng nhập tên người thuê" }}
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <Input
-                label="Tên người thuê"
-                value={value}
-                onChangeText={onChange}
-                required
-                icon="person"
-                error={error?.message}
-                placeholder="Nhập tên người thuê"
-              />
-            )}
-          />
-          <Controller
-            control={control}
-            name="contractClientLandlord.phoneNumber"
-            rules={{ required: "Vui lòng nhập số điện thoại người thuê" }}
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <Input
-                label="Số điện thoại người thuê"
-                value={value}
-                type="number"
-                maxLength={10}
-                keyboardType="phone-pad"
-                required
-                icon="phone-portrait-outline"
-                onChangeText={onChange}
-                placeholder="Nhập số điện thoại người thuê"
-                error={error?.message}
-              />
-            )}
-          />
-          <Controller
-            control={control}
-            name="contractClientLandlord.idCardNumber"
-            rules={{ required: "Vui lòng nhập CCCD/CMND người thuê" }}
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <Input
-                label="CCCD/CMND người thuê"
-                value={value}
-                maxLength={12}
-                keyboardType="numeric"
-                onChangeText={onChange}
-                placeholder="Nhập CCCD/CMND người thuê"
-                icon="card-outline"
-                required
-                error={error?.message}
-              />
-            )}
-          />
-          <Controller
-            control={control}
-            name="partnerClientCount"
-            render={({ field: { onChange, value } }) => (
-              <View>
-                <Input
-                  label="Số lượng người ở cùng"
-                  value={value?.toString()}
-                  disabled
-                  onChangeText={(text) => {
-                    setValue("ignoreAutoUpdatePartnerNumber", true);
-                    onChange(text);
-                  }}
-                  placeholder="Tự động tính số lượng người ở cùng"
-                  type="number"
-                  icon="people-outline"
-                  keyboardType="numeric"
-                />
+        <FormSection title="Chọn phòng" icon="bed-outline">
+          <ComboBox
+            label="Phòng"
+            required
+            options={roomOptions}
+            valueKey="value"
+            labelKey="label"
+            value={roomId}
+            isLoading={isLoadingOptions}
+            placeholder="Chọn phòng cần tạo hợp đồng"
+            onChange={(option) => {
+              const next = (option as { value: string }).value;
+              if (next !== roomId) setRoomId(next);
+            }}
+            renderItem={(item) => (
+              <View style={styles.optionRow}>
+                <Text style={fieldStyles.text}>{item.label}</Text>
+                <Text style={uiType.caption}>{item.extra?.propertyName}</Text>
               </View>
             )}
           />
         </FormSection>
-        <Controller
-          control={control}
-          name="contractClient"
-          render={({ field: { value, onChange }, fieldState: { error } }) => (
-            <PartnerClientsSection
-              onAdd={handleAddCompanion}
-              onEdit={handleEditCompanion}
-              onDelete={handleDeleteCompanion}
-              data={contractClientsFields}
-              error={error?.message}
-            />
-          )}
-        />
 
-        <FormSection title="Thời hạn thuê" icon="calendar-outline">
-          <Controller
-            control={control}
-            name="startDate"
-            rules={{ required: "Vui lòng chọn ngày bắt đầu" }}
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <DatePicker
-                value={value}
-                label="Ngày bắt đầu"
-                showClear={false}
-                onChange={onChange}
-                placeholder="Chọn ngày bắt đầu"
-                required
-                minDate={new Date()}
-                error={error?.message}
-                icon="calendar"
+        {isLoading && <Loading />}
+
+        {hasRoom && !isLoading && (
+          <>
+            {/* Phòng được chọn */}
+            <Card style={styles.summary}>
+              <IconSquircle icon="bed" />
+              <View style={styles.flex}>
+                <Text style={styles.summaryTitle} numberOfLines={1}>
+                  {roomData?.name || "Tên phòng"}
+                </Text>
+                <Text style={uiType.caption} numberOfLines={1}>
+                  {roomData?.property?.name || "Tên tòa nhà"}
+                </Text>
+              </View>
+              <View style={styles.priceCol}>
+                <Text style={uiType.caption}>Giá thuê</Text>
+                <Text style={styles.price}>
+                  {formatCurrency(roomData?.rentAmount?.toString() || "0")}
+                  đ/tháng
+                </Text>
+              </View>
+            </Card>
+
+            <FormSection title="Thông tin người thuê" icon="person-outline">
+              <Controller
+                control={control}
+                name="contractClientLandlord.name"
+                rules={{ required: "Vui lòng nhập tên người thuê" }}
+                render={({
+                  field: { onChange, value },
+                  fieldState: { error },
+                }) => (
+                  <Input
+                    label="Tên người thuê"
+                    value={value}
+                    onChangeText={onChange}
+                    required
+                    icon="person"
+                    error={error?.message}
+                    placeholder="Nhập tên người thuê"
+                  />
+                )}
               />
-            )}
-          />
-
-          <Controller
-            control={control}
-            name="endDate"
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <DatePicker
-                label="Ngày kết thúc (tùy chọn)"
-                value={value}
-                onChange={onChange}
-                placeholder="Chọn ngày kết thúc"
-                error={error?.message}
-                icon="calendar"
-                minDate={
-                  watch("startDate")
-                    ? new Date(watch("startDate") ?? "")
-                    : new Date()
-                }
+              <Controller
+                control={control}
+                name="contractClientLandlord.phoneNumber"
+                rules={{ required: "Vui lòng nhập số điện thoại người thuê" }}
+                render={({
+                  field: { onChange, value },
+                  fieldState: { error },
+                }) => (
+                  <Input
+                    label="Số điện thoại người thuê"
+                    value={value}
+                    type="number"
+                    maxLength={10}
+                    keyboardType="phone-pad"
+                    required
+                    icon="phone-portrait-outline"
+                    onChangeText={onChange}
+                    placeholder="Nhập số điện thoại người thuê"
+                    error={error?.message}
+                  />
+                )}
               />
-            )}
-          />
-        </FormSection>
-
-        <FormSection title="Thông tin thanh toán" icon="cash-outline">
-          <Controller
-            control={control}
-            name="rentAmountAgreed"
-            rules={{ required: "Vui lòng nhập tiền thuê hàng tháng" }}
-            render={({ field: { onChange, value }, fieldState: { error } }) => {
-              return (
-                <Input
-                  type="number"
-                  label="Tiền thuê hàng tháng"
-                  value={value ? formatCurrency(value.toString()) : ""}
-                  onChangeText={onChange}
-                  placeholder="Nhập tiền thuê hàng tháng"
-                  error={error?.message}
-                  icon="cash"
-                  keyboardType="numeric"
-                  returnKeyType="done"
-                  returnKeyLabel="Xong"
-                  required
-                  showClear={false}
-                />
-              );
-            }}
-          />
-
-          <Controller
-            control={control}
-            name="isPrepaidRoom"
-            render={({ field: { onChange, value } }) => {
-              return (
-                <Switch
-                  label="Tiền phòng thanh toán trước"
-                  alignLabel="horizontal"
-                  value={value as boolean}
-                  onValueChange={onChange}
-                />
-              );
-            }}
-          />
-
-          <Controller
-            control={control}
-            name="paymentDueDay"
-            rules={{ required: "Vui lòng nhập ngày thu tiền hàng tháng" }}
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <Input
-                label="Ngày thu tiền hàng tháng"
-                value={value?.toString()}
-                onChangeText={onChange}
-                required
-                placeholder="Nhập ngày thu tiền hàng tháng"
-                min={1}
-                max={30}
-                error={error?.message}
-                type="number"
-                icon="calendar-clear"
-                keyboardType="numeric"
-                returnKeyType="done"
-                returnKeyLabel="Xong"
+              <Controller
+                control={control}
+                name="contractClientLandlord.idCardNumber"
+                rules={{ required: "Vui lòng nhập CCCD/CMND người thuê" }}
+                render={({
+                  field: { onChange, value },
+                  fieldState: { error },
+                }) => (
+                  <Input
+                    label="CCCD/CMND người thuê"
+                    value={value}
+                    maxLength={12}
+                    keyboardType="numeric"
+                    onChangeText={onChange}
+                    placeholder="Nhập CCCD/CMND người thuê"
+                    icon="card-outline"
+                    required
+                    error={error?.message}
+                  />
+                )}
               />
-            )}
-          />
-
-          <Controller
-            control={control}
-            name="depositAmountPaid"
-            rules={{ required: "Vui lòng nhập tiền cọc" }}
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <Input
-                label="Tiền cọc"
-                value={value ? formatCurrency(value.toString()) : ""}
-                onChangeText={onChange}
-                placeholder="Nhập tiền cọc"
-                error={error?.message}
-                icon="shield-checkmark"
-                keyboardType="numeric"
-                returnKeyType="done"
-                returnKeyLabel="Xong"
-              />
-            )}
-          />
-        </FormSection>
-
-        <FormSection
-          title="Dịch vụ"
-          icon="flash-outline"
-          caption={
-            contractServices.length > 0
-              ? `${contractServices.length} dịch vụ`
-              : undefined
-          }
-          action={
-            <AddButton
-              label="Thêm"
-              variant="soft"
-              onPress={handleAddService}
-              accessibilityLabel="Thêm dịch vụ"
-            />
-          }
-        >
-          {contractServices.length === 0 ? (
-            <View style={styles.emptyRow}>
-              <Ionicons
-                name="construct-outline"
-                size={18}
-                color={uiColors.textSubtle}
-              />
-              <Text style={[uiType.caption, styles.flex]}>
-                Chưa có dịch vụ nào — hãy tạo thêm trong cập nhật tòa nhà.
-              </Text>
-            </View>
-          ) : (
-            <>
-              {contractServices.map((service, index) => (
-                <Controller
-                  key={service.id || service.serviceId || index}
-                  control={control}
-                  name={`contractServices.${index}`}
-                  render={({ field: { value } }) => (
-                    <ServiceItem
-                      service={service}
-                      onDelete={() => {
-                        Alert.alert(
-                          "Xóa dịch vụ",
-                          "Bạn có chắc chắn muốn xóa dịch vụ này không?",
-                          [
-                            {
-                              text: "Hủy",
-                              style: "cancel",
-                            },
-                            {
-                              text: "Xóa",
-                              style: "destructive",
-                              onPress: () => {
-                                remove(index);
-                              },
-                            },
-                          ],
-                        );
+              <Controller
+                control={control}
+                name="partnerClientCount"
+                render={({ field: { onChange, value } }) => (
+                  <View>
+                    <Input
+                      label="Số lượng người ở cùng"
+                      value={value?.toString()}
+                      disabled
+                      onChangeText={(text) => {
+                        setValue("ignoreAutoUpdatePartnerNumber", true);
+                        onChange(text);
                       }}
-                      index={index}
-                      onEdit={() =>
-                        openContractServiceForm(
-                          value as ContractServiceDetailResponse,
-                          index,
-                        )
-                      }
-                      onChange={(service) => update(index, service)}
+                      placeholder="Tự động tính số lượng người ở cùng"
+                      type="number"
+                      icon="people-outline"
+                      keyboardType="numeric"
                     />
-                  )}
-                />
-              ))}
-            </>
-          )}
-        </FormSection>
-
-        <FormSection title="Điều khoản bổ sung" icon="document-text-outline">
-          <Controller
-            control={control}
-            name="notes"
-            render={({ field: { onChange, value } }) => (
-              <Input
-                type="area"
-                value={value}
-                onChangeText={onChange}
-                placeholder="Nhập điều khoản bổ sung (không bắc buộc)"
-                numberOfLines={3}
-                textAlignVertical="top"
+                  </View>
+                )}
               />
-            )}
-          />
-        </FormSection>
+            </FormSection>
+            <Controller
+              control={control}
+              name="contractClient"
+              render={({
+                field: { value, onChange },
+                fieldState: { error },
+              }) => (
+                <PartnerClientsSection
+                  onAdd={handleAddCompanion}
+                  onEdit={handleEditCompanion}
+                  onDelete={handleDeleteCompanion}
+                  data={contractClientsFields}
+                  error={error?.message}
+                />
+              )}
+            />
+
+            <FormSection title="Thời hạn thuê" icon="calendar-outline">
+              <Controller
+                control={control}
+                name="startDate"
+                rules={{ required: "Vui lòng chọn ngày bắt đầu" }}
+                render={({
+                  field: { onChange, value },
+                  fieldState: { error },
+                }) => (
+                  <DatePicker
+                    value={value}
+                    label="Ngày bắt đầu"
+                    showClear={false}
+                    onChange={onChange}
+                    placeholder="Chọn ngày bắt đầu"
+                    required
+                    minDate={new Date()}
+                    error={error?.message}
+                    icon="calendar"
+                  />
+                )}
+              />
+
+              <Controller
+                control={control}
+                name="endDate"
+                render={({
+                  field: { onChange, value },
+                  fieldState: { error },
+                }) => (
+                  <DatePicker
+                    label="Ngày kết thúc (tùy chọn)"
+                    value={value}
+                    onChange={onChange}
+                    placeholder="Chọn ngày kết thúc"
+                    error={error?.message}
+                    icon="calendar"
+                    minDate={
+                      watch("startDate")
+                        ? new Date(watch("startDate") ?? "")
+                        : new Date()
+                    }
+                  />
+                )}
+              />
+            </FormSection>
+
+            <FormSection title="Thông tin thanh toán" icon="cash-outline">
+              <Controller
+                control={control}
+                name="rentAmountAgreed"
+                rules={{ required: "Vui lòng nhập tiền thuê hàng tháng" }}
+                render={({
+                  field: { onChange, value },
+                  fieldState: { error },
+                }) => {
+                  return (
+                    <Input
+                      type="number"
+                      label="Tiền thuê hàng tháng"
+                      value={value ? formatCurrency(value.toString()) : ""}
+                      onChangeText={onChange}
+                      placeholder="Nhập tiền thuê hàng tháng"
+                      error={error?.message}
+                      icon="cash"
+                      keyboardType="numeric"
+                      returnKeyType="done"
+                      returnKeyLabel="Xong"
+                      required
+                      showClear={false}
+                    />
+                  );
+                }}
+              />
+
+              <Controller
+                control={control}
+                name="isPrepaidRoom"
+                render={({ field: { onChange, value } }) => {
+                  return (
+                    <Switch
+                      label="Tiền phòng thanh toán trước"
+                      alignLabel="horizontal"
+                      value={value as boolean}
+                      onValueChange={onChange}
+                    />
+                  );
+                }}
+              />
+
+              <Controller
+                control={control}
+                name="paymentDueDay"
+                rules={{ required: "Vui lòng nhập ngày thu tiền hàng tháng" }}
+                render={({
+                  field: { onChange, value },
+                  fieldState: { error },
+                }) => (
+                  <Input
+                    label="Ngày thu tiền hàng tháng"
+                    value={value?.toString()}
+                    onChangeText={onChange}
+                    required
+                    placeholder="Nhập ngày thu tiền hàng tháng"
+                    min={1}
+                    max={30}
+                    error={error?.message}
+                    type="number"
+                    icon="calendar-clear"
+                    keyboardType="numeric"
+                    returnKeyType="done"
+                    returnKeyLabel="Xong"
+                  />
+                )}
+              />
+
+              <Controller
+                control={control}
+                name="depositAmountPaid"
+                rules={{ required: "Vui lòng nhập tiền cọc" }}
+                render={({
+                  field: { onChange, value },
+                  fieldState: { error },
+                }) => (
+                  <Input
+                    label="Tiền cọc"
+                    value={value ? formatCurrency(value.toString()) : ""}
+                    onChangeText={onChange}
+                    placeholder="Nhập tiền cọc"
+                    error={error?.message}
+                    icon="shield-checkmark"
+                    keyboardType="numeric"
+                    returnKeyType="done"
+                    returnKeyLabel="Xong"
+                  />
+                )}
+              />
+            </FormSection>
+
+            <FormSection
+              title="Dịch vụ"
+              icon="flash-outline"
+              caption={
+                contractServices.length > 0
+                  ? `${contractServices.length} dịch vụ`
+                  : undefined
+              }
+              action={
+                <AddButton
+                  label="Thêm"
+                  variant="soft"
+                  onPress={handleAddService}
+                  accessibilityLabel="Thêm dịch vụ"
+                />
+              }
+            >
+              {contractServices.length === 0 ? (
+                <View style={styles.emptyRow}>
+                  <Ionicons
+                    name="construct-outline"
+                    size={18}
+                    color={uiColors.textSubtle}
+                  />
+                  <Text style={[uiType.caption, styles.flex]}>
+                    Chưa có dịch vụ nào — hãy tạo thêm trong cập nhật tòa nhà.
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  {contractServices.map((service, index) => (
+                    <Controller
+                      key={service.id || service.serviceId || index}
+                      control={control}
+                      name={`contractServices.${index}`}
+                      render={({ field: { value } }) => (
+                        <ServiceItem
+                          service={service}
+                          onDelete={() => {
+                            Alert.alert(
+                              "Xóa dịch vụ",
+                              "Bạn có chắc chắn muốn xóa dịch vụ này không?",
+                              [
+                                {
+                                  text: "Hủy",
+                                  style: "cancel",
+                                },
+                                {
+                                  text: "Xóa",
+                                  style: "destructive",
+                                  onPress: () => {
+                                    remove(index);
+                                  },
+                                },
+                              ],
+                            );
+                          }}
+                          index={index}
+                          onEdit={() =>
+                            openContractServiceForm(
+                              value as ContractServiceDetailResponse,
+                              index,
+                            )
+                          }
+                          onChange={(service) => update(index, service)}
+                        />
+                      )}
+                    />
+                  ))}
+                </>
+              )}
+            </FormSection>
+
+            <FormSection
+              title="Điều khoản bổ sung"
+              icon="document-text-outline"
+            >
+              <Controller
+                control={control}
+                name="notes"
+                render={({ field: { onChange, value } }) => (
+                  <Input
+                    type="area"
+                    value={value}
+                    onChangeText={onChange}
+                    placeholder="Nhập điều khoản bổ sung (không bắc buộc)"
+                    numberOfLines={3}
+                    textAlignVertical="top"
+                  />
+                )}
+              />
+            </FormSection>
+          </>
+        )}
         <ContractServiceComponent
           ref={contractServiceRef}
           onSuccess={(service, index) => {
@@ -719,6 +818,7 @@ const CreateContractForm = forwardRef<
 CreateContractForm.displayName = "CreateContractForm";
 
 const styles = StyleSheet.create({
+  optionRow: { paddingVertical: 8, paddingHorizontal: 12 },
   summary: {
     flexDirection: "row",
     alignItems: "center",

@@ -1,10 +1,12 @@
 import { privateApi } from "@/services/api";
 import { ApiResponse } from "@/types/api";
 import { BasePagingRequest } from "@/types/base.request";
+import { ComboOptionWithExtra } from "@/types/comboOption";
 import { BasePagingResponse } from "@/types/base.response";
 import {
   RoomDetailResponse,
   RoomListResponse,
+  RoomOptionExtra,
   RoomServiceDetailResponse,
   RoomUpdateRequest,
 } from "@/types/room";
@@ -49,5 +51,15 @@ export const getRoomWitcService = async (id: string) => {
   const response = await privateApi.get<ApiResponse<RoomServiceDetailResponse>>(
     `/rooms/${id}/services`
   );
+  return response.data;
+};
+
+/** Rooms that can still receive a new contract. */
+export const getContractableRoomOptions = async (
+  propertyId?: string
+): Promise<ApiResponse<ComboOptionWithExtra<string, string, RoomOptionExtra>[]>> => {
+  const response = await privateApi.get<
+    ApiResponse<ComboOptionWithExtra<string, string, RoomOptionExtra>[]>
+  >("/rooms/combo-contractable", { params: { propertyId } });
   return response.data;
 };
