@@ -78,8 +78,8 @@ const ContractListScreen = ({ navigation }: ContractListScreenProps) => {
         search={{ placeholder: "Tìm kiếm hợp đồng…", onSearch: setSearch }}
         action={
           <AddButton
-            // Navigate to room list to select a room for creating contract
-            onPress={() => navigation.navigate("RoomList")}
+            // No preselected room: the user picks one on the create screen
+            onPress={() => navigation.navigate("CreateContract", {})}
             accessibilityLabel="Tạo hợp đồng"
           />
         }

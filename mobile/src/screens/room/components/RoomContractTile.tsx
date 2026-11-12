@@ -18,11 +18,14 @@ import { formatDate } from "@/utils/dateUtil";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import IconSquircle from "@/components/IconSquircle";
+import PressableScale from "@/components/PressableScale";
 import StatusBadge from "@/components/StatusBadge";
 
 export interface RoomContractTileProps {
   contract: ContractListResponse;
   tenantName: string;
+  /** Opens the contract detail. */
+  onPress?: () => void;
 }
 
 /** Due-date color: overdue → error · within 3 days → warning · otherwise default. */
@@ -36,11 +39,16 @@ const getDueDateColor = (endDate: string | Date) => {
   return uiColors.ink;
 };
 
-const RoomContractTile = ({ contract, tenantName }: RoomContractTileProps) => {
+const RoomContractTile = ({ contract, tenantName, onPress }: RoomContractTileProps) => {
   const contractBadge = CONTRACT_STATUS_BADGE[contract.status];
 
   return (
-    <View style={styles.container}>
+    <PressableScale
+      onPress={onPress}
+      scaleTo={0.98}
+      accessibilityLabel={`Xem hợp đồng ${contract.code}`}
+      style={styles.container}
+    >
       {/* Tenant row with status badge */}
       <View style={styles.tenantRow}>
         <IconSquircle icon="person-outline" size="sm" tone="neutral" />
@@ -87,7 +95,7 @@ const RoomContractTile = ({ contract, tenantName }: RoomContractTileProps) => {
           </View>
         </>
       ) : null}
-    </View>
+    </PressableScale>
   );
 };
 

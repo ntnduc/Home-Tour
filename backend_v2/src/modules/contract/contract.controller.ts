@@ -19,13 +19,14 @@ import { ContractStatus } from '../../common/enums/contract.enum';
 import { Role } from '../../common/enums/role.enum';
 import { Roles } from '../rbac/decorators/roles.decorator';
 import { ContractService } from './contract.service';
-import { ContractChangeStatusDto } from './dto/contract-dto/contract.change.status.dto';
 import { ContractCancelPreInvoiceDto } from './dto/contract-dto/contract.cancel-pre-invoice.dto';
+import { ContractChangeStatusDto } from './dto/contract-dto/contract.change.status.dto';
 import { ContractConfirmPaymentDto } from './dto/contract-dto/contract.confirm-payment.dto';
 import { ContractCreateDto } from './dto/contract-dto/contract.create.dto';
 import { ContractDetailDto } from './dto/contract-dto/contract.detail.dto';
 import { ContractListDto } from './dto/contract-dto/contract.list.dto';
 import { ContractUpdateDto } from './dto/contract-dto/contract.update.dto';
+import { BaseFilterDto } from '../../common/base/dto/filter.dto';
 import { Contracts } from './entities/contracts.entity';
 
 @ApiTags('Contract')
@@ -57,12 +58,17 @@ export class ContractController extends BaseController<
     );
   }
 
-  // @Get('room/:roomId')
-  // @ApiOperation({ summary: 'Get contracts by room ID' })
-  // @ApiResponse({ status: 200, description: 'List of contracts for the room.' })
-  // async getContractsByRoomId(@Param('roomId') roomId: string) {
-  //   return await this.contractService.findByRoomId(roomId);
-  // }
+  @Get('room/:roomId')
+  @ApiOperation({ summary: 'Get contracts by room ID' })
+  @ApiResponse({ status: 200, description: 'List of contracts for the room.' })
+  async getContractsByRoomId(
+    @Param('roomId') roomId: string,
+    @Query() query: BaseFilterDto<Contracts>,
+  ) {
+    // BaseService reads equality filters from `filters`, not from the top level
+    query.filters = { ...(query.filters ?? {}), roomId } as any;
+    return await this.contractService.getAll(query);
+  }
 
   // @Get('room/:roomId/active')
   // @ApiOperation({ summary: 'Get active contract by room ID' })

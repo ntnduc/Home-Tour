@@ -23,8 +23,8 @@ export const shadows = StyleSheet.create<Record<ShadowTier, ViewStyle>>({
   },
   medium: {
     shadowColor: palette.gray[900],
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
+    shadowOffset: { width: 10, height: 10 },
+    shadowOpacity: 0.8,
     shadowRadius: 20,
     elevation: 5,
   },

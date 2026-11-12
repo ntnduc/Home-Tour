@@ -80,3 +80,11 @@ export interface RoomServiceDetailResponse extends RoomDetailResponse {
   contractServices: ContractServiceDetailResponse[];
   property: PropertyDetail;
 }
+
+/** Extra info returned with each contractable room option. */
+export interface RoomOptionExtra {
+  propertyId: string;
+  propertyName: string;
+  rentAmount: number;
+  status: RoomStatus;
+}
