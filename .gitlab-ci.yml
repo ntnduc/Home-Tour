@@ -33,13 +33,17 @@ variables:
     - echo "Image tag $IMAGE_TAG"
 
 # Shared SSH setup for jobs that talk to the server.
-# The SSH private key is provided by the runner (default ~/.ssh key), no CI variable needed.
-# Optional SSH_KNOWN_HOSTS (type "File") pins the server host key if the runner's known_hosts lacks it.
+# SSH_PRIVATE_KEY and SSH_KNOWN_HOSTS are GitLab variables of type "File".
 .ssh_setup:
   before_script:
     - apk add --no-cache openssh-client
-    - SSH_OPTS=""
-    - if [ -n "$SSH_KNOWN_HOSTS" ]; then SSH_OPTS="-o UserKnownHostsFile=$SSH_KNOWN_HOSTS"; fi
+    - |
+      for v in SSH_PRIVATE_KEY SSH_KNOWN_HOSTS; do
+        eval "f=\$$v"
+        if [ ! -f "$f" ]; then echo "$v is missing (must be a GitLab CI/CD variable of type File)"; exit 1; fi
+      done
+    - chmod 600 "$SSH_PRIVATE_KEY"
+    - SSH_OPTS="-i $SSH_PRIVATE_KEY -o IdentitiesOnly=yes -o UserKnownHostsFile=$SSH_KNOWN_HOSTS"
 
 # Placeholder, not executed yet. Remove the `rules` block to enable.
 test:

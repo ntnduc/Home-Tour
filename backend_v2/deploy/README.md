@@ -48,9 +48,10 @@ The runner must reach `DEPLOY_HOST` on SSH. If the runner host is in the tailnet
 | `DEPLOY_PORT` | Variable | | `22` |
 | `DEPLOY_USER` | Variable | | `deploy` |
 | `DEPLOY_DIR` | Variable | | `/opt/home-tour/backend` |
-| `SSH_KNOWN_HOSTS` | **File** | | *Optional.* Output of `ssh-keyscan -p 22 100.x.y.z`. Only needed if the runner's `known_hosts` does not have the server yet |
+| `SSH_PRIVATE_KEY` | **File** | | content of `gitlab_deploy` private key (must end with a newline) |
+| `SSH_KNOWN_HOSTS` | **File** | | output of `ssh-keyscan -p 22 100.x.y.z` (pins the server host key) |
 
-No SSH private key variable: the runner already provides its default SSH key (`~/.ssh/id_*`) to job containers.
+`migrate` and `deploy` stop with a clear error if either SSH variable is missing.
 | `ANSIBLE_REPO_REF` | Variable | | `v1.2.0` (tag of `ntnduc/ansible-docker-compose`: `docker compose` v2 + version in `.env`) |
 
 App secrets (DB, JWT) are **not** stored in GitLab. They live only in the server `.env`.
@@ -83,21 +84,26 @@ sudo chown 1000:1000 /opt/home-tour/backend/uploads
 ```
 `docker` group lets `deploy` run docker without sudo (note: docker group is root-equivalent; keep the key safe).
 
-### 2.3 Authorize the runner's SSH key
-The runner already has an SSH key available in job containers. Add its **public** key to `deploy`:
+### 2.3 SSH key for CI (GitLab variable `SSH_PRIVATE_KEY`)
+On your machine, create a key dedicated to CI (no passphrase):
+```bash
+ssh-keygen -t ed25519 -C "gitlab-ci-deploy" -f ./gitlab_deploy -N ""
+```
+On the server, add the **public** key to `deploy`:
 ```bash
 sudo -u deploy mkdir -p /home/deploy/.ssh
-echo "<runner public key, e.g. ssh-ed25519 AAAA... gitlab-runner>" | sudo -u deploy tee -a /home/deploy/.ssh/authorized_keys
+echo "<content of gitlab_deploy.pub>" | sudo -u deploy tee -a /home/deploy/.ssh/authorized_keys
 sudo chmod 700 /home/deploy/.ssh && sudo chmod 600 /home/deploy/.ssh/authorized_keys
 ```
-Then:
-1. Test from a job container on the runner (same network and key as CI):
-   `docker run --rm -it <same ssh mount as the runner> alpine sh -c 'apk add -q openssh-client && ssh -p 22 deploy@<tailscale-ip> docker ps'`
-   — or simply run the pipeline and check the `migrate` job log.
-2. Host key: if the runner's `known_hosts` does not have the server, the job fails with
-   `Host key verification failed`. Then set GitLab `SSH_KNOWN_HOSTS` (File) = `ssh-keyscan -p 22 <tailscale-ip>`,
-   and compare the fingerprint with `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the server.
-3. The key file mounted into jobs must be `chmod 600`, otherwise ssh refuses it (`UNPROTECTED PRIVATE KEY FILE`).
+Then, in this order:
+1. Test: `ssh -i gitlab_deploy -o IdentitiesOnly=yes deploy@<tailscale-ip> docker ps`.
+2. GitLab → Settings → CI/CD → Variables → add `SSH_PRIVATE_KEY`, **Type: File**, Protected,
+   value = full content of `gitlab_deploy` (from `-----BEGIN OPENSSH PRIVATE KEY-----` to `-----END ...-----`
+   **plus a final newline**; without it ssh fails with `error in libcrypto`).
+   File variables cannot be masked; keep them Protected and limit project Maintainers.
+3. `ssh-keyscan -p 22 <tailscale-ip>` → GitLab `SSH_KNOWN_HOSTS` (**Type: File**). Compare the fingerprint with
+   `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the server.
+4. Delete the local key files (`gitlab_deploy`, `gitlab_deploy.pub`).
 
 Optional, `/etc/ssh/sshd_config`:
 ```
