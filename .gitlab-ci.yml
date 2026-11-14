@@ -33,17 +33,23 @@ variables:
     - echo "Image tag $IMAGE_TAG"
 
 # Shared SSH setup for jobs that talk to the server.
-# SSH_PRIVATE_KEY and SSH_KNOWN_HOSTS are GitLab variables of type "File".
+# SSH_PRIVATE_KEY: GitLab variable (type Variable) with the private key text, raw or base64-encoded.
 .ssh_setup:
   before_script:
     - apk add --no-cache openssh-client
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
     - |
-      for v in SSH_PRIVATE_KEY SSH_KNOWN_HOSTS; do
-        eval "f=\$$v"
-        if [ ! -f "$f" ]; then echo "$v is missing (must be a GitLab CI/CD variable of type File)"; exit 1; fi
-      done
-    - chmod 600 "$SSH_PRIVATE_KEY"
-    - SSH_OPTS="-i $SSH_PRIVATE_KEY -o IdentitiesOnly=yes -o UserKnownHostsFile=$SSH_KNOWN_HOSTS"
+      if [ -z "$SSH_PRIVATE_KEY" ]; then echo "SSH_PRIVATE_KEY is missing"; exit 1; fi
+      # Raw key, or base64 (single line, so the variable can be masked)
+      case "$SSH_PRIVATE_KEY" in
+        *"BEGIN "*) printf '%s\n' "$SSH_PRIVATE_KEY" ;;
+        *) printf '%s' "$SSH_PRIVATE_KEY" | base64 -d ;;
+      esac | tr -d '\r' > ~/.ssh/id_deploy
+      chmod 600 ~/.ssh/id_deploy
+      if ! ssh-keygen -y -f ~/.ssh/id_deploy > /dev/null; then echo "SSH_PRIVATE_KEY is not a valid private key"; exit 1; fi
+    # Trust the server host key on each run (connection goes over Tailscale)
+    - ssh-keyscan -p "$DEPLOY_PORT" "$DEPLOY_HOST" > ~/.ssh/known_hosts 2>/dev/null
+    - SSH_OPTS="-i $HOME/.ssh/id_deploy -o IdentitiesOnly=yes"
 
 # Placeholder, not executed yet. Remove the `rules` block to enable.
 test:

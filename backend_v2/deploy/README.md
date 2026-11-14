@@ -48,10 +48,10 @@ The runner must reach `DEPLOY_HOST` on SSH. If the runner host is in the tailnet
 | `DEPLOY_PORT` | Variable | | `22` |
 | `DEPLOY_USER` | Variable | | `deploy` |
 | `DEPLOY_DIR` | Variable | | `/opt/home-tour/backend` |
-| `SSH_PRIVATE_KEY` | **File** | | content of `gitlab_deploy` private key (must end with a newline) |
-| `SSH_KNOWN_HOSTS` | **File** | | output of `ssh-keyscan -p 22 100.x.y.z` (pins the server host key) |
+| `SSH_PRIVATE_KEY` | Variable | ✅ if base64 | private key text of `gitlab_deploy` — raw, or base64 (one line, maskable) |
 
-`migrate` and `deploy` stop with a clear error if either SSH variable is missing.
+`migrate` and `deploy` stop with a clear error if `SSH_PRIVATE_KEY` is missing or not a valid key.
+The server host key is fetched with `ssh-keyscan` on every run (no known_hosts variable).
 | `ANSIBLE_REPO_REF` | Variable | | `v1.2.0` (tag of `ntnduc/ansible-docker-compose`: `docker compose` v2 + version in `.env`) |
 
 App secrets (DB, JWT) are **not** stored in GitLab. They live only in the server `.env`.
@@ -97,13 +97,12 @@ sudo chmod 700 /home/deploy/.ssh && sudo chmod 600 /home/deploy/.ssh/authorized_
 ```
 Then, in this order:
 1. Test: `ssh -i gitlab_deploy -o IdentitiesOnly=yes deploy@<tailscale-ip> docker ps`.
-2. GitLab → Settings → CI/CD → Variables → add `SSH_PRIVATE_KEY`, **Type: File**, Protected,
-   value = full content of `gitlab_deploy` (from `-----BEGIN OPENSSH PRIVATE KEY-----` to `-----END ...-----`
-   **plus a final newline**; without it ssh fails with `error in libcrypto`).
-   File variables cannot be masked; keep them Protected and limit project Maintainers.
-3. `ssh-keyscan -p 22 <tailscale-ip>` → GitLab `SSH_KNOWN_HOSTS` (**Type: File**). Compare the fingerprint with
-   `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the server.
-4. Delete the local key files (`gitlab_deploy`, `gitlab_deploy.pub`).
+2. GitLab → Settings → CI/CD → Variables → add `SSH_PRIVATE_KEY`, **Type: Variable**, Protected. Value, one of:
+   - **Raw:** full content of `gitlab_deploy` (`-----BEGIN OPENSSH PRIVATE KEY-----` … `-----END …-----`).
+     Multi-line, so it cannot be masked (it may appear if a script prints it).
+   - **Base64 (recommended):** `base64 < gitlab_deploy | tr -d '\n'` → one line, tick **Masked**.
+   The job detects which one it is, writes it to `~/.ssh/id_deploy` and fixes the final newline / `\r`.
+3. Delete the local key files (`gitlab_deploy`, `gitlab_deploy.pub`).
 
 Optional, `/etc/ssh/sshd_config`:
 ```
