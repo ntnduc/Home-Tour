@@ -1,0 +1,20 @@
+# Alternative to docker-compose.yml: bridge network + host-gateway.
+# Switch steps: README.md section "Switching to host-gateway".
+services:
+  backend:
+    image: harbor.example.com/home-tour/home-tour-backend:${VERSION:?VERSION is required in .env}
+    container_name: home-tour-backend
+    restart: unless-stopped
+    env_file: .env # set DB_HOST=host.docker.internal
+    ports:
+      # Bind to the Tailscale IP of this server only (or 127.0.0.1:3000:3000)
+      - "100.x.y.z:3000:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./uploads:/app/uploads
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"

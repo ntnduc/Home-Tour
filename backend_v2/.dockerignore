@@ -1,0 +1,17 @@
+node_modules
+dist
+coverage
+uploads
+test
+document
+.env
+.env.*
+!.env.example
+.git
+.github
+.vscode
+.claude
+deploy
+yarn.lock
+*.log
+.DS_Store

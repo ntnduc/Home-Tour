@@ -1,0 +1,20 @@
+# Server: /opt/home-tour/backend/docker-compose.yml
+# The image tag comes from VERSION in .env (Ansible updates it on every deploy).
+# To run another version: edit VERSION in .env, then `docker compose up -d`.
+# No postgres service: the backend uses the Postgres already running on this host.
+services:
+  backend:
+    image: harbor.example.com/home-tour/home-tour-backend:${VERSION:?VERSION is required in .env}
+    container_name: home-tour-backend
+    restart: unless-stopped
+    # App listens on host:3000 and reaches Postgres at 127.0.0.1.
+    # Port 3000 must be restricted to tailscale0 by the firewall (see README).
+    network_mode: host
+    env_file: .env
+    volumes:
+      - ./uploads:/app/uploads
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"

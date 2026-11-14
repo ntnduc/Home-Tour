@@ -1,0 +1,12 @@
+# Reference only. CI generates this file from GitLab variables.
+all:
+  vars:
+    remote_user: deploy
+    working_time: "{{ ansible_date_time.iso8601_basic_short }}"
+    service_stacks:
+      - docker_repository: harbor.example.com/home-tour
+        image_name: home-tour-backend
+        image_version: 12
+        working_directory: /opt/home-tour/backend
+        version_key: VERSION
+        env_file: .env
