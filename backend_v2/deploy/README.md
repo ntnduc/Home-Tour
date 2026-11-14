@@ -48,11 +48,17 @@ The runner must reach `DEPLOY_HOST` on SSH. If the runner host is in the tailnet
 | `DEPLOY_PORT` | Variable | | `22` |
 | `DEPLOY_USER` | Variable | | `deploy` |
 | `DEPLOY_DIR` | Variable | | `/opt/home-tour/backend` |
-| `SSH_PRIVATE_KEY` | **File** | | content of `gitlab_deploy` (keep trailing newline) |
-| `SSH_KNOWN_HOSTS` | **File** | | output of `ssh-keyscan -p 22 100.x.y.z` |
+| `SSH_KNOWN_HOSTS` | **File** | | *Optional.* Output of `ssh-keyscan -p 22 100.x.y.z`. Only needed if the runner's `known_hosts` does not have the server yet |
+
+No SSH private key variable: the runner already provides its default SSH key (`~/.ssh/id_*`) to job containers.
 | `ANSIBLE_REPO_REF` | Variable | | `v1.2.0` (tag of `ntnduc/ansible-docker-compose`: `docker compose` v2 + version in `.env`) |
 
 App secrets (DB, JWT) are **not** stored in GitLab. They live only in the server `.env`.
+
+⚠ Harbor robot names contain `$` (`robot$home-tour+ci`). For `HARBOR_USERNAME` and `HARBOR_PASSWORD`
+**uncheck "Expand variable reference"**, otherwise GitLab treats `$home` as a variable and login fails.
+
+`IMAGE_VERSION` is not set here; it is an optional field in the **Run pipeline** form (see section 4).
 
 ### 1.4 Harbor
 - Project `home-tour` (private).
@@ -72,22 +78,26 @@ sudo groupadd deploy
 sudo useradd -m -g deploy -G docker -s /bin/bash deploy
 sudo mkdir -p /opt/home-tour/backend/uploads
 sudo chown -R deploy:deploy /opt/home-tour
+# The container runs as user `node` (uid 1000), it must be able to write uploads
+sudo chown 1000:1000 /opt/home-tour/backend/uploads
 ```
 `docker` group lets `deploy` run docker without sudo (note: docker group is root-equivalent; keep the key safe).
 
-### 2.3 SSH key for the runner
-On your machine:
-```bash
-ssh-keygen -t ed25519 -C "gitlab-ci-deploy" -f ./gitlab_deploy -N ""
-```
-On the server, add `gitlab_deploy.pub`:
+### 2.3 Authorize the runner's SSH key
+The runner already has an SSH key available in job containers. Add its **public** key to `deploy`:
 ```bash
 sudo -u deploy mkdir -p /home/deploy/.ssh
-sudo -u deploy tee -a /home/deploy/.ssh/authorized_keys < gitlab_deploy.pub
+echo "<runner public key, e.g. ssh-ed25519 AAAA... gitlab-runner>" | sudo -u deploy tee -a /home/deploy/.ssh/authorized_keys
 sudo chmod 700 /home/deploy/.ssh && sudo chmod 600 /home/deploy/.ssh/authorized_keys
 ```
-Then: `gitlab_deploy` → GitLab `SSH_PRIVATE_KEY`, `ssh-keyscan -p 22 <tailscale-ip>` → `SSH_KNOWN_HOSTS`,
-delete the local key files. Test from the runner host: `ssh -i gitlab_deploy deploy@<tailscale-ip> docker ps`.
+Then:
+1. Test from a job container on the runner (same network and key as CI):
+   `docker run --rm -it <same ssh mount as the runner> alpine sh -c 'apk add -q openssh-client && ssh -p 22 deploy@<tailscale-ip> docker ps'`
+   — or simply run the pipeline and check the `migrate` job log.
+2. Host key: if the runner's `known_hosts` does not have the server, the job fails with
+   `Host key verification failed`. Then set GitLab `SSH_KNOWN_HOSTS` (File) = `ssh-keyscan -p 22 <tailscale-ip>`,
+   and compare the fingerprint with `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the server.
+3. The key file mounted into jobs must be `chmod 600`, otherwise ssh refuses it (`UNPROTECTED PRIVATE KEY FILE`).
 
 Optional, `/etc/ssh/sshd_config`:
 ```
@@ -115,22 +125,38 @@ Credentials are stored in `/home/deploy/.docker/config.json`. The Ansible role d
 
 ### 2.6 Database (existing Postgres on this host)
 No Postgres container is used. With `network_mode: host` the app connects to `127.0.0.1:<DB_PORT>`.
+As Postgres superuser (`sudo -u postgres psql`):
 ```sql
 CREATE USER home_tour WITH PASSWORD '...';
 CREATE DATABASE home_tour_v2 OWNER home_tour;
+\c home_tour_v2
+-- Required: migrations use uuid_generate_v4() but do not create the extension,
+-- and a normal user cannot create it. Without this the first migrate job fails.
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 ```
+`pg_hba.conf` must allow password login from localhost for this user (default on most installs):
+```
+host  home_tour_v2  home_tour  127.0.0.1/32  scram-sha-256
+```
+Test as deploy: `psql -h 127.0.0.1 -U home_tour home_tour_v2 -c 'select 1'`.
+
 The database is empty → the first pipeline's `migrate` job creates the whole schema from
-`src/database/migrations`. Check manually after the first run:
+`src/database/migrations`. Check after the first run (in `/opt/home-tour/backend`):
 ```bash
-docker run --rm --network host --env-file .env <image> npm run migration:show:prod
+IMG=$(grep -m1 'image:' docker-compose.yml | awk '{print $2}' | cut -d: -f1)
+docker run --rm --network host --env-file .env "$IMG:$(grep ^VERSION= .env | cut -d= -f2)" npm run migration:show:prod
 ```
 
 ### 2.7 Tailscale + firewall (option A1)
+Create the tags in the Tailscale ACL first (section 3), otherwise `--advertise-tags` is rejected.
 ```bash
 curl -fsSL https://tailscale.com/install.sh | sh
 sudo tailscale up --advertise-tags=tag:backend
 ```
-`network_mode: host` makes the app listen on all interfaces, so the firewall must limit port 3000 to Tailscale:
+`network_mode: host` makes the app listen on all interfaces, so the firewall must limit port 3000 to Tailscale.
+
+⚠ **Lock-out risk:** if you are connected over the public IP, `ufw enable` with these rules cuts your SSH.
+First confirm you can SSH via the Tailscale IP, or temporarily keep `sudo ufw allow 22/tcp`.
 ```bash
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
@@ -186,6 +212,9 @@ Tailscale ACL (admin console → Access controls), adjust to your tags:
 ```
 Tag the runner host `tag:ci` if it is on the tailnet.
 
+⚠ A policy with `acls` replaces the default "allow all". Merge these rules into your existing policy and keep
+the access you still need (e.g. your own devices → `tag:edge:22`), or you lose it.
+
 ---
 
 ## 4. Operations
@@ -196,6 +225,9 @@ Tag the runner host `tag:ci` if it is on the tailnet.
     Anything that is not `^[0-9]+(\.[0-9]+)*$` (e.g. `v1.2`) fails the pipeline.
   - Re-running a job of an old pipeline keeps that pipeline's version.
   - A manual version that already exists in Harbor is overwritten. Use a new number, or enable tag immutability in Harbor.
+  - **Run pipeline** builds the latest commit of the chosen branch/tag. To rebuild old code, create a git tag on
+    that commit and run the pipeline on the tag (needs a workflow rule for tags) — or simply redeploy the old image
+    by setting `VERSION` in `.env` (below); no rebuild needed.
 
 - **Run an older version (on the server):** set `VERSION=<tag>` in `.env` (any version in Harbor, e.g. `12` or `1.2.0`),
   then `docker compose up -d`. No change to `docker-compose.yml`.
@@ -213,9 +245,9 @@ Tag the runner host `tag:ci` if it is on the tailnet.
 1. Replace server `docker-compose.yml` with `docker-compose.host-gateway.yml` (keep the same image line),
    set the Tailscale IP in `ports:`.
 2. `.env`: `DB_HOST=host.docker.internal`.
-3. `postgresql.conf`: `listen_addresses = 'localhost,172.17.0.1'` — or `'*'` if the firewall blocks 5432 publicly.
-   Compose networks use `172.18.0.0/16` and up, so the gateway the container sees may differ; check with
-   `docker network inspect backend_default`.
+3. `postgresql.conf`: `listen_addresses = '*'` (access is then limited by `pg_hba.conf` + firewall below).
+   Listing only `172.17.0.1` is not enough: compose creates its own network (`172.18.0.0/16` and up,
+   see `docker network inspect backend_default`), and Postgres must be restarted, not reloaded, after this change.
 4. `pg_hba.conf`:
    ```
    host  home_tour_v2  home_tour  172.16.0.0/12  scram-sha-256
@@ -223,6 +255,8 @@ Tag the runner host `tag:ci` if it is on the tailnet.
    then `sudo systemctl reload postgresql`.
 5. Firewall: `sudo ufw allow from 172.16.0.0/12 to any port 5432 proto tcp`.
 6. `.gitlab-ci.yml` `migrate` job: replace `--network host` with `--add-host host.docker.internal:host-gateway`.
-7. Remove the ufw rule for port 3000 on `tailscale0` if the port is now bound to the Tailscale IP only
-   (note: Docker-published ports bypass ufw, so binding to the Tailscale IP is what protects it).
+7. Port 3000 is now published by Docker, which **bypasses ufw**. Binding `ports:` to the Tailscale IP is what
+   protects it; the `tailscale0` ufw rule for 3000 is no longer used and can be removed.
+   Boot-order gotcha: the bind fails if Docker starts before Tailscale has its IP. Fix with a systemd drop-in
+   (`sudo systemctl edit docker` → `[Unit]` `After=tailscaled.service` `Wants=tailscaled.service`).
 8. `docker compose up -d`.
