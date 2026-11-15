@@ -104,6 +104,7 @@ deploy:
     - !reference [.version, before_script]
     - !reference [.ssh_setup, before_script]
     - apk add --no-cache ansible git
+    - ANSIBLE_REPO_REF="${ANSIBLE_REPO_REF:-main}"
     - git clone --depth 1 --branch "$ANSIBLE_REPO_REF" https://github.com/ntnduc/ansible-docker-compose.git /ansible
     - |
       cat > /ansible/inventory.ini <<EOF
